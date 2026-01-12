@@ -2,8 +2,9 @@ package com.silkfinik.fairsplit.features.groups.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
 import com.silkfinik.fairsplit.core.data.repository.GroupRepository
-import com.silkfinik.fairsplit.core.mode.Group
+import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.features.groups.ui.GroupsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,13 +20,7 @@ class GroupsViewModel @Inject constructor(
 
     val uiState: StateFlow<GroupsUiState> = groupRepository.getGroups()
         .map { entities ->
-            val domainGroups = entities.map { entity ->
-                Group(
-                    id = entity.id,
-                    name = entity.name,
-                    currency = entity.currency
-                )
-            }
+            val domainGroups = entities.map { it.asDomainModel() }
             GroupsUiState(groups = domainGroups)
         }
         .stateIn(

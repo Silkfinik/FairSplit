@@ -1,6 +1,6 @@
 package com.silkfinik.fairsplit.features.groups.ui
 
-import com.silkfinik.fairsplit.core.mode.Group
+import com.silkfinik.fairsplit.core.model.Group
 
 data class GroupsUiState(
     val groups: List<Group> = emptyList(),

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface GroupDao {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGroup(group: GroupEntity): Long
 
     @Update
@@ -28,4 +28,10 @@ interface GroupDao {
 
     @Query("SELECT * FROM groups WHERE id = :groupId")
     suspend fun getGroupById(groupId: String): GroupEntity?
+
+    @Query("SELECT * FROM groups WHERE is_dirty = 1")
+    suspend fun getDirtyGroups(): List<GroupEntity>
+
+    @Query("UPDATE groups SET is_dirty = 0 WHERE id IN (:ids)")
+    suspend fun markGroupsAsSynced(ids: List<String>)
 }

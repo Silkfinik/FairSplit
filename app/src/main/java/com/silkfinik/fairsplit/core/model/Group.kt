@@ -1,4 +1,4 @@
-package com.silkfinik.fairsplit.core.mode
+package com.silkfinik.fairsplit.core.model
 
 import com.silkfinik.fairsplit.core.model.Currency
 

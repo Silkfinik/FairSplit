@@ -5,13 +5,13 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import com.silkfinik.fairsplit.core.common.di.ApplicationScope
+import com.silkfinik.fairsplit.core.data.mapper.asDto
+import com.silkfinik.fairsplit.core.data.mapper.asEntity
 import com.silkfinik.fairsplit.core.data.repository.AuthRepository
 import com.silkfinik.fairsplit.core.database.dao.GroupDao
 import com.silkfinik.fairsplit.core.database.entity.GroupEntity
-import com.silkfinik.fairsplit.core.database.util.Converters
 import com.silkfinik.fairsplit.core.network.model.GroupDto
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -26,15 +26,11 @@ class GroupSynchronizer @Inject constructor(
 ) {
 
     private var groupListener: ListenerRegistration? = null
-    private val converters = Converters()
 
     suspend fun syncLocalChanges() {
         val userId = authRepository.getUserId() ?: return
 
-        // Берем все группы из базы (Flow -> List)
-        // В идеале в DAO нужен метод getDirtyGroups(), но пока возьмем все и отфильтруем
-        val allGroups = groupDao.getGroups().first()
-        val dirtyGroups = allGroups.filter { it.is_dirty }
+        val dirtyGroups = groupDao.getDirtyGroups()
 
         if (dirtyGroups.isEmpty()) return
 
@@ -43,23 +39,19 @@ class GroupSynchronizer @Inject constructor(
 
         dirtyGroups.forEach { entity ->
             val docRef = groupsCollection.document(entity.id)
-            val dto = mapEntityToDto(entity)
+            val dto = entity.asDto()
 
-            // Используем merge, чтобы не затереть данные, если они изменились параллельно
-            // (хотя LWW требует более сложной логики, для старта хватит SetOptions.merge())
             batch.set(docRef, dto, SetOptions.merge())
         }
 
         try {
             batch.commit().await()
-            Log.d("Sync", "Успешно отправлено ${dirtyGroups.size} групп")
+            Log.d("Sync", "Successfully sent ${dirtyGroups.size} groups")
 
-            // После успеха снимаем флаг is_dirty
-            dirtyGroups.forEach { group ->
-                groupDao.insertGroup(group.copy(is_dirty = false)) // insert = replace/update
-            }
+            val syncedIds = dirtyGroups.map { it.id }
+            groupDao.markGroupsAsSynced(syncedIds)
         } catch (e: Exception) {
-            Log.e("Sync", "Ошибка синхронизации: ${e.message}")
+            Log.e("Sync", "Sync error: ${e.message}")
         }
     }
 
@@ -68,7 +60,6 @@ class GroupSynchronizer @Inject constructor(
 
         groupListener?.remove()
 
-        // Слушаем только свои группы
         val query = firestore.collection("groups")
             .whereEqualTo("owner_id", userId)
 
@@ -80,7 +71,6 @@ class GroupSynchronizer @Inject constructor(
 
             if (snapshot != null) {
                 val dtos = snapshot.toObjects(GroupDto::class.java)
-                // Обработку данных выносим в корутину, чтобы не грузить UI поток
                 externalScope.launch {
                     saveServerDataToLocal(dtos)
                 }
@@ -97,46 +87,27 @@ class GroupSynchronizer @Inject constructor(
         dtos.forEach { dto ->
             val localEntity = groupDao.getGroupById(dto.id)
 
-            // Логика разрешения конфликтов (LWW - Last Write Wins)
-            val shouldSave = if (localEntity == null) {
-                // 1. У нас нет такой группы -> сохраняем смело
-                true
-            } else if (!localEntity.is_dirty) {
-                // 2. У нас есть группа, и она синхронизирована (чистая) -> обновляем смело
-                true
+            if (shouldUpdateLocal(localEntity, dto)) {
+                groupDao.insertGroup(dto.asEntity())
             } else {
-                // 3. У нас есть группа, и она "грязная" (мы что-то меняли оффлайн)
-                // Сравниваем время: если сервер новее, то затираем наши правки.
-                // Если наши правки новее - не трогаем (потом PUSH их отправит).
-                dto.updatedAt > localEntity.updated_at
-            }
-
-            if (shouldSave) {
-                groupDao.insertGroup(mapDtoToEntity(dto))
+                Log.d("Sync", "Skipping update for ${dto.name}")
             }
         }
     }
 
-    private fun mapEntityToDto(entity: GroupEntity): GroupDto {
-        return GroupDto(
-            id = entity.id,
-            name = entity.name,
-            currency = entity.currency.name,
-            ownerId = entity.owner_id,
-            createdAt = entity.created_at,
-            updatedAt = entity.updated_at
-        )
-    }
+    private fun shouldUpdateLocal(localEntity: GroupEntity?, dto: GroupDto): Boolean {
+        if (localEntity == null) {
+            Log.d("Sync", "Group ${dto.name} (ID: ${dto.id}) is new -> saving.")
+            return true
+        }
+        
+        if (!localEntity.is_dirty) {
+            Log.d("Sync", "Group ${dto.name} is locally clean -> updating from server.")
+            return true
+        }
 
-    private fun mapDtoToEntity(dto: GroupDto): GroupEntity {
-        return GroupEntity(
-            id = dto.id,
-            name = dto.name,
-            currency = converters.toCurrency(dto.currency),
-            owner_id = dto.ownerId,
-            created_at = dto.createdAt,
-            updated_at = dto.updatedAt,
-            is_dirty = false // Пришло с сервера -> значит чистое
-        )
+        val isServerNewer = dto.updatedAt > localEntity.updated_at
+        Log.d("Sync", "Conflict for ${dto.name}: LocalTime=${localEntity.updated_at}, ServerTime=${dto.updatedAt}. ServerNewer=$isServerNewer")
+        return isServerNewer
     }
 }

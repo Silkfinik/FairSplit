@@ -8,11 +8,14 @@ data class GroupDto(
     val currency: String = "USD",
 
     @get:PropertyName("owner_id")
-    val ownerId: String = "",
+    @set:PropertyName("owner_id")
+    var ownerId: String = "",
 
     @get:PropertyName("created_at")
-    val createdAt: Long = 0,
+    @set:PropertyName("created_at")
+    var createdAt: Long = 0,
 
     @get:PropertyName("updated_at")
-    val updatedAt: Long = 0
+    @set:PropertyName("updated_at")
+    var updatedAt: Long = 0
 )

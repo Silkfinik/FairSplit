@@ -29,7 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.silkfinik.fairsplit.core.mode.Group
+import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.features.groups.viewmodel.GroupsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
