@@ -1,9 +1,9 @@
 package com.silkfinik.fairsplit.core.data.di
 
-import com.silkfinik.fairsplit.core.data.repository.AuthRepository
 import com.silkfinik.fairsplit.core.data.repository.FirebaseAuthRepository
-import com.silkfinik.fairsplit.core.data.repository.GroupRepository
 import com.silkfinik.fairsplit.core.data.repository.OfflineGroupRepository
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

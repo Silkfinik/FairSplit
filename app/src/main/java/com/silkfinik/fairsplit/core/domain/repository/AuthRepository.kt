@@ -1,4 +1,4 @@
-package com.silkfinik.fairsplit.core.data.repository
+package com.silkfinik.fairsplit.core.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 

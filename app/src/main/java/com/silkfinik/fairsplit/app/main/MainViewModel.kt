@@ -3,8 +3,8 @@ package com.silkfinik.fairsplit.app.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.NetworkMonitor
-import com.silkfinik.fairsplit.core.data.repository.AuthRepository
-import com.silkfinik.fairsplit.core.data.sync.GroupSynchronizer
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +16,7 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val networkMonitor: NetworkMonitor,
-    private val groupSynchronizer: GroupSynchronizer
+    private val groupRepository: GroupRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Loading)
@@ -35,7 +35,7 @@ class MainViewModel @Inject constructor(
             _uiState.value = MainUiState.Loading
 
             if (authRepository.hasSession()) {
-                groupSynchronizer.startListening()
+                groupRepository.startSync()
                 _uiState.value = MainUiState.Success
                 return@launch
             }
@@ -44,7 +44,7 @@ class MainViewModel @Inject constructor(
                 if (isOnline) {
                     val result = authRepository.signInAnonymously()
                     if (result.isSuccess) {
-                        groupSynchronizer.startListening()
+                        groupRepository.startSync()
                         _uiState.value = MainUiState.Success
                     } else {
                         _uiState.value = MainUiState.ErrorAuthFailed("Ошибка входа: ${result.exceptionOrNull()?.message}")

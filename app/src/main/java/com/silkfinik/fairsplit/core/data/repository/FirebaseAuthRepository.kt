@@ -1,6 +1,7 @@
 package com.silkfinik.fairsplit.core.data.repository
 
 import com.google.firebase.auth.FirebaseAuth
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

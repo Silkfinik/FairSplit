@@ -32,6 +32,6 @@ interface GroupDao {
     @Query("SELECT * FROM groups WHERE is_dirty = 1")
     suspend fun getDirtyGroups(): List<GroupEntity>
 
-    @Query("UPDATE groups SET is_dirty = 0 WHERE id IN (:ids)")
-    suspend fun markGroupsAsSynced(ids: List<String>)
+    @Query("UPDATE groups SET is_dirty = 0 WHERE id = :id AND updated_at = :lastUpdated")
+    suspend fun markGroupAsSynced(id: String, lastUpdated: Long)
 }

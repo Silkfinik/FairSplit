@@ -2,9 +2,8 @@ package com.silkfinik.fairsplit.features.groups.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.silkfinik.fairsplit.core.data.repository.AuthRepository
-import com.silkfinik.fairsplit.core.data.repository.GroupRepository
-import com.silkfinik.fairsplit.core.data.sync.GroupSynchronizer
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.features.groups.ui.CreateGroupUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,8 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CreateGroupViewModel @Inject constructor(
     private val repository: GroupRepository,
-    private val authRepository: AuthRepository,
-    private val synchronizer: GroupSynchronizer
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateGroupUiState())
@@ -42,8 +40,6 @@ class CreateGroupViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = authRepository.getUserId() ?: return@launch
             repository.createGroup(currentState.name, currentState.selectedCurrency, userId)
-
-            synchronizer.syncLocalChanges()
 
             onSuccess()
             _uiState.update { it.copy(isLoading = false) }
