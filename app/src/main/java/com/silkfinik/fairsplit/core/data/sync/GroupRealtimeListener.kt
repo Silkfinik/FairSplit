@@ -57,7 +57,11 @@ class GroupRealtimeListener @Inject constructor(
             val localEntity = groupDao.getGroupById(dto.id)
 
             if (shouldUpdateLocal(localEntity, dto)) {
-                groupDao.insertGroup(dto.asEntity())
+                if (localEntity != null) {
+                    groupDao.updateGroup(dto.asEntity())
+                } else {
+                    groupDao.insertGroup(dto.asEntity())
+                }
             } else {
                 Log.d("Sync", "Skipping update for ${dto.name}")
             }

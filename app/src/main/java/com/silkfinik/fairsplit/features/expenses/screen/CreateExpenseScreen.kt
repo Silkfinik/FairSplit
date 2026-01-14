@@ -3,15 +3,19 @@ package com.silkfinik.fairsplit.features.expenses.screen
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -35,7 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.features.expenses.viewmodel.CreateExpenseViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,14 +94,32 @@ fun CreateExpenseScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text("Кто платил:", style = MaterialTheme.typography.bodyMedium)
+                    Text("Кто платил:", style = MaterialTheme.typography.titleSmall)
                     PayerDropdown(
                         members = uiState.members,
                         selectedPayerId = uiState.payerId,
                         onPayerSelected = viewModel::onPayerChange
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("За кого (Поровну):", style = MaterialTheme.typography.titleSmall)
+                    
+                    val amount = uiState.amount.toDoubleOrNull() ?: 0.0
+                    val splitCount = uiState.splitMemberIds.size
+                    val splitAmount = if (splitCount > 0) amount / splitCount else 0.0
+
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(uiState.members) { member ->
+                            SplitMemberItem(
+                                member = member,
+                                isSelected = uiState.splitMemberIds.contains(member.id),
+                                amount = if (uiState.splitMemberIds.contains(member.id)) splitAmount else 0.0,
+                                onToggle = { viewModel.onSplitMemberToggle(member.id) }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     if (uiState.error != null) {
                         Text(
@@ -119,8 +143,41 @@ fun CreateExpenseScreen(
 }
 
 @Composable
+fun SplitMemberItem(
+    member: Member,
+    isSelected: Boolean,
+    amount: Double,
+    onToggle: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle() }
+            .padding(vertical = 4.dp)
+    ) {
+        Checkbox(
+            checked = isSelected,
+            onCheckedChange = { onToggle() }
+        )
+        Text(
+            text = member.name,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge
+        )
+        if (isSelected && amount > 0) {
+            Text(
+                text = String.format(Locale.getDefault(), "%.2f", amount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
 fun PayerDropdown(
-    members: List<com.silkfinik.fairsplit.core.model.Member>,
+    members: List<Member>,
     selectedPayerId: String?,
     onPayerSelected: (String) -> Unit
 ) {

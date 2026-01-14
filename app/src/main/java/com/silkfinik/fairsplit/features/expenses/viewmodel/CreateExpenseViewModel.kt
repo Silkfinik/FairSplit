@@ -46,7 +46,8 @@ class CreateExpenseViewModel @Inject constructor(
                         it.copy(
                             isLoading = false, 
                             members = members,
-                            payerId = it.payerId ?: members.firstOrNull()?.id
+                            payerId = it.payerId ?: members.firstOrNull()?.id, // Default to first member
+                            splitMemberIds = if (it.splitMemberIds.isEmpty()) members.map { m -> m.id }.toSet() else it.splitMemberIds
                         ) 
                     }
                 }
@@ -68,6 +69,18 @@ class CreateExpenseViewModel @Inject constructor(
         _uiState.update { it.copy(payerId = payerId) }
     }
 
+    fun onSplitMemberToggle(memberId: String) {
+        _uiState.update { state ->
+            val currentIds = state.splitMemberIds.toMutableSet()
+            if (currentIds.contains(memberId)) {
+                currentIds.remove(memberId)
+            } else {
+                currentIds.add(memberId)
+            }
+            state.copy(splitMemberIds = currentIds)
+        }
+    }
+
     fun onSaveClick() {
         val currentState = _uiState.value
         val amount = currentState.amount.toDoubleOrNull()
@@ -84,6 +97,10 @@ class CreateExpenseViewModel @Inject constructor(
             _uiState.update { it.copy(error = "Выберите плательщика") }
             return
         }
+        if (currentState.splitMemberIds.isEmpty()) {
+            _uiState.update { it.copy(error = "Выберите, на кого делить") }
+            return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -91,8 +108,9 @@ class CreateExpenseViewModel @Inject constructor(
                 val group = groupRepository.getGroup(groupId).first() ?: throw Exception("Группа не найдена")
                 val userId = authRepository.getUserId() ?: throw Exception("Не авторизован")
 
-                val splitAmount = amount / currentState.members.size
-                val splits = currentState.members.associate { it.id to splitAmount }
+                // Equal split among selected members
+                val splitAmount = amount / currentState.splitMemberIds.size
+                val splits = currentState.splitMemberIds.associateWith { splitAmount }
 
                 val expense = Expense(
                     id = UUID.randomUUID().toString(),
