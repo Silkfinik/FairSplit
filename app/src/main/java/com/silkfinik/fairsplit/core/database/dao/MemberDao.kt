@@ -22,4 +22,7 @@ interface MemberDao {
 
     @Query("SELECT * FROM members WHERE group_id = :groupId ORDER BY name ASC")
     fun getMembers(groupId: String): Flow<List<MemberEntity>>
+
+    @Query("SELECT * FROM members WHERE id = :memberId")
+    suspend fun getMemberById(memberId: String): MemberEntity?
 }

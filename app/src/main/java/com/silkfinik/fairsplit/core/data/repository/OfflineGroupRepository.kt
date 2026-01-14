@@ -2,7 +2,9 @@ package com.silkfinik.fairsplit.core.data.repository
 
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
 import com.silkfinik.fairsplit.core.database.dao.GroupDao
+import com.silkfinik.fairsplit.core.database.dao.MemberDao
 import com.silkfinik.fairsplit.core.database.entity.GroupEntity
+import com.silkfinik.fairsplit.core.database.entity.MemberEntity
 import com.silkfinik.fairsplit.core.data.sync.GroupRealtimeListener
 import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
@@ -15,6 +17,7 @@ import javax.inject.Inject
 
 class OfflineGroupRepository @Inject constructor(
     private val groupDao: GroupDao,
+    private val memberDao: MemberDao,
     private val groupRealtimeListener: GroupRealtimeListener,
     private val workManagerSyncManager: WorkManagerSyncManager
 ) : GroupRepository {
@@ -44,6 +47,18 @@ class OfflineGroupRepository @Inject constructor(
         )
 
         groupDao.insertGroup(group)
+
+        val member = MemberEntity(
+            id = ownerId,
+            group_id = newId,
+            name = "Я",
+            is_ghost = false,
+            created_at = timestamp,
+            updated_at = timestamp,
+            is_dirty = true
+        )
+        memberDao.insertMember(member)
+
         workManagerSyncManager.scheduleSync()
         return newId
     }

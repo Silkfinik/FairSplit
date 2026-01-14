@@ -36,7 +36,8 @@ import com.silkfinik.fairsplit.features.groups.viewmodel.GroupsViewModel
 @Composable
 fun GroupsListScreen(
     viewModel: GroupsViewModel = hiltViewModel(),
-    onNavigateToCreateGroup: () -> Unit
+    onNavigateToCreateGroup: () -> Unit,
+    onNavigateToGroupDetails: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val groups = uiState.groups
@@ -60,7 +61,10 @@ fun GroupsListScreen(
                 modifier = Modifier.padding(padding)
             ) {
                 items(groups) { group ->
-                    GroupItem(group = group)
+                    GroupItem(
+                        group = group,
+                        onClick = { onNavigateToGroupDetails(group.id) }
+                    )
                 }
             }
         }
@@ -68,10 +72,10 @@ fun GroupsListScreen(
 }
 
 @Composable
-fun GroupItem(group: Group) {
+fun GroupItem(group: Group, onClick: () -> Unit) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth().clickable { /* TODO: Переход к деталям */ }
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

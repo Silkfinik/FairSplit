@@ -19,7 +19,7 @@ class GroupRealtimeListener @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val groupDao: GroupDao,
     private val authRepository: AuthRepository,
-    @ApplicationScope private val externalScope: CoroutineScope
+    @param:ApplicationScope private val externalScope: CoroutineScope
 ) {
 
     private var groupListener: ListenerRegistration? = null

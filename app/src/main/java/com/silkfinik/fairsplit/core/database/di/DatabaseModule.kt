@@ -3,6 +3,7 @@ package com.silkfinik.fairsplit.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.silkfinik.fairsplit.core.database.AppDatabase
+import com.silkfinik.fairsplit.core.database.dao.ExpenseDao
 import com.silkfinik.fairsplit.core.database.dao.GroupDao
 import com.silkfinik.fairsplit.core.database.dao.MemberDao
 import dagger.Module
@@ -38,5 +39,10 @@ object DatabaseModule {
     @Provides
     fun provideMemberDao(database: AppDatabase): MemberDao {
         return database.memberDao()
+    }
+
+    @Provides
+    fun provideExpenseDao(database: AppDatabase): ExpenseDao {
+        return database.expenseDao()
     }
 }

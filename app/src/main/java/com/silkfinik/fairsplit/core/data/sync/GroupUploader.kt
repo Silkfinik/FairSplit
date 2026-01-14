@@ -10,8 +10,6 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val COLLECTION_GROUPS = "groups"
-
 @Singleton
 class GroupUploader @Inject constructor(
     private val firestore: FirebaseFirestore,
@@ -27,7 +25,7 @@ class GroupUploader @Inject constructor(
         if (dirtyGroups.isEmpty()) return
 
         val batch = firestore.batch()
-        val groupsCollection = firestore.collection(COLLECTION_GROUPS)
+        val groupsCollection = firestore.collection("groups")
 
         dirtyGroups.forEach { entity ->
             val docRef = groupsCollection.document(entity.id)

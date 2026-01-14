@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class WorkManagerSyncManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     fun scheduleSync() {
         val constraints = Constraints.Builder()
