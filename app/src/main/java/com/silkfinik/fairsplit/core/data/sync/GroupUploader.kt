@@ -4,8 +4,11 @@ import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.silkfinik.fairsplit.core.data.mapper.asDto
+import com.silkfinik.fairsplit.core.data.mapper.asGhostDto
 import com.silkfinik.fairsplit.core.database.dao.GroupDao
+import com.silkfinik.fairsplit.core.database.dao.MemberDao
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.network.model.GhostDto
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,6 +17,7 @@ import javax.inject.Singleton
 class GroupUploader @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val groupDao: GroupDao,
+    private val memberDao: MemberDao,
     private val authRepository: AuthRepository
 ) {
 
@@ -27,9 +31,21 @@ class GroupUploader @Inject constructor(
         val batch = firestore.batch()
         val groupsCollection = firestore.collection("groups")
 
-        dirtyGroups.forEach { entity ->
+        for (entity in dirtyGroups) {
             val docRef = groupsCollection.document(entity.id)
-            val dto = entity.asDto()
+            val members = memberDao.getMembersSync(entity.id)
+            
+            var dto = entity.asDto()
+            
+            val realMemberIds = members.filter { !it.is_ghost }.map { it.id }
+            val ghostsMap = members.filter { it.is_ghost }.associate { member ->
+                member.id to member.asGhostDto()
+            }
+            
+            dto = dto.copy(
+                members = realMemberIds,
+                ghosts = ghostsMap
+            )
 
             batch.set(docRef, dto, SetOptions.merge())
         }

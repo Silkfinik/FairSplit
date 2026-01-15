@@ -11,6 +11,9 @@ data class GroupDto(
     @set:PropertyName("owner_id")
     var ownerId: String = "",
 
+    val members: List<String> = emptyList(),
+    val ghosts: Map<String, GhostDto> = emptyMap(),
+
     @get:PropertyName("created_at")
     @set:PropertyName("created_at")
     var createdAt: Long = 0,

@@ -13,6 +13,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -21,12 +26,17 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -44,9 +54,35 @@ import java.util.Locale
 fun GroupDetailsScreen(
     viewModel: GroupDetailsViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
-    onAddExpenseClick: (String) -> Unit
+    onAddExpenseClick: (String) -> Unit,
+    onEditExpenseClick: (String, String) -> Unit,
+    onMembersClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
+
+    if (expenseToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { expenseToDelete = null },
+            title = { Text("Удалить трату?") },
+            text = { Text("Это действие нельзя отменить.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        expenseToDelete?.let { viewModel.deleteExpense(it.id) }
+                        expenseToDelete = null
+                    }
+                ) {
+                    Text("Удалить", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { expenseToDelete = null }) {
+                    Text("Отмена")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -61,6 +97,13 @@ fun GroupDetailsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
+                    }
+                },
+                actions = {
+                    if (uiState is GroupDetailsUiState.Success) {
+                        IconButton(onClick = { onMembersClick((uiState as GroupDetailsUiState.Success).group.id) }) {
+                            Icon(Icons.Default.Group, "Участники")
+                        }
                     }
                 }
             )
@@ -93,7 +136,14 @@ fun GroupDetailsScreen(
                     if (state.expenses.isEmpty()) {
                         EmptyExpensesState(modifier = Modifier.align(Alignment.Center))
                     } else {
-                        ExpensesList(expenses = state.expenses)
+                        ExpensesList(
+                            expenses = state.expenses,
+                            currentUserId = state.currentUserId,
+                            onDeleteExpense = { expenseToDelete = it },
+                            onEditExpense = { expense ->
+                                onEditExpenseClick(state.group.id, expense.id)
+                            }
+                        )
                     }
                 }
             }
@@ -102,19 +152,34 @@ fun GroupDetailsScreen(
 }
 
 @Composable
-fun ExpensesList(expenses: List<Expense>) {
+fun ExpensesList(
+    expenses: List<Expense>,
+    currentUserId: String?,
+    onDeleteExpense: (Expense) -> Unit,
+    onEditExpense: (Expense) -> Unit
+) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(expenses) { expense ->
-            ExpenseItem(expense = expense)
+            ExpenseItem(
+                expense = expense,
+                isEditable = expense.creatorId == currentUserId,
+                onDelete = { onDeleteExpense(expense) },
+                onEdit = { onEditExpense(expense) }
+            )
         }
     }
 }
 
 @Composable
-fun ExpenseItem(expense: Expense) {
+fun ExpenseItem(
+    expense: Expense,
+    isEditable: Boolean,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
+) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth()
@@ -141,6 +206,22 @@ fun ExpenseItem(expense: Expense) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
+            if (isEditable) {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Редактировать",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Удалить",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
     }
 }

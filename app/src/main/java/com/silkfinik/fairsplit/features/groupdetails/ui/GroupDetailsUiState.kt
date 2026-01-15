@@ -7,7 +7,8 @@ sealed interface GroupDetailsUiState {
     data object Loading : GroupDetailsUiState
     data class Success(
         val group: Group,
-        val expenses: List<Expense>
+        val expenses: List<Expense>,
+        val currentUserId: String? = null
     ) : GroupDetailsUiState
     data class Error(val message: String) : GroupDetailsUiState
 }

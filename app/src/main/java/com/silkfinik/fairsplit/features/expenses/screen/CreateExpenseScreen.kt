@@ -60,7 +60,7 @@ fun CreateExpenseScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Новая трата") },
+                title = { Text(if (uiState.isEditing) "Редактирование траты" else "Новая трата") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")

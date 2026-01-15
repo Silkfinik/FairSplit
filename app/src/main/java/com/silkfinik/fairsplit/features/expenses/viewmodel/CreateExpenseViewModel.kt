@@ -29,19 +29,42 @@ class CreateExpenseViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val groupId: String = checkNotNull(savedStateHandle["groupId"])
+    private val expenseId: String? = savedStateHandle["expenseId"]
 
     private val _uiState = MutableStateFlow(CreateExpenseUiState())
     val uiState: StateFlow<CreateExpenseUiState> = _uiState.asStateFlow()
 
     init {
-        loadMembers()
+        loadData()
     }
 
-    private fun loadMembers() {
+    private fun loadData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                memberRepository.getMembers(groupId).collect { members ->
+                // Load Members first
+                val members = memberRepository.getMembers(groupId).first()
+                
+                if (expenseId != null) {
+                    // Edit Mode: Load Expense
+                    val expense = expenseRepository.getExpense(expenseId).first()
+                    if (expense != null) {
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                isEditing = true,
+                                members = members,
+                                description = expense.description,
+                                amount = expense.amount.toString(),
+                                payerId = expense.payers.keys.firstOrNull(), // Assuming single payer for now
+                                splitMemberIds = expense.splits.keys
+                            ) 
+                        }
+                    } else {
+                        _uiState.update { it.copy(isLoading = false, error = "Трата не найдена", members = members) }
+                    }
+                } else {
+                    // Create Mode
                     _uiState.update { 
                         it.copy(
                             isLoading = false, 
@@ -112,21 +135,35 @@ class CreateExpenseViewModel @Inject constructor(
                 val splitAmount = amount / currentState.splitMemberIds.size
                 val splits = currentState.splitMemberIds.associateWith { splitAmount }
 
-                val expense = Expense(
-                    id = UUID.randomUUID().toString(),
-                    groupId = groupId,
-                    description = currentState.description,
-                    amount = amount,
-                    currency = group.currency,
-                    date = System.currentTimeMillis(),
-                    creatorId = userId,
-                    payers = mapOf(currentState.payerId to amount),
-                    splits = splits,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
-                )
-
-                expenseRepository.createExpense(expense)
+                if (expenseId != null) {
+                    // Update existing
+                    val existingExpense = expenseRepository.getExpense(expenseId).first() ?: throw Exception("Трата не найдена")
+                    val updatedExpense = existingExpense.copy(
+                        description = currentState.description,
+                        amount = amount,
+                        payers = mapOf(currentState.payerId to amount),
+                        splits = splits,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    expenseRepository.updateExpense(updatedExpense)
+                } else {
+                    // Create new
+                    val expense = Expense(
+                        id = UUID.randomUUID().toString(),
+                        groupId = groupId,
+                        description = currentState.description,
+                        amount = amount,
+                        currency = group.currency,
+                        date = System.currentTimeMillis(),
+                        creatorId = userId,
+                        payers = mapOf(currentState.payerId to amount),
+                        splits = splits,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    expenseRepository.createExpense(expense)
+                }
+                
                 _uiState.update { it.copy(isLoading = false, isSaved = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }

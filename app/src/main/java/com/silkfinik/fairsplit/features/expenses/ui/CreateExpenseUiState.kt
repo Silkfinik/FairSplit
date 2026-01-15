@@ -10,5 +10,6 @@ data class CreateExpenseUiState(
     val payerId: String? = null,
     val splitMemberIds: Set<String> = emptySet(),
     val error: String? = null,
+    val isEditing: Boolean = false,
     val isSaved: Boolean = false
 )
