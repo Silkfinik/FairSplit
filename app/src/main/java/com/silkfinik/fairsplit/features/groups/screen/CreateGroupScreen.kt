@@ -17,15 +17,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.core.model.Currency
+import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.features.groups.viewmodel.CreateGroupViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,8 +39,16 @@ fun CreateGroupScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    ObserveAsEvents(
+        flow = viewModel.uiEvent,
+        snackbarHostState = snackbarHostState,
+        onNavigateBack = onBack
+    )
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Новая группа") },

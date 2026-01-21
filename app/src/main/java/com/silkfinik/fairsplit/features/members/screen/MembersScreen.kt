@@ -3,11 +3,16 @@ package com.silkfinik.fairsplit.features.members.screen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -24,6 +29,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -36,9 +43,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.model.Member
+import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.features.members.ui.MembersUiState
 import com.silkfinik.fairsplit.features.members.viewmodel.MembersViewModel
 
@@ -50,6 +61,13 @@ fun MembersScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddMemberDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    ObserveAsEvents(
+        flow = viewModel.uiEvent,
+        snackbarHostState = snackbarHostState,
+        onNavigateBack = onBack
+    )
 
     if (showAddMemberDialog) {
         AddMemberDialog(
@@ -62,6 +80,7 @@ fun MembersScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Участники") },
@@ -100,7 +119,11 @@ fun MembersScreen(
 
 @Composable
 fun MembersList(members: List<Member>) {
-    LazyColumn {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+    ) {
         items(members) { member ->
             MemberItem(member = member)
         }
@@ -111,14 +134,20 @@ fun MembersList(members: List<Member>) {
 fun MemberItem(member: Member) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Column(modifier = Modifier.padding(start = 16.dp)) {
+            Icon(
+                imageVector = Icons.Default.Person, 
+                contentDescription = null, 
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
                 Text(
                     text = member.name,
                     style = MaterialTheme.typography.titleMedium,
@@ -126,7 +155,7 @@ fun MemberItem(member: Member) {
                 )
                 if (member.isGhost) {
                     Text(
-                        text = "Призрак",
+                        text = "Виртуальный участник",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -147,12 +176,31 @@ fun AddMemberDialog(
         onDismissRequest = onDismiss,
         title = { Text("Добавить участника") },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Имя") },
-                singleLine = true
-            )
+            Column {
+                Text(
+                    text = "Введите имя участника, которого нет в приложении, чтобы делить с ним траты.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.padding(8.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Имя") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            if (name.isNotBlank()) {
+                                onConfirm(name)
+                            }
+                        }
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         },
         confirmButton = {
             Button(
@@ -160,7 +208,8 @@ fun AddMemberDialog(
                     if (name.isNotBlank()) {
                         onConfirm(name)
                     }
-                }
+                },
+                enabled = name.isNotBlank()
             ) {
                 Text("Добавить")
             }

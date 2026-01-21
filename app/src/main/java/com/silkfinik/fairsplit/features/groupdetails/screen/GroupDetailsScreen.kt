@@ -5,9 +5,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -16,8 +20,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,8 +31,9 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -40,9 +46,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.model.Expense
+import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.features.groupdetails.ui.GroupDetailsUiState
 import com.silkfinik.fairsplit.features.groupdetails.viewmodel.GroupDetailsViewModel
 import java.text.SimpleDateFormat
@@ -60,6 +69,13 @@ fun GroupDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    ObserveAsEvents(
+        flow = viewModel.uiEvent,
+        snackbarHostState = snackbarHostState,
+        onNavigateBack = onBackClick
+    )
 
     if (expenseToDelete != null) {
         AlertDialog(
@@ -85,6 +101,7 @@ fun GroupDetailsScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -115,7 +132,7 @@ fun GroupDetailsScreen(
                         onAddExpenseClick((uiState as GroupDetailsUiState.Success).group.id)
                     }
                 ) {
-                    Icon(Icons.Default.Add, "Добавить трату")
+                    Icon(Icons.Default.Add, "Добавить")
                 }
             }
         }
@@ -128,8 +145,9 @@ fun GroupDetailsScreen(
                 is GroupDetailsUiState.Error -> {
                     Text(
                         text = state.message,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
                     )
                 }
                 is GroupDetailsUiState.Success -> {
@@ -160,7 +178,7 @@ fun ExpensesList(
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(expenses) { expense ->
             ExpenseItem(
@@ -188,6 +206,13 @@ fun ExpenseItem(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                imageVector = Icons.Default.ReceiptLong,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = expense.description,
@@ -195,23 +220,26 @@ fun ExpenseItem(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = SimpleDateFormat("dd MMM", Locale.getDefault()).format(Date(expense.date)),
+                    text = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(expense.date)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "${expense.amount} ${expense.currency.symbol}",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
+            
             if (isEditable) {
+                Spacer(modifier = Modifier.width(4.dp))
                 IconButton(onClick = onEdit) {
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = "Редактировать",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 IconButton(onClick = onDelete) {
@@ -229,10 +257,27 @@ fun ExpenseItem(
 @Composable
 fun EmptyExpensesState(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Трат пока нет", style = MaterialTheme.typography.bodyLarge)
-        Text("Добавьте первую покупку", style = MaterialTheme.typography.bodyMedium)
+        Icon(
+            imageVector = Icons.Default.Receipt,
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Трат пока нет",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Добавьте первую покупку, чтобы разделить расходы",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

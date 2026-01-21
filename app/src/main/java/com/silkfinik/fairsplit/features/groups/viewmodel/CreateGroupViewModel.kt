@@ -1,10 +1,11 @@
 package com.silkfinik.fairsplit.features.groups.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
-import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
+import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.domain.usecase.group.CreateGroupUseCase
 import com.silkfinik.fairsplit.core.model.Currency
+import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.groups.ui.CreateGroupUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,9 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CreateGroupViewModel @Inject constructor(
-    private val repository: GroupRepository,
-    private val authRepository: AuthRepository
-) : ViewModel() {
+    private val createGroupUseCase: CreateGroupUseCase
+) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(CreateGroupUiState())
     val uiState: StateFlow<CreateGroupUiState> = _uiState.asStateFlow()
@@ -33,16 +33,26 @@ class CreateGroupViewModel @Inject constructor(
 
     fun createGroup(onSuccess: () -> Unit) {
         val currentState = _uiState.value
-        if (currentState.name.isBlank()) return
+        if (currentState.name.isBlank()) {
+            sendEvent(UiEvent.ShowSnackbar("Введите название группы"))
+            return
+        }
 
         _uiState.update { it.copy(isLoading = true) }
 
         viewModelScope.launch {
-            val userId = authRepository.getUserId() ?: return@launch
-            repository.createGroup(currentState.name, currentState.selectedCurrency, userId)
-
-            onSuccess()
-            _uiState.update { it.copy(isLoading = false) }
+            val result = createGroupUseCase(currentState.name, currentState.selectedCurrency)
+            
+            when (result) {
+                is Result.Success -> {
+                    onSuccess()
+                    _uiState.update { it.copy(isLoading = false) }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoading = false) }
+                    sendEvent(UiEvent.ShowSnackbar(result.message))
+                }
+            }
         }
     }
 }
