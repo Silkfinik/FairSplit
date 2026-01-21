@@ -8,14 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -23,8 +21,6 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -36,7 +32,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,16 +44,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.core.common.util.CurrencyFormatter
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
+import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
+import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
+import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.features.groupdetails.ui.GroupDetailsUiState
 import com.silkfinik.fairsplit.features.groupdetails.viewmodel.GroupDetailsViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupDetailsScreen(
     viewModel: GroupDetailsViewModel = hiltViewModel(),
@@ -103,19 +101,14 @@ fun GroupDetailsScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    if (uiState is GroupDetailsUiState.Success) {
-                        Text((uiState as GroupDetailsUiState.Success).group.name)
-                    } else {
-                        Text("Группа")
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
-                    }
-                },
+            val title = if (uiState is GroupDetailsUiState.Success) {
+                (uiState as GroupDetailsUiState.Success).group.name
+            } else {
+                "Группа"
+            }
+            FairSplitTopAppBar(
+                title = title,
+                onBackClick = onBackClick,
                 actions = {
                     if (uiState is GroupDetailsUiState.Success) {
                         IconButton(onClick = { onMembersClick((uiState as GroupDetailsUiState.Success).group.id) }) {
@@ -132,7 +125,7 @@ fun GroupDetailsScreen(
                         onAddExpenseClick((uiState as GroupDetailsUiState.Success).group.id)
                     }
                 ) {
-                    Icon(Icons.Default.Add, "Добавить")
+                    Icon(Icons.Default.Add, "Добавить трату")
                 }
             }
         }
@@ -145,14 +138,21 @@ fun GroupDetailsScreen(
                 is GroupDetailsUiState.Error -> {
                     Text(
                         text = state.message,
-                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp),
                         color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center
                     )
                 }
                 is GroupDetailsUiState.Success -> {
                     if (state.expenses.isEmpty()) {
-                        EmptyExpensesState(modifier = Modifier.align(Alignment.Center))
+                        FairSplitEmptyState(
+                            modifier = Modifier.align(Alignment.Center),
+                            icon = Icons.Default.Receipt,
+                            title = "Трат пока нет",
+                            description = "Добавьте первую покупку, чтобы разделить расходы"
+                        )
                     } else {
                         ExpensesList(
                             expenses = state.expenses,
@@ -198,10 +198,7 @@ fun ExpenseItem(
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    FairSplitCard {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -226,8 +223,9 @@ fun ExpenseItem(
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
+            
             Text(
-                text = "${expense.amount} ${expense.currency.symbol}",
+                text = CurrencyFormatter.format(expense.amount, expense.currency),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -251,33 +249,5 @@ fun ExpenseItem(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun EmptyExpensesState(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.Receipt,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.secondary
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Трат пока нет",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Добавьте первую покупку, чтобы разделить расходы",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }

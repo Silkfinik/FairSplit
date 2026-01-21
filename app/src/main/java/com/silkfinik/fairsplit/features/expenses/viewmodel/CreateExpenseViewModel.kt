@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpenseUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.member.GetMembersUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SaveExpenseUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
@@ -21,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CreateExpenseViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
+    private val getGroupUseCase: GetGroupUseCase,
     private val getMembersUseCase: GetMembersUseCase,
     private val getExpenseUseCase: GetExpenseUseCase,
     private val saveExpenseUseCase: SaveExpenseUseCase
@@ -40,7 +42,8 @@ class CreateExpenseViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                // Load Members first
+                // Load Group and Members
+                val group = getGroupUseCase(groupId).first() ?: throw Exception("Группа не найдена")
                 val members = getMembersUseCase(groupId).first()
                 
                 if (expenseId != null) {
@@ -51,6 +54,7 @@ class CreateExpenseViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 isEditing = true,
+                                currency = group.currency,
                                 members = members,
                                 description = expense.description,
                                 amount = expense.amount.toString(),
@@ -59,13 +63,14 @@ class CreateExpenseViewModel @Inject constructor(
                             ) 
                         }
                     } else {
-                        _uiState.update { it.copy(isLoading = false, error = "Трата не найдена", members = members) }
+                        _uiState.update { it.copy(isLoading = false, error = "Трата не найдена", members = members, currency = group.currency) }
                     }
                 } else {
                     // Create Mode
                     _uiState.update { 
                         it.copy(
                             isLoading = false, 
+                            currency = group.currency,
                             members = members,
                             payerId = it.payerId ?: members.firstOrNull()?.id, // Default to first member
                             splitMemberIds = if (it.splitMemberIds.isEmpty()) members.map { m -> m.id }.toSet() else it.splitMemberIds
@@ -79,15 +84,19 @@ class CreateExpenseViewModel @Inject constructor(
     }
 
     fun onDescriptionChange(description: String) {
-        _uiState.update { it.copy(description = description) }
+        val error = if (description.isBlank()) "Введите описание" else null
+        _uiState.update { it.copy(description = description, descriptionError = error) }
     }
 
     fun onAmountChange(amount: String) {
-        _uiState.update { it.copy(amount = amount) }
+        // Allow empty during typing, but validate format
+        val doubleVal = amount.toDoubleOrNull()
+        val error = if (amount.isNotBlank() && (doubleVal == null || doubleVal <= 0)) "Некорректная сумма" else null
+        _uiState.update { it.copy(amount = amount, amountError = error) }
     }
 
     fun onPayerChange(payerId: String) {
-        _uiState.update { it.copy(payerId = payerId) }
+        _uiState.update { it.copy(payerId = payerId, payerError = null) }
     }
 
     fun onSplitMemberToggle(memberId: String) {
@@ -98,40 +107,46 @@ class CreateExpenseViewModel @Inject constructor(
             } else {
                 currentIds.add(memberId)
             }
-            state.copy(splitMemberIds = currentIds)
+            val error = if (currentIds.isEmpty()) "Выберите хотя бы одного" else null
+            state.copy(splitMemberIds = currentIds, splitError = error)
         }
     }
 
     fun toggleAllMembers(selectAll: Boolean) {
         _uiState.update { state ->
-            if (selectAll) {
-                state.copy(splitMemberIds = state.members.map { it.id }.toSet())
+            val newIds = if (selectAll) {
+                state.members.map { it.id }.toSet()
             } else {
-                state.copy(splitMemberIds = emptySet())
+                emptySet()
             }
+            val error = if (newIds.isEmpty()) "Выберите хотя бы одного" else null
+            state.copy(splitMemberIds = newIds, splitError = error)
         }
     }
 
     fun onSaveClick() {
         val currentState = _uiState.value
-        val amount = currentState.amount.toDoubleOrNull()
+        
+        // Final validation before save
+        val descriptionError = if (currentState.description.isBlank()) "Введите описание" else null
+        val amountVal = currentState.amount.toDoubleOrNull()
+        val amountError = if (amountVal == null || amountVal <= 0) "Введите сумму" else null
+        val payerError = if (currentState.payerId == null) "Выберите плательщика" else null
+        val splitError = if (currentState.splitMemberIds.isEmpty()) "Выберите, на кого делить" else null
 
-        if (currentState.description.isBlank()) {
-            sendEvent(UiEvent.ShowSnackbar("Введите описание"))
+        if (descriptionError != null || amountError != null || payerError != null || splitError != null) {
+            _uiState.update { 
+                it.copy(
+                    descriptionError = descriptionError,
+                    amountError = amountError,
+                    payerError = payerError,
+                    splitError = splitError
+                ) 
+            }
             return
         }
-        if (amount == null || amount <= 0) {
-            sendEvent(UiEvent.ShowSnackbar("Введите корректную сумму"))
-            return
-        }
-        if (currentState.payerId == null) {
-            sendEvent(UiEvent.ShowSnackbar("Выберите плательщика"))
-            return
-        }
-        if (currentState.splitMemberIds.isEmpty()) {
-            sendEvent(UiEvent.ShowSnackbar("Выберите, на кого делить"))
-            return
-        }
+
+        val amount = amountVal!! // Safe per check above
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -141,7 +156,7 @@ class CreateExpenseViewModel @Inject constructor(
                 expenseId = expenseId,
                 description = currentState.description,
                 amount = amount,
-                payerId = currentState.payerId,
+                payerId = currentState.payerId!!,
                 splitMemberIds = currentState.splitMemberIds
             )
             

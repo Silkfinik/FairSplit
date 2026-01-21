@@ -1,6 +1,5 @@
 package com.silkfinik.fairsplit.features.groups.screen
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,8 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,11 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +23,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,14 +30,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
+import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
+import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
+import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.features.groups.viewmodel.GroupsViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupsListScreen(
     viewModel: GroupsViewModel = hiltViewModel(),
@@ -63,7 +56,7 @@ fun GroupsListScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(title = { Text("Мои группы") })
+            FairSplitTopAppBar(title = "Мои группы")
         },
         floatingActionButton = {
             if (!uiState.isLoading && uiState.groups.isNotEmpty()) {
@@ -77,14 +70,18 @@ fun GroupsListScreen(
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (uiState.groups.isEmpty()) {
-                EmptyState(
+                FairSplitEmptyState(
                     modifier = Modifier.align(Alignment.Center),
-                    onCreateClick = onNavigateToCreateGroup
+                    icon = Icons.Default.Groups,
+                    title = "Групп пока нет",
+                    description = "Создайте свою первую группу, чтобы начать вести совместный бюджет с друзьями!",
+                    actionLabel = "Создать группу",
+                    onActionClick = onNavigateToCreateGroup
                 )
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(uiState.groups) { group ->
@@ -101,10 +98,7 @@ fun GroupsListScreen(
 
 @Composable
 fun GroupItem(group: Group, onClick: () -> Unit) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }
-    ) {
+    FairSplitCard(onClick = onClick) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -129,44 +123,6 @@ fun GroupItem(group: Group, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
             )
-        }
-    }
-}
-
-@Composable
-fun EmptyState(
-    modifier: Modifier = Modifier,
-    onCreateClick: () -> Unit
-) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.Groups,
-            contentDescription = null,
-            modifier = Modifier.size(100.dp),
-            tint = MaterialTheme.colorScheme.secondary
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Групп пока нет",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Создайте свою первую группу, чтобы начать вести совместный бюджет с друзьями!",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onCreateClick) {
-            Icon(Icons.Default.Add, contentDescription = null)
-            Spacer(modifier = Modifier.size(8.dp))
-            Text("Создать группу")
         }
     }
 }
