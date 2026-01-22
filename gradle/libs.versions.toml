@@ -33,6 +33,10 @@ ksp = "2.3.0"
 #WorkManager
 work = "2.11.0"
 
+#Testing
+mockk = "1.13.16"
+coroutinesTest = "1.10.1"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -76,6 +80,10 @@ firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 
 #WorkManager
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+
+#Testing
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
