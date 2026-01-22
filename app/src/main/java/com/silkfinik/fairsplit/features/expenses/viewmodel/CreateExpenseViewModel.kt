@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.abs
 
 @HiltViewModel
 class CreateExpenseViewModel @Inject constructor(
@@ -33,6 +34,9 @@ class CreateExpenseViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(CreateExpenseUiState())
     val uiState: StateFlow<CreateExpenseUiState> = _uiState.asStateFlow()
+
+    // Internal state to track selected members for splitting, separate from the calculated amounts
+    private var selectedSplitMemberIds: Set<String> = emptySet()
 
     init {
         loadData()
@@ -50,6 +54,7 @@ class CreateExpenseViewModel @Inject constructor(
                     // Edit Mode: Load Expense
                     val expense = getExpenseUseCase(expenseId).first()
                     if (expense != null) {
+                        selectedSplitMemberIds = expense.splits.keys
                         _uiState.update { 
                             it.copy(
                                 isLoading = false,
@@ -59,7 +64,7 @@ class CreateExpenseViewModel @Inject constructor(
                                 description = expense.description,
                                 amount = expense.amount.toString(),
                                 payerId = expense.payers.keys.firstOrNull(), // Assuming single payer for now
-                                splitMemberIds = expense.splits.keys
+                                splits = expense.splits
                             ) 
                         }
                     } else {
@@ -67,15 +72,18 @@ class CreateExpenseViewModel @Inject constructor(
                     }
                 } else {
                     // Create Mode
+                    // Default: select all members
+                    selectedSplitMemberIds = members.map { it.id }.toSet()
+                    
                     _uiState.update { 
                         it.copy(
                             isLoading = false, 
                             currency = group.currency,
                             members = members,
-                            payerId = it.payerId ?: members.firstOrNull()?.id, // Default to first member
-                            splitMemberIds = if (it.splitMemberIds.isEmpty()) members.map { m -> m.id }.toSet() else it.splitMemberIds
+                            payerId = it.payerId ?: members.firstOrNull()?.id // Default to first member
                         ) 
                     }
+                    recalculateSplits()
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -89,10 +97,12 @@ class CreateExpenseViewModel @Inject constructor(
     }
 
     fun onAmountChange(amount: String) {
-        // Allow empty during typing, but validate format
+        // Allow empty during typing
         val doubleVal = amount.toDoubleOrNull()
         val error = if (amount.isNotBlank() && (doubleVal == null || doubleVal <= 0)) "Некорректная сумма" else null
+        
         _uiState.update { it.copy(amount = amount, amountError = error) }
+        recalculateSplits()
     }
 
     fun onPayerChange(payerId: String) {
@@ -100,28 +110,41 @@ class CreateExpenseViewModel @Inject constructor(
     }
 
     fun onSplitMemberToggle(memberId: String) {
-        _uiState.update { state ->
-            val currentIds = state.splitMemberIds.toMutableSet()
-            if (currentIds.contains(memberId)) {
-                currentIds.remove(memberId)
-            } else {
-                currentIds.add(memberId)
-            }
-            val error = if (currentIds.isEmpty()) "Выберите хотя бы одного" else null
-            state.copy(splitMemberIds = currentIds, splitError = error)
+        val currentIds = selectedSplitMemberIds.toMutableSet()
+        if (currentIds.contains(memberId)) {
+            currentIds.remove(memberId)
+        } else {
+            currentIds.add(memberId)
         }
+        selectedSplitMemberIds = currentIds
+        
+        recalculateSplits()
     }
 
     fun toggleAllMembers(selectAll: Boolean) {
-        _uiState.update { state ->
-            val newIds = if (selectAll) {
-                state.members.map { it.id }.toSet()
-            } else {
-                emptySet()
-            }
-            val error = if (newIds.isEmpty()) "Выберите хотя бы одного" else null
-            state.copy(splitMemberIds = newIds, splitError = error)
+        selectedSplitMemberIds = if (selectAll) {
+            _uiState.value.members.map { it.id }.toSet()
+        } else {
+            emptySet()
         }
+        recalculateSplits()
+    }
+
+    private fun recalculateSplits() {
+        val amount = _uiState.value.amount.toDoubleOrNull() ?: 0.0
+        val count = selectedSplitMemberIds.size
+        
+        val newSplits = if (count > 0 && amount > 0) {
+            val splitAmount = amount / count
+            // Simple equal split
+            selectedSplitMemberIds.associateWith { splitAmount }
+        } else {
+            emptyMap()
+        }
+        
+        val splitError = if (selectedSplitMemberIds.isEmpty()) "Выберите хотя бы одного" else null
+        
+        _uiState.update { it.copy(splits = newSplits, splitError = splitError) }
     }
 
     fun onSaveClick() {
@@ -132,21 +155,26 @@ class CreateExpenseViewModel @Inject constructor(
         val amountVal = currentState.amount.toDoubleOrNull()
         val amountError = if (amountVal == null || amountVal <= 0) "Введите сумму" else null
         val payerError = if (currentState.payerId == null) "Выберите плательщика" else null
-        val splitError = if (currentState.splitMemberIds.isEmpty()) "Выберите, на кого делить" else null
+        val splitError = if (currentState.splits.isEmpty()) "Выберите, на кого делить" else null
 
-        if (descriptionError != null || amountError != null || payerError != null || splitError != null) {
+        // STRICT VALIDATION: Sum(Splits) == Amount
+        val totalSplit = currentState.splits.values.sum()
+        val difference = if (amountVal != null) abs(amountVal - totalSplit) else 0.0
+        val balanceError = if (difference > 0.01) "Сумма сплита не совпадает с общей суммой" else null
+
+        if (descriptionError != null || amountError != null || payerError != null || splitError != null || balanceError != null) {
             _uiState.update { 
                 it.copy(
                     descriptionError = descriptionError,
                     amountError = amountError,
                     payerError = payerError,
-                    splitError = splitError
+                    splitError = splitError ?: balanceError // Show balance error in split section if generic split error is empty
                 ) 
             }
             return
         }
 
-        val amount = amountVal!! // Safe per check above
+        val amount = amountVal!!
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -157,7 +185,7 @@ class CreateExpenseViewModel @Inject constructor(
                 description = currentState.description,
                 amount = amount,
                 payerId = currentState.payerId!!,
-                splitMemberIds = currentState.splitMemberIds
+                splits = currentState.splits
             )
             
             val result = saveExpenseUseCase(params)
@@ -173,5 +201,10 @@ class CreateExpenseViewModel @Inject constructor(
                 }
             }
         }
+    }
+    
+    // Helper to check if a member is selected (since we moved the Set out of UiState for cleaner separation)
+    fun isMemberSelected(memberId: String): Boolean {
+        return selectedSplitMemberIds.contains(memberId)
     }
 }

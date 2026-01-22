@@ -21,7 +21,7 @@ class SaveExpenseUseCase @Inject constructor(
         val description: String,
         val amount: Double,
         val payerId: String,
-        val splitMemberIds: Set<String>
+        val splits: Map<String, Double>
     )
 
     suspend operator fun invoke(params: Params): Result<Unit> {
@@ -31,10 +31,6 @@ class SaveExpenseUseCase @Inject constructor(
             val userId = authRepository.getUserId() 
                 ?: return Result.Error("Не авторизован")
 
-            // Equal split among selected members
-            val splitAmount = params.amount / params.splitMemberIds.size
-            val splits = params.splitMemberIds.associateWith { splitAmount }
-
             if (params.expenseId != null) {
                 // Update existing
                 val existingExpense = expenseRepository.getExpense(params.expenseId).first() 
@@ -43,7 +39,7 @@ class SaveExpenseUseCase @Inject constructor(
                     description = params.description,
                     amount = params.amount,
                     payers = mapOf(params.payerId to params.amount),
-                    splits = splits,
+                    splits = params.splits,
                     updatedAt = System.currentTimeMillis()
                 )
                 expenseRepository.updateExpense(updatedExpense)
@@ -58,7 +54,7 @@ class SaveExpenseUseCase @Inject constructor(
                     date = System.currentTimeMillis(),
                     creatorId = userId,
                     payers = mapOf(params.payerId to params.amount),
-                    splits = splits,
+                    splits = params.splits,
                     createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis()
                 )

@@ -1,6 +1,8 @@
 package com.silkfinik.fairsplit.features.expenses.screen
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -155,22 +156,18 @@ fun CreateExpenseScreen(
                             }
                         }
                         
-                        val allSelected = uiState.splitMemberIds.size == uiState.members.size
+                        val allSelected = uiState.splits.size == uiState.members.size
                         TextButton(onClick = { viewModel.toggleAllMembers(!allSelected) }) {
                             Text(if (allSelected) "Снять все" else "Выбрать все")
                         }
                     }
-                    
-                    val amount = uiState.amount.toDoubleOrNull() ?: 0.0
-                    val splitCount = uiState.splitMemberIds.size
-                    val splitAmount = if (splitCount > 0) amount / splitCount else 0.0
 
                     LazyColumn(modifier = Modifier.weight(1f)) {
                         items(uiState.members) { member ->
                             SplitMemberItem(
                                 member = member,
-                                isSelected = uiState.splitMemberIds.contains(member.id),
-                                amount = if (uiState.splitMemberIds.contains(member.id)) splitAmount else 0.0,
+                                isSelected = viewModel.isMemberSelected(member.id),
+                                amount = uiState.splits[member.id] ?: 0.0,
                                 currency = uiState.currency,
                                 onToggle = { viewModel.onSplitMemberToggle(member.id) }
                             )
@@ -181,8 +178,7 @@ fun CreateExpenseScreen(
 
                     Button(
                         onClick = viewModel::onSaveClick,
-                        modifier = Modifier.fillMaxWidth(),
-                        // Button is enabled, validation is shown inline on click if not already shown
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Сохранить")
                     }
@@ -247,11 +243,11 @@ fun PayerDropdown(
                 Icon(Icons.Default.ArrowDropDown, "Выбрать")
             },
             isError = isError,
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            interactionSource = remember { MutableInteractionSource() }
                 .also { interactionSource ->
                     LaunchedEffect(interactionSource) {
                         interactionSource.interactions.collect {
-                            if (it is androidx.compose.foundation.interaction.PressInteraction.Release) {
+                            if (it is PressInteraction.Release) {
                                 expanded = true
                             }
                         }

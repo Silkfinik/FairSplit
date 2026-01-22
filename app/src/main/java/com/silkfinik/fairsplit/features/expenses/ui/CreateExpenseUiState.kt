@@ -10,7 +10,7 @@ data class CreateExpenseUiState(
     val currency: Currency = Currency.RUB,
     val members: List<Member> = emptyList(),
     val payerId: String? = null,
-    val splitMemberIds: Set<String> = emptySet(),
+    val splits: Map<String, Double> = emptyMap(), // MemberID -> Amount
     val error: String? = null, // General error
     val descriptionError: String? = null,
     val amountError: String? = null,
@@ -23,6 +23,6 @@ data class CreateExpenseUiState(
         get() = description.isNotBlank() && 
                 amount.toDoubleOrNull()?.let { it > 0 } == true &&
                 payerId != null && 
-                splitMemberIds.isNotEmpty() &&
+                splits.isNotEmpty() &&
                 descriptionError == null && amountError == null
 }

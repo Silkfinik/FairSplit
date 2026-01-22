@@ -10,6 +10,7 @@ import com.silkfinik.fairsplit.core.domain.usecase.auth.GetCurrentUserIdUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpensesUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SyncGroupExpensesUseCase
+import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.groupdetails.ui.GroupDetailsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,6 +26,7 @@ class GroupDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getGroupUseCase: GetGroupUseCase,
     private val getExpensesUseCase: GetExpensesUseCase,
+    private val getMembersUseCase: com.silkfinik.fairsplit.core.domain.usecase.member.GetMembersUseCase,
     private val getCurrentUserIdUseCase: GetCurrentUserIdUseCase,
     private val addGhostMemberUseCase: AddGhostMemberUseCase,
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
@@ -36,14 +38,18 @@ class GroupDetailsViewModel @Inject constructor(
     val uiState: StateFlow<GroupDetailsUiState> = combine(
         getGroupUseCase(groupId),
         getExpensesUseCase(groupId),
+        getMembersUseCase(groupId),
         getCurrentUserIdUseCase()
-    ) { group, expenses, userId ->
+    ) { group, expenses, members, userId ->
         if (group == null) {
             GroupDetailsUiState.Error("Группа не найдена")
         } else {
+            val balances = calculateBalances(expenses)
             GroupDetailsUiState.Success(
                 group = group, 
+                members = members,
                 expenses = expenses,
+                balances = balances,
                 currentUserId = userId
             )
         }
@@ -60,6 +66,26 @@ class GroupDetailsViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         syncGroupExpensesUseCase.stop(groupId)
+    }
+
+    private fun calculateBalances(expenses: List<Expense>): Map<String, Double> {
+        val balances = mutableMapOf<String, Double>()
+        
+        expenses.forEach { expense ->
+            if (expense.isDeleted) return@forEach
+            
+            // Add what they paid (positive)
+            expense.payers.forEach { (memberId, amount) ->
+                balances[memberId] = (balances[memberId] ?: 0.0) + amount
+            }
+            
+            // Subtract what they owe (negative)
+            expense.splits.forEach { (memberId, amount) ->
+                balances[memberId] = (balances[memberId] ?: 0.0) - amount
+            }
+        }
+        
+        return balances
     }
 
     fun addGhostMember(name: String) {
