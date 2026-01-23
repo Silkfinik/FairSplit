@@ -17,8 +17,9 @@ fun ExpenseEntity.asDomainModel(): Expense {
         payers = payers,
         splits = splits,
         category = category,
-        isDeleted = isDeleted,
-        createdAt = createdAt,
+        isDeleted = is_deleted,
+        isMathValid = is_math_valid,
+        createdAt = created_at,
         updatedAt = updatedAt
     )
 }
@@ -35,8 +36,9 @@ fun Expense.asEntity(isDirty: Boolean = true): ExpenseEntity {
         payers = payers,
         splits = splits,
         category = category,
-        isDeleted = isDeleted,
-        createdAt = createdAt,
+        is_deleted = isDeleted,
+        is_math_valid = isMathValid,
+        created_at = createdAt,
         updatedAt = updatedAt,
         isDirty = isDirty
     )
@@ -53,8 +55,9 @@ fun ExpenseEntity.asDto(): ExpenseDto {
         payers = payers,
         splits = splits,
         category = category,
-        isDeleted = isDeleted,
-        createdAt = createdAt,
+        isDeleted = is_deleted,
+        isMathValid = is_math_valid,
+        createdAt = created_at,
         updatedAt = updatedAt
     )
 }
@@ -71,9 +74,10 @@ fun ExpenseDto.asEntity(groupId: String): ExpenseEntity {
         payers = payers,
         splits = splits,
         category = category,
-        isDeleted = isDeleted,
-        createdAt = createdAt,
+        is_deleted = isDeleted,
+        is_math_valid = isMathValid,
+        created_at = createdAt,
         updatedAt = updatedAt,
-        isDirty = false // From server, so clean by default
+        isDirty = false
     )
 }

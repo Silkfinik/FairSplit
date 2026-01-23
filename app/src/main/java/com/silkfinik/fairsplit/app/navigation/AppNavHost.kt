@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.silkfinik.fairsplit.features.expenses.screen.CreateExpenseScreen
+import com.silkfinik.fairsplit.features.expenses.screen.ExpenseHistoryScreen
 import com.silkfinik.fairsplit.features.groupdetails.screen.GroupDetailsScreen
 import com.silkfinik.fairsplit.features.groups.screen.CreateGroupScreen
 import com.silkfinik.fairsplit.features.groups.screen.GroupsListScreen
@@ -70,8 +71,28 @@ fun AppNavHost(
                     defaultValue = null
                 }
             )
-        ) {
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getString("groupId")!!
+            val expenseId = backStackEntry.arguments?.getString("expenseId")
+            
             CreateExpenseScreen(
+                onBack = { navController.popBackStack() },
+                onHistoryClick = {
+                    if (expenseId != null) {
+                        navController.navigate(Screen.ExpenseHistory.createRoute(groupId, expenseId))
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.ExpenseHistory.route,
+            arguments = listOf(
+                navArgument("groupId") { type = NavType.StringType },
+                navArgument("expenseId") { type = NavType.StringType }
+            )
+        ) {
+            ExpenseHistoryScreen(
                 onBack = { navController.popBackStack() }
             )
         }

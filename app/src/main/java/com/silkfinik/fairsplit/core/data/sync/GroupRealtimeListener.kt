@@ -34,7 +34,7 @@ class GroupRealtimeListener @Inject constructor(
         groupListener?.remove()
 
         val query = firestore.collection("groups")
-            .whereEqualTo("owner_id", userId)
+            .whereArrayContains("members", userId)
 
         groupListener = query.addSnapshotListener { snapshot, e ->
             if (e != null) {

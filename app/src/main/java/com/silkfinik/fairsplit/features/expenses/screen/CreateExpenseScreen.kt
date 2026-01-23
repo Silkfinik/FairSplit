@@ -51,11 +51,15 @@ import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.features.expenses.viewmodel.CreateExpenseViewModel
 
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.IconButton
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateExpenseScreen(
     viewModel: CreateExpenseViewModel = hiltViewModel(),
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onHistoryClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -71,7 +75,14 @@ fun CreateExpenseScreen(
         topBar = {
             FairSplitTopAppBar(
                 title = if (uiState.isEditing) "Редактирование траты" else "Новая трата",
-                onBackClick = onBack
+                onBackClick = onBack,
+                actions = {
+                    if (uiState.isEditing) {
+                        IconButton(onClick = onHistoryClick) {
+                            Icon(Icons.Default.History, contentDescription = "История")
+                        }
+                    }
+                }
             )
         }
     ) { padding ->

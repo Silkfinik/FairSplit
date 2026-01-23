@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -281,9 +282,9 @@ fun ExpenseItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.ReceiptLong,
+                imageVector = if (!expense.isMathValid) Icons.Default.Warning else Icons.Default.ReceiptLong,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = if (!expense.isMathValid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -293,11 +294,19 @@ fun ExpenseItem(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(expense.date)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (!expense.isMathValid) {
+                    Text(
+                        text = "Ошибка в расчетах",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    Text(
+                        text = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(expense.date)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(8.dp))
             

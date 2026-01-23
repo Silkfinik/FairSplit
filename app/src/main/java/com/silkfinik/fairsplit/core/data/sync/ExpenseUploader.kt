@@ -37,7 +37,9 @@ class ExpenseUploader @Inject constructor(
                     .document(entity.id)
                 
                 val dto = entity.asDto()
-                batch.set(docRef, dto, SetOptions.merge())
+                // Use default set (overwrite) to ensure maps like 'splits' are replaced, not merged.
+                // This might clear server-side fields (is_math_valid), but Cloud Functions will restore them.
+                batch.set(docRef, dto)
             }
         }
 

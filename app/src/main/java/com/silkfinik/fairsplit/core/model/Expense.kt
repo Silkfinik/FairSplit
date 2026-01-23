@@ -12,6 +12,7 @@ data class Expense(
     val splits: Map<String, Double>,
     val category: String? = null,
     val isDeleted: Boolean = false,
+    val isMathValid: Boolean = true,
     val createdAt: Long,
     val updatedAt: Long
 )

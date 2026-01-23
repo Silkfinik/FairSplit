@@ -11,11 +11,46 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.silkfinik.fairsplit.core.model.HistoryItem
+import com.silkfinik.fairsplit.core.network.model.HistoryDto
+import kotlinx.coroutines.tasks.await
+
 class OfflineExpenseRepository @Inject constructor(
     private val expenseDao: ExpenseDao,
     private val expenseRealtimeListener: ExpenseRealtimeListener,
-    private val workManagerSyncManager: WorkManagerSyncManager
+    private val workManagerSyncManager: WorkManagerSyncManager,
+    private val firestore: FirebaseFirestore
 ) : ExpenseRepository {
+
+    override suspend fun getExpenseHistory(groupId: String, expenseId: String): List<HistoryItem> {
+        return try {
+            val snapshot = firestore.collection("groups")
+                .document(groupId)
+                .collection("expenses")
+                .document(expenseId)
+                .collection("history")
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .get()
+                .await()
+            
+            snapshot.documents.map { doc ->
+                val dto = doc.toObject(HistoryDto::class.java)!!
+                val timestamp = (dto.timestamp as? Timestamp)?.toDate()?.time ?: 0L
+                
+                HistoryItem(
+                    id = doc.id,
+                    action = dto.action,
+                    changes = dto.changes,
+                    timestamp = timestamp,
+                    isMathValid = dto.isMathValid
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 
     override fun getExpensesForGroup(groupId: String): Flow<List<Expense>> {
         // Start listening when this flow is collected (actually, usually controlled by UI lifecycle, 
@@ -45,7 +80,7 @@ class OfflineExpenseRepository @Inject constructor(
     override suspend fun deleteExpense(expenseId: String) {
         val expenseEntity = expenseDao.getExpenseById(expenseId) ?: return
         val deletedExpense = expenseEntity.copy(
-            isDeleted = true,
+            is_deleted = true,
             updatedAt = System.currentTimeMillis(),
             isDirty = true
         )

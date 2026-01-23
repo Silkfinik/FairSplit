@@ -27,5 +27,9 @@ data class ExpenseDto(
     
     @get:PropertyName("updated_at")
     @set:PropertyName("updated_at")
-    var updatedAt: Long = 0
+    var updatedAt: Long = 0,
+    
+    @get:PropertyName("is_math_valid")
+    @set:PropertyName("is_math_valid")
+    var isMathValid: Boolean = true
 )
