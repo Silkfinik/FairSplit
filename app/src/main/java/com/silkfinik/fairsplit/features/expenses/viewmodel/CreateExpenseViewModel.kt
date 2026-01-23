@@ -20,13 +20,16 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.abs
 
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+
 @HiltViewModel
 class CreateExpenseViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getGroupUseCase: GetGroupUseCase,
     private val getMembersUseCase: GetMembersUseCase,
     private val getExpenseUseCase: GetExpenseUseCase,
-    private val saveExpenseUseCase: SaveExpenseUseCase
+    private val saveExpenseUseCase: SaveExpenseUseCase,
+    private val authRepository: AuthRepository
 ) : BaseViewModel() {
 
     private val groupId: String = checkNotNull(savedStateHandle["groupId"])
@@ -49,6 +52,7 @@ class CreateExpenseViewModel @Inject constructor(
                 // Load Group and Members
                 val group = getGroupUseCase(groupId).first() ?: throw Exception("Группа не найдена")
                 val members = getMembersUseCase(groupId).first()
+                val currentUserId = authRepository.getUserId()
                 
                 if (expenseId != null) {
                     // Edit Mode: Load Expense
@@ -68,7 +72,7 @@ class CreateExpenseViewModel @Inject constructor(
                             ) 
                         }
                     } else {
-                        _uiState.update { it.copy(isLoading = false, error = "Трата не найдена", members = members, currency = group.currency) }
+                        _uiState.update { it.copy(isLoading = false, error = "Трата не найдена", members = members, currency = group.currency, currentUserId = currentUserId) }
                     }
                 } else {
                     // Create Mode
@@ -80,6 +84,7 @@ class CreateExpenseViewModel @Inject constructor(
                             isLoading = false, 
                             currency = group.currency,
                             members = members,
+                            currentUserId = currentUserId,
                             payerId = it.payerId ?: members.firstOrNull()?.id // Default to first member
                         ) 
                     }

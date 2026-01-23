@@ -141,6 +141,7 @@ fun CreateExpenseScreen(
                     PayerDropdown(
                         members = uiState.members,
                         selectedPayerId = uiState.payerId,
+                        currentUserId = uiState.currentUserId,
                         onPayerSelected = viewModel::onPayerChange,
                         isError = uiState.payerError != null
                     )
@@ -175,8 +176,9 @@ fun CreateExpenseScreen(
 
                     LazyColumn(modifier = Modifier.weight(1f)) {
                         items(uiState.members) { member ->
+                            val displayName = if (member.id == uiState.currentUserId) "${member.name} (Вы)" else member.name
                             SplitMemberItem(
-                                member = member,
+                                name = displayName,
                                 isSelected = viewModel.isMemberSelected(member.id),
                                 amount = uiState.splits[member.id] ?: 0.0,
                                 currency = uiState.currency,
@@ -201,7 +203,7 @@ fun CreateExpenseScreen(
 
 @Composable
 fun SplitMemberItem(
-    member: Member,
+    name: String,
     isSelected: Boolean,
     amount: Double,
     currency: Currency,
@@ -219,7 +221,7 @@ fun SplitMemberItem(
             onCheckedChange = { onToggle() }
         )
         Text(
-            text = member.name,
+            text = name,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge
         )
@@ -238,15 +240,19 @@ fun SplitMemberItem(
 fun PayerDropdown(
     members: List<Member>,
     selectedPayerId: String?,
+    currentUserId: String?,
     onPayerSelected: (String) -> Unit,
     isError: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedMember = members.find { it.id == selectedPayerId }
+    val selectedName = selectedMember?.let { 
+        if (it.id == currentUserId) "${it.name} (Вы)" else it.name 
+    } ?: "Выберите..."
 
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
-            value = selectedMember?.name ?: "Выберите...",
+            value = selectedName,
             onValueChange = {},
             readOnly = true,
             modifier = Modifier.fillMaxWidth(),
@@ -271,8 +277,9 @@ fun PayerDropdown(
             modifier = Modifier.fillMaxWidth()
         ) {
             members.forEach { member ->
+                val displayName = if (member.id == currentUserId) "${member.name} (Вы)" else member.name
                 DropdownMenuItem(
-                    text = { Text(member.name) },
+                    text = { Text(displayName) },
                     onClick = {
                         onPayerSelected(member.id)
                         expanded = false

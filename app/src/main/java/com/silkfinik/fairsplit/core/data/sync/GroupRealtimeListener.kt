@@ -66,15 +66,19 @@ class GroupRealtimeListener @Inject constructor(
                 } else {
                     groupDao.insertGroup(dto.asEntity())
                 }
-                syncMembers(dto)
             } else {
                 Log.d("Sync", "Skipping update for ${dto.name}")
             }
+            // Always sync members to ensure names and list integrity
+            syncMembers(dto)
         }
     }
 
     private suspend fun syncMembers(dto: GroupDto) {
+        Log.d("Sync", "Syncing members for group ${dto.name} (${dto.id}). Members: ${dto.members.size}, Profiles: ${dto.memberProfiles?.size ?: 0}")
+        
         dto.ghosts.forEach { (ghostId, ghostDto) ->
+            // ... (ghost logic unchanged)
             val localMember = memberDao.getMemberById(ghostId)
             if (localMember == null) {
                 val newMember = ghostDto.asMemberEntity(ghostId, dto.id)
@@ -87,18 +91,29 @@ class GroupRealtimeListener @Inject constructor(
         }
 
         dto.members.forEach { memberId ->
+            val profile = dto.memberProfiles?.get(memberId)
+            Log.d("Sync", "Processing member $memberId. Profile found: ${profile != null}, Name: ${profile?.displayName}")
+            
+            val memberName = profile?.displayName?.takeIf { it.isNotBlank() } ?: "Участник"
+            
             val localMember = memberDao.getMemberById(memberId)
             if (localMember == null) {
                  val newMember = MemberEntity(
                     id = memberId,
                     group_id = dto.id,
-                    name = "Участник",
+                    name = memberName,
                     is_ghost = false,
                     created_at = System.currentTimeMillis(),
                     updated_at = System.currentTimeMillis(),
                     is_dirty = false
                 )
                 memberDao.insertMember(newMember)
+                Log.d("Sync", "Inserted new member $memberId with name $memberName")
+            } else {
+                if (!localMember.is_dirty && localMember.name != memberName) {
+                    memberDao.updateMember(localMember.copy(name = memberName))
+                    Log.d("Sync", "Updated member $memberId to name $memberName")
+                }
             }
         }
     }

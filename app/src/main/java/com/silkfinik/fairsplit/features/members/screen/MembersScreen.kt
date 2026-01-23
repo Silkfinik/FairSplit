@@ -101,7 +101,7 @@ fun MembersScreen(
                     )
                 }
                 is MembersUiState.Success -> {
-                    MembersList(members = state.members)
+                    MembersList(members = state.members, currentUserId = state.currentUserId)
                 }
             }
         }
@@ -109,20 +109,21 @@ fun MembersScreen(
 }
 
 @Composable
-fun MembersList(members: List<Member>) {
+fun MembersList(members: List<Member>, currentUserId: String?) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(members) { member ->
-            MemberItem(member = member)
+            val displayName = if (member.id == currentUserId) "${member.name} (Вы)" else member.name
+            MemberItem(name = displayName, isGhost = member.isGhost)
         }
     }
 }
 
 @Composable
-fun MemberItem(member: Member) {
+fun MemberItem(name: String, isGhost: Boolean) {
     FairSplitCard {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -137,11 +138,11 @@ fun MemberItem(member: Member) {
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
-                    text = member.name,
+                    text = name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                if (member.isGhost) {
+                if (isGhost) {
                     Text(
                         text = "Виртуальный участник",
                         style = MaterialTheme.typography.bodySmall,

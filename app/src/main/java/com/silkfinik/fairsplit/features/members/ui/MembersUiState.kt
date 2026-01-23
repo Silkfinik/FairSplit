@@ -4,6 +4,9 @@ import com.silkfinik.fairsplit.core.model.Member
 
 sealed interface MembersUiState {
     data object Loading : MembersUiState
-    data class Success(val members: List<Member>) : MembersUiState
+    data class Success(
+        val members: List<Member>,
+        val currentUserId: String? = null
+    ) : MembersUiState
     data class Error(val message: String) : MembersUiState
 }

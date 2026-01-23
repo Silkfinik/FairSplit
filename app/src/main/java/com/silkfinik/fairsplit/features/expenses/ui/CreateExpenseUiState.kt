@@ -10,6 +10,7 @@ data class CreateExpenseUiState(
     val currency: Currency = Currency.RUB,
     val members: List<Member> = emptyList(),
     val payerId: String? = null,
+    val currentUserId: String? = null,
     val splits: Map<String, Double> = emptyMap(), // MemberID -> Amount
     val error: String? = null, // General error
     val descriptionError: String? = null,

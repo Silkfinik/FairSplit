@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.groupdetails.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
@@ -41,10 +42,18 @@ class GroupDetailsViewModel @Inject constructor(
         getMembersUseCase(groupId),
         getCurrentUserIdUseCase()
     ) { group, expenses, members, userId ->
+        Log.d("GroupDetails", "UI Update for group $groupId. Members found: ${members.size}. Expenses: ${expenses.size}")
+        members.forEach { m -> Log.d("GroupDetails", "Member in list: ${m.id} (${m.name})") }
+        
         if (group == null) {
             GroupDetailsUiState.Error("Группа не найдена")
         } else {
             val balances = calculateBalances(expenses)
+            balances.forEach { (id, amount) -> 
+                val found = members.find { it.id == id }
+                Log.d("GroupDetails", "Balance for $id: $amount. Found name: ${found?.name}") 
+            }
+            
             GroupDetailsUiState.Success(
                 group = group, 
                 members = members,

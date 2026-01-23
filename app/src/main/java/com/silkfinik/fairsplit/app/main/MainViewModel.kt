@@ -33,32 +33,24 @@ class MainViewModel @Inject constructor(
         checkAuthAndNetwork()
     }
 
+    fun onNameEntered() {
+        _uiState.value = MainUiState.Success
+    }
+
     private fun checkAuthAndNetwork() {
         viewModelScope.launch {
             _uiState.value = MainUiState.Loading
 
             if (authRepository.hasSession()) {
-                val userId = authRepository.getUserId()
-                if (userId != null) {
-                    ensureUserProfile(userId)
-                    groupRepository.startSync()
-                    _uiState.value = MainUiState.Success
-                    return@launch
-                }
+                handleAuthenticatedUser()
+                return@launch
             }
 
             networkMonitor.isOnline.collect { isOnline ->
                 if (isOnline) {
                     val result = authRepository.signInAnonymously()
                     if (result.isSuccess) {
-                        val userId = authRepository.getUserId()
-                        if (userId != null) {
-                            ensureUserProfile(userId)
-                            groupRepository.startSync()
-                            _uiState.value = MainUiState.Success
-                        } else {
-                            _uiState.value = MainUiState.ErrorAuthFailed("UID is null after sign in")
-                        }
+                        handleAuthenticatedUser()
                     } else {
                         _uiState.value = MainUiState.ErrorAuthFailed("Ошибка входа: ${result.exceptionOrNull()?.message}")
                     }
@@ -69,20 +61,43 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    private suspend fun handleAuthenticatedUser() {
+        val userId = authRepository.getUserId()
+        if (userId != null) {
+            val name = authRepository.getUserName()
+            val isAnonymous = authRepository.isAnonymous()
+
+            // Only create/sync profile if user is NOT anonymous (Google) 
+            // OR if they already have a name (Returning Anonymous with profile)
+            if (!isAnonymous || !name.isNullOrBlank()) {
+                ensureUserProfile(userId)
+            }
+            
+            groupRepository.startSync()
+            
+            // Check if user has a display name
+            if (name.isNullOrBlank()) {
+                _uiState.value = MainUiState.NeedsName
+            } else {
+                _uiState.value = MainUiState.Success
+            }
+        } else {
+            _uiState.value = MainUiState.ErrorAuthFailed("UID is null after sign in")
+        }
+    }
+
     private suspend fun ensureUserProfile(uid: String) {
         try {
             if (!userRepository.userExists(uid)) {
                 val newUser = User(
                     id = uid,
-                    isAnonymous = true,
+                    isAnonymous = authRepository.isAnonymous(),
                     createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis()
                 )
                 userRepository.createOrUpdateUser(newUser)
             }
         } catch (e: Exception) {
-            // Log error, but don't block app start. 
-            // Ideally we should retry or show a non-blocking error.
             e.printStackTrace()
         }
     }

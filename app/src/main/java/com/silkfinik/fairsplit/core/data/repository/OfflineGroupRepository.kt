@@ -8,6 +8,7 @@ import com.silkfinik.fairsplit.core.database.entity.MemberEntity
 import com.silkfinik.fairsplit.core.data.sync.GroupRealtimeListener
 import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Group
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +20,8 @@ class OfflineGroupRepository @Inject constructor(
     private val groupDao: GroupDao,
     private val memberDao: MemberDao,
     private val groupRealtimeListener: GroupRealtimeListener,
-    private val workManagerSyncManager: WorkManagerSyncManager
+    private val workManagerSyncManager: WorkManagerSyncManager,
+    private val authRepository: AuthRepository
 ) : GroupRepository {
 
     override fun getGroups(): Flow<List<Group>> {
@@ -51,7 +53,7 @@ class OfflineGroupRepository @Inject constructor(
         val member = MemberEntity(
             id = ownerId,
             group_id = newId,
-            name = "Я",
+            name = authRepository.getUserName() ?: "Я",
             is_ghost = false,
             created_at = timestamp,
             updated_at = timestamp,
