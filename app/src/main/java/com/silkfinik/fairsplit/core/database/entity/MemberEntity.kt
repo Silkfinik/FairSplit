@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "members",
+    primaryKeys = ["id", "group_id"],
     foreignKeys = [
         ForeignKey(
             entity = GroupEntity::class,
@@ -18,7 +19,6 @@ import androidx.room.PrimaryKey
     indices = [Index("group_id")]
 )
 data class MemberEntity(
-    @PrimaryKey
     val id: String,
 
     val group_id: String,

@@ -26,6 +26,6 @@ interface MemberDao {
     @Query("SELECT * FROM members WHERE group_id = :groupId")
     suspend fun getMembersSync(groupId: String): List<MemberEntity>
 
-    @Query("SELECT * FROM members WHERE id = :memberId")
-    suspend fun getMemberById(memberId: String): MemberEntity?
+    @Query("SELECT * FROM members WHERE group_id = :groupId AND id = :memberId")
+    suspend fun getMember(groupId: String, memberId: String): MemberEntity?
 }

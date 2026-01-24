@@ -28,8 +28,8 @@ class OfflineMemberRepository @Inject constructor(
         memberDao.updateMember(member.asEntity(isDirty = true))
     }
 
-    override suspend fun deleteMember(memberId: String) {
-        val memberEntity = memberDao.getMemberById(memberId) ?: return
+    override suspend fun deleteMember(groupId: String, memberId: String) {
+        val memberEntity = memberDao.getMember(groupId, memberId) ?: return
         memberDao.deleteMember(memberEntity)
     }
 }

@@ -7,5 +7,5 @@ interface MemberRepository {
     fun getMembers(groupId: String): Flow<List<Member>>
     suspend fun addMember(member: Member)
     suspend fun updateMember(member: Member)
-    suspend fun deleteMember(memberId: String)
+    suspend fun deleteMember(groupId: String, memberId: String)
 }
