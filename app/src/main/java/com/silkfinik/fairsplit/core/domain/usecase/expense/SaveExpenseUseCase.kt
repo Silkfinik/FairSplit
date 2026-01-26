@@ -1,6 +1,5 @@
 package com.silkfinik.fairsplit.core.domain.usecase.expense
 
-import android.util.Log
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.ExpenseRepository
@@ -62,7 +61,6 @@ class SaveExpenseUseCase @Inject constructor(
             }
             Result.Success(Unit)
         } catch (e: Exception) {
-            Log.e("SaveExpenseUseCase", "Error saving expense", e)
             Result.Error(e.message ?: "Произошла ошибка при сохранении", e)
         }
     }

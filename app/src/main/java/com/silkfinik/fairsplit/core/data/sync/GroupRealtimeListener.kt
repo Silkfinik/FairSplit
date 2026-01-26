@@ -85,7 +85,7 @@ class GroupRealtimeListener @Inject constructor(
                 val newMember = ghostDto.asMemberEntity(ghostId, dto.id)
                 memberDao.insertMember(newMember)
             } else {
-                if (!localMember.is_dirty && localMember.name != ghostDto.name) {
+                if (!localMember.isDirty && localMember.name != ghostDto.name) {
                     memberDao.updateMember(localMember.copy(name = ghostDto.name))
                 }
             }
@@ -107,17 +107,17 @@ class GroupRealtimeListener @Inject constructor(
             if (localMember == null) {
                  val newMember = MemberEntity(
                     id = memberId,
-                    group_id = dto.id,
+                    groupId = dto.id,
                     name = finalName,
-                    is_ghost = false,
-                    created_at = System.currentTimeMillis(),
-                    updated_at = System.currentTimeMillis(),
-                    is_dirty = false
+                    isGhost = false,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis(),
+                    isDirty = false
                 )
                 memberDao.insertMember(newMember)
                 Log.d("Sync", "Inserted new member $memberId with name $finalName")
             } else {
-                if (!localMember.is_dirty && localMember.name != finalName) {
+                if (!localMember.isDirty && localMember.name != finalName) {
                     memberDao.updateMember(localMember.copy(name = finalName))
                     Log.d("Sync", "Updated member $memberId to name $finalName")
                 }
@@ -131,13 +131,13 @@ class GroupRealtimeListener @Inject constructor(
             return true
         }
         
-        if (!localEntity.is_dirty) {
+        if (!localEntity.isDirty) {
             Log.d("Sync", "Group ${dto.name} is locally clean -> updating from server.")
             return true
         }
 
-        val isServerNewer = dto.updatedAt > localEntity.updated_at
-        Log.d("Sync", "Conflict for ${dto.name}: LocalTime=${localEntity.updated_at}, ServerTime=${dto.updatedAt}. ServerNewer=$isServerNewer")
+        val isServerNewer = dto.updatedAt > localEntity.updatedAt
+        Log.d("Sync", "Conflict for ${dto.name}: LocalTime=${localEntity.updatedAt}, ServerTime=${dto.updatedAt}. ServerNewer=$isServerNewer")
         return isServerNewer
     }
 }

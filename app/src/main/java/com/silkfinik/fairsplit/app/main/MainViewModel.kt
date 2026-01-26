@@ -67,15 +67,12 @@ class MainViewModel @Inject constructor(
             val name = authRepository.getUserName()
             val isAnonymous = authRepository.isAnonymous()
 
-            // Only create/sync profile if user is NOT anonymous (Google) 
-            // OR if they already have a name (Returning Anonymous with profile)
             if (!isAnonymous || !name.isNullOrBlank()) {
                 ensureUserProfile(userId)
             }
             
             groupRepository.startSync()
             
-            // Check if user has a display name
             if (name.isNullOrBlank()) {
                 _uiState.value = MainUiState.NeedsName
             } else {

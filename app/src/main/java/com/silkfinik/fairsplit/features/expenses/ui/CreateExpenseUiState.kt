@@ -11,6 +11,7 @@ data class CreateExpenseUiState(
     val members: List<Member> = emptyList(),
     val payerId: String? = null,
     val currentUserId: String? = null,
+    val selectedSplitMemberIds: Set<String> = emptySet(),
     val splits: Map<String, Double> = emptyMap(), // MemberID -> Amount
     val error: String? = null, // General error
     val descriptionError: String? = null,

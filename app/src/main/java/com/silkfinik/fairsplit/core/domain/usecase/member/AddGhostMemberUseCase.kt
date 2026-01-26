@@ -1,6 +1,5 @@
 package com.silkfinik.fairsplit.core.domain.usecase.member
 
-import android.util.Log
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.repository.MemberRepository
@@ -34,7 +33,6 @@ class AddGhostMemberUseCase @Inject constructor(
             
             Result.Success(Unit)
         } catch (e: Exception) {
-            Log.e("AddGhostMemberUseCase", "Error adding ghost member", e)
             Result.Error(e.message ?: "Ошибка при добавлении участника", e)
         }
     }

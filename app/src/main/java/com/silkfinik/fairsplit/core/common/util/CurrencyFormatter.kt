@@ -17,13 +17,6 @@ object CurrencyFormatter {
             // Fallback if currency code is not standard
         }
         
-        // If we want strictly our symbol:
-        // format.maximumFractionDigits = 2
-        // return "${format.format(amount).replace(format.currency.symbol, "")} ${currency.symbol}"
-        
-        // Let's stick to standard locale formatting but ensuring our currency code is respected where possible.
-        // Or simpler: Format number + Our Symbol. This gives full control over the symbol displayed.
-        
         val numberFormat = NumberFormat.getNumberInstance(Locale.getDefault())
         numberFormat.minimumFractionDigits = 0
         numberFormat.maximumFractionDigits = 2

@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class GoogleSignInHelper @Inject constructor(
-    @ApplicationContext private val appContext: Context
+    @param:ApplicationContext private val appContext: Context
 ) {
     suspend fun signIn(activityContext: Context): GoogleIdTokenCredential? {
         val credentialManager = CredentialManager.create(activityContext)

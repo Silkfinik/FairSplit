@@ -80,7 +80,7 @@ class OfflineExpenseRepository @Inject constructor(
     override suspend fun deleteExpense(expenseId: String) {
         val expenseEntity = expenseDao.getExpenseById(expenseId) ?: return
         val deletedExpense = expenseEntity.copy(
-            is_deleted = true,
+            isDeleted = true,
             updatedAt = System.currentTimeMillis(),
             isDirty = true
         )

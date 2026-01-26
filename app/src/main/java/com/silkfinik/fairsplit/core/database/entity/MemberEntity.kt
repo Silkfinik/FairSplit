@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.core.database.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -21,12 +22,12 @@ import androidx.room.PrimaryKey
 data class MemberEntity(
     val id: String,
 
-    val group_id: String,
+    @ColumnInfo(name = "group_id") val groupId: String,
     val name: String,
 
-    val is_ghost: Boolean = true,
+    @ColumnInfo(name = "is_ghost") val isGhost: Boolean = true,
 
-    val created_at: Long,
-    val updated_at: Long,
-    val is_dirty: Boolean = true
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    @ColumnInfo(name = "is_dirty") val isDirty: Boolean = true
 )

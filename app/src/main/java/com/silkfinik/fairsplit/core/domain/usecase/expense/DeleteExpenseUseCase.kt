@@ -1,6 +1,5 @@
 package com.silkfinik.fairsplit.core.domain.usecase.expense
 
-import android.util.Log
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.domain.repository.ExpenseRepository
 import javax.inject.Inject
@@ -13,7 +12,6 @@ class DeleteExpenseUseCase @Inject constructor(
             expenseRepository.deleteExpense(expenseId)
             Result.Success(Unit)
         } catch (e: Exception) {
-            Log.e("DeleteExpenseUseCase", "Error deleting expense", e)
             Result.Error(e.message ?: "Ошибка при удалении траты", e)
         }
     }

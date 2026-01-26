@@ -42,22 +42,22 @@ class OfflineGroupRepository @Inject constructor(
             id = newId,
             name = name,
             currency = currency,
-            owner_id = ownerId,
-            created_at = timestamp,
-            updated_at = timestamp,
-            is_dirty = true
+            ownerId = ownerId,
+            createdAt = timestamp,
+            updatedAt = timestamp,
+            isDirty = true
         )
 
         groupDao.insertGroup(group)
 
         val member = MemberEntity(
             id = ownerId,
-            group_id = newId,
+            groupId = newId,
             name = authRepository.getUserName() ?: "Я",
-            is_ghost = false,
-            created_at = timestamp,
-            updated_at = timestamp,
-            is_dirty = true
+            isGhost = false,
+            createdAt = timestamp,
+            updatedAt = timestamp,
+            isDirty = true
         )
         memberDao.insertMember(member)
 
@@ -71,8 +71,8 @@ class OfflineGroupRepository @Inject constructor(
         val updatedGroup = existingEntity.copy(
             name = group.name,
             currency = group.currency,
-            updated_at = System.currentTimeMillis(),
-            is_dirty = true
+            updatedAt = System.currentTimeMillis(),
+            isDirty = true
         )
         groupDao.updateGroup(updatedGroup)
         workManagerSyncManager.scheduleSync()

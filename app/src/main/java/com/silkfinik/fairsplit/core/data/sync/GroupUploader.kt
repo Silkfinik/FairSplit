@@ -37,8 +37,8 @@ class GroupUploader @Inject constructor(
             
             var dto = entity.asDto()
             
-            val realMemberIds = members.filter { !it.is_ghost }.map { it.id }
-            val ghostsMap = members.filter { it.is_ghost }.associate { member ->
+            val realMemberIds = members.filter { !it.isGhost }.map { it.id }
+            val ghostsMap = members.filter { it.isGhost }.associate { member ->
                 member.id to member.asGhostDto()
             }
             
@@ -54,7 +54,7 @@ class GroupUploader @Inject constructor(
         Log.d("Sync", "Successfully sent ${dirtyGroups.size} groups")
 
         dirtyGroups.forEach { group ->
-            groupDao.markGroupAsSynced(group.id, group.updated_at)
+            groupDao.markGroupAsSynced(group.id, group.updatedAt)
         }
     }
 }

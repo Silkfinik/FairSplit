@@ -6,22 +6,22 @@ import com.silkfinik.fairsplit.core.model.Member
 fun MemberEntity.asDomainModel(): Member {
     return Member(
         id = id,
-        groupId = group_id,
+        groupId = groupId,
         name = name,
-        isGhost = is_ghost,
-        createdAt = created_at,
-        updatedAt = updated_at
+        isGhost = isGhost,
+        createdAt = createdAt,
+        updatedAt = updatedAt
     )
 }
 
 fun Member.asEntity(isDirty: Boolean = true): MemberEntity {
     return MemberEntity(
         id = id,
-        group_id = groupId,
+        groupId = groupId,
         name = name,
-        is_ghost = isGhost,
-        created_at = createdAt,
-        updated_at = updatedAt,
-        is_dirty = isDirty
+        isGhost = isGhost,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        isDirty = isDirty
     )
 }

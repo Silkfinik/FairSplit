@@ -14,11 +14,11 @@ fun MemberEntity.asGhostDto(): GhostDto {
 fun GhostDto.asMemberEntity(id: String, groupId: String): MemberEntity {
     return MemberEntity(
         id = id,
-        group_id = groupId,
+        groupId = groupId,
         name = this.name,
-        is_ghost = true,
-        created_at = System.currentTimeMillis(), // Not present in GhostDto map
-        updated_at = System.currentTimeMillis(),
-        is_dirty = false // Coming from server
+        isGhost = true,
+        createdAt = System.currentTimeMillis(),
+        updatedAt = System.currentTimeMillis(),
+        isDirty = false // Coming from server
     )
 }

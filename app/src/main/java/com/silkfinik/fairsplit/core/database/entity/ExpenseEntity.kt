@@ -30,10 +30,10 @@ data class ExpenseEntity(
     val payers: Map<String, Double>,
     val splits: Map<String, Double>,
     val category: String? = null,
-    val is_deleted: Boolean = false,
-    val is_math_valid: Boolean = true,
+    @ColumnInfo(name = "is_deleted") val isDeleted: Boolean = false,
+    @ColumnInfo(name = "is_math_valid") val isMathValid: Boolean = true,
 
-    val created_at: Long,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     @ColumnInfo(name = "is_dirty") val isDirty: Boolean = true
 )

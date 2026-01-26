@@ -31,6 +31,7 @@ class UpdateUserNameUseCase @Inject constructor(
                 currentUser.copy(
                     displayName = name, 
                     isAnonymous = isAnon,
+                    createdAt = if (currentUser.createdAt == 0L) System.currentTimeMillis() else currentUser.createdAt,
                     updatedAt = System.currentTimeMillis()
                 )
             } else {
@@ -38,6 +39,7 @@ class UpdateUserNameUseCase @Inject constructor(
                     id = userId,
                     displayName = name,
                     isAnonymous = isAnon,
+                    createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis()
                 )
             }

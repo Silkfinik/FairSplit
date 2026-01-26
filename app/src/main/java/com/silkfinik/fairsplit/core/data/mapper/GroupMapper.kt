@@ -18,9 +18,9 @@ fun GroupEntity.asDto(): GroupDto {
         id = this.id,
         name = this.name,
         currency = this.currency.name,
-        ownerId = this.owner_id,
-        createdAt = this.created_at,
-        updatedAt = this.updated_at
+        ownerId = this.ownerId,
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt
     )
 }
 
@@ -35,9 +35,9 @@ fun GroupDto.asEntity(): GroupEntity {
         id = this.id,
         name = this.name,
         currency = currencyEnum,
-        owner_id = this.ownerId,
-        created_at = this.createdAt,
-        updated_at = this.updatedAt,
-        is_dirty = false
+        ownerId = this.ownerId,
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt,
+        isDirty = false
     )
 }
