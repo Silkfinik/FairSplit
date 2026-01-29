@@ -31,9 +31,6 @@ class ExpenseRealtimeListener @Inject constructor(
         val query = firestore.collection("groups")
             .document(groupId)
             .collection("expenses")
-            // We can add sorting here if needed, but for sync just getting all is safer.
-            // If the collection is huge, we might need 'updated_at' > lastSyncTime.
-            // For now, full sync of the collection.
 
         val registration = query.addSnapshotListener { snapshot, e ->
             if (e != null) {
@@ -69,11 +66,10 @@ class ExpenseRealtimeListener @Inject constructor(
     }
 
     private fun shouldUpdateLocal(localEntity: ExpenseEntity?, dto: ExpenseDto): Boolean {
-        if (localEntity == null) return true // New expense
+        if (localEntity == null) return true
         
-        if (!localEntity.isDirty) return true // Local is clean, accept server version (even if same, to be safe)
+        if (!localEntity.isDirty) return true
 
-        // Conflict resolution: Last Write Wins (LWW) based on updatedAt
         return dto.updatedAt > localEntity.updatedAt
     }
 }

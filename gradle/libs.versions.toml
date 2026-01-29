@@ -40,8 +40,10 @@ coroutinesTest = "1.10.1"
 #Credential Manager
 credentials = "1.5.0-alpha06"
 googleId = "1.1.1"
+coil = "2.7.0"
 
 [libraries]
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleId" }

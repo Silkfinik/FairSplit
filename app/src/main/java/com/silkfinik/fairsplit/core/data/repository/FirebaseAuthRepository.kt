@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 class FirebaseAuthRepository @Inject constructor(
     private val auth: FirebaseAuth
@@ -49,6 +50,24 @@ class FirebaseAuthRepository @Inject constructor(
         }
     }
 
+    override suspend fun updateProfile(name: String, photoUrl: String?): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: throw Exception("User not logged in")
+            val builder = UserProfileChangeRequest.Builder()
+                .setDisplayName(name)
+
+            if (photoUrl != null) {
+                builder.setPhotoUri(photoUrl.toUri())
+            }
+
+            val profileUpdates = builder.build()
+            user.updateProfile(profileUpdates).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun linkGoogleAccount(idToken: String): Result<Unit> {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
@@ -57,8 +76,6 @@ class FirebaseAuthRepository @Inject constructor(
             try {
                 user.linkWithCredential(credential).await()
             } catch (e: FirebaseAuthUserCollisionException) {
-                // Account already exists with this credential. Sign in instead.
-                // This will switch the current user to the existing one.
                 auth.signInWithCredential(credential).await()
             } catch (e: Exception) {
                 throw e

@@ -7,42 +7,38 @@ import com.silkfinik.fairsplit.core.model.User
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
-class UpdateUserNameUseCase @Inject constructor(
+class UpdateUserUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(name: String): Result<Unit> {
+    suspend operator fun invoke(name: String, photoUrl: String? = null): Result<Unit> {
         return try {
-            // 1. Update Firebase Auth Profile
-            val authResult = authRepository.updateDisplayName(name)
+            val authResult = authRepository.updateProfile(name, photoUrl)
             if (!authResult.isSuccess) {
                 return Result.Error(authResult.exceptionOrNull()?.message ?: "Ошибка обновления профиля")
             }
 
-            // 2. Update Firestore User Document
             val userId = authRepository.getUserId() ?: return Result.Error("Пользователь не найден")
-            
-            // Fetch existing user to preserve fields
+
             val currentUser = userRepository.getUser(userId).first()
             
             val isAnon = authRepository.isAnonymous()
             
-            val updatedUser = if (currentUser != null) {
-                currentUser.copy(
-                    displayName = name, 
-                    isAnonymous = isAnon,
-                    createdAt = if (currentUser.createdAt == 0L) System.currentTimeMillis() else currentUser.createdAt,
-                    updatedAt = System.currentTimeMillis()
-                )
-            } else {
-                User(
+            val updatedUser = currentUser?.copy(
+                displayName = name,
+                photoUrl = photoUrl ?: currentUser.photoUrl,
+                isAnonymous = isAnon,
+                createdAt = if (currentUser.createdAt == 0L) System.currentTimeMillis() else currentUser.createdAt,
+                updatedAt = System.currentTimeMillis()
+            )
+                ?: User(
                     id = userId,
                     displayName = name,
+                    photoUrl = photoUrl,
                     isAnonymous = isAnon,
                     createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis()
                 )
-            }
             
             userRepository.createOrUpdateUser(updatedUser)
             

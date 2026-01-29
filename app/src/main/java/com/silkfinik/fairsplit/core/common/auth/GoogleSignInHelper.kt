@@ -11,14 +11,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+import androidx.credentials.CustomCredential
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
+import com.silkfinik.fairsplit.core.common.util.Result
+
 class GoogleSignInHelper @Inject constructor(
     @param:ApplicationContext private val appContext: Context
 ) {
-    suspend fun signIn(activityContext: Context): GoogleIdTokenCredential? {
+    suspend fun signIn(activityContext: Context): Result<GoogleIdTokenCredential> {
         val credentialManager = CredentialManager.create(activityContext)
-        
-        // Use appContext to get resource if needed, but activityContext is safer for resources too
-        // But default_web_client_id is app-wide.
         val webClientId = appContext.getString(com.silkfinik.fairsplit.R.string.default_web_client_id)
 
         val googleIdOption = GetGoogleIdOption.Builder()
@@ -40,17 +42,24 @@ class GoogleSignInHelper @Inject constructor(
             }
             
             val credential = result.credential
-            if (credential is GoogleIdTokenCredential) {
-                credential
+            if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                try {
+                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                    Result.Success(googleIdTokenCredential)
+                } catch (e: Exception) {
+                    Result.Error("Ошибка обработки данных Google", e)
+                }
             } else {
-                null
+                Result.Error("Неизвестный тип учетных данных")
             }
+        } catch (e: GetCredentialCancellationException) {
+            Result.Error("Вход отменен", e)
+        } catch (e: NoCredentialException) {
+            Result.Error("Учетные данные не найдены", e)
         } catch (e: GetCredentialException) {
-            e.printStackTrace()
-            null
+            Result.Error("Ошибка входа: ${e.message}", e)
         } catch (e: Exception) {
-            e.printStackTrace()
-            null
+            Result.Error("Неизвестная ошибка: ${e.message}", e)
         }
     }
 }

@@ -45,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.ui.component.UserAvatar
 import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
@@ -116,33 +117,33 @@ fun MembersList(members: List<Member>, currentUserId: String?) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(members) { member ->
-            val displayName = if (member.id == currentUserId) "${member.name} (Вы)" else member.name
-            MemberItem(name = displayName, isGhost = member.isGhost)
+            MemberItem(member = member, currentUserId = currentUserId)
         }
     }
 }
 
 @Composable
-fun MemberItem(name: String, isGhost: Boolean) {
+fun MemberItem(member: Member, currentUserId: String?) {
+    val displayName = if (member.id == currentUserId) "${member.name} (Вы)" else member.name
+    
     FairSplitCard {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Person, 
-                contentDescription = null, 
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
+            UserAvatar(
+                photoUrl = member.photoUrl,
+                name = member.name,
+                size = 40.dp
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
-                    text = name,
+                    text = displayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                if (isGhost) {
+                if (member.isGhost) {
                     Text(
                         text = "Виртуальный участник",
                         style = MaterialTheme.typography.bodySmall,

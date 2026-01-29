@@ -6,7 +6,7 @@ import com.silkfinik.fairsplit.core.network.model.GhostDto
 fun MemberEntity.asGhostDto(): GhostDto {
     return GhostDto(
         name = this.name,
-        isMerged = false, // Default for now, logic will be added with Smart Linking
+        isMerged = false,
         mergedWithUid = null
     )
 }
@@ -19,6 +19,6 @@ fun GhostDto.asMemberEntity(id: String, groupId: String): MemberEntity {
         isGhost = true,
         createdAt = System.currentTimeMillis(),
         updatedAt = System.currentTimeMillis(),
-        isDirty = false // Coming from server
+        isDirty = false
     )
 }

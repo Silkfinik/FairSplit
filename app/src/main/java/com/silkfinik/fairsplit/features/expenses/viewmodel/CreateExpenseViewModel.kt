@@ -163,7 +163,6 @@ class CreateExpenseViewModel @Inject constructor(
         val payerError = if (currentState.payerId == null) "Выберите плательщика" else null
         val splitError = if (currentState.splits.isEmpty()) "Выберите, на кого делить" else null
 
-        // Check balance with a small tolerance for float arithmetic
         val totalSplit = currentState.splits.values.sum()
         val difference = if (amountVal != null) abs(amountVal - totalSplit) else 0.0
         val balanceError = if (difference > 0.02) "Сумма сплита не совпадает с общей суммой" else null

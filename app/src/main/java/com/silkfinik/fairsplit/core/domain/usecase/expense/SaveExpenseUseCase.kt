@@ -31,7 +31,6 @@ class SaveExpenseUseCase @Inject constructor(
                 ?: return Result.Error("Не авторизован")
 
             if (params.expenseId != null) {
-                // Update existing
                 val existingExpense = expenseRepository.getExpense(params.expenseId).first() 
                     ?: return Result.Error("Трата не найдена")
                 val updatedExpense = existingExpense.copy(
@@ -43,7 +42,6 @@ class SaveExpenseUseCase @Inject constructor(
                 )
                 expenseRepository.updateExpense(updatedExpense)
             } else {
-                // Create new
                 val expense = Expense(
                     id = UUID.randomUUID().toString(),
                     groupId = params.groupId,

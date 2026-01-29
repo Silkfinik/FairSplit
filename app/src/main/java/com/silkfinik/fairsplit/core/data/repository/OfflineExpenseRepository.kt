@@ -53,9 +53,6 @@ class OfflineExpenseRepository @Inject constructor(
     }
 
     override fun getExpensesForGroup(groupId: String): Flow<List<Expense>> {
-        // Start listening when this flow is collected (actually, usually controlled by UI lifecycle, 
-        // but for now let's assume UI calls start/stop or we rely on explicit calls)
-        // For best practice, we'll expose explicit start/stop methods in the interface.
         return expenseDao.getExpensesForGroup(groupId).map { entities ->
             entities.map { it.asDomainModel() }
         }
@@ -87,8 +84,7 @@ class OfflineExpenseRepository @Inject constructor(
         expenseDao.updateExpense(deletedExpense)
         workManagerSyncManager.scheduleSync()
     }
-    
-    // Extensions for sync control (can be added to interface if needed, or cast)
+
     override fun startSync(groupId: String) {
         expenseRealtimeListener.startListening(groupId)
     }

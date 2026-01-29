@@ -7,14 +7,11 @@ import java.util.Locale
 object CurrencyFormatter {
     fun format(amount: Double, currency: Currency): String {
         val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
-        // We override the currency symbol/code based on our model if needed,
-        // or just use the number formatting and append our symbol.
-        // Usually NumberFormat handles currency well if we set the currency code.
         try {
             val javaCurrency = java.util.Currency.getInstance(currency.code)
             format.currency = javaCurrency
         } catch (e: Exception) {
-            // Fallback if currency code is not standard
+
         }
         
         val numberFormat = NumberFormat.getNumberInstance(Locale.getDefault())

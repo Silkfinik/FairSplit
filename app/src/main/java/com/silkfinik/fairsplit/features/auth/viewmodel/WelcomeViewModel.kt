@@ -3,7 +3,7 @@ package com.silkfinik.fairsplit.features.auth.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
-import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserNameUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.auth.ui.WelcomeUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,12 +15,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import android.content.Context
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.silkfinik.fairsplit.core.common.auth.GoogleSignInHelper
 import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkGoogleAccountUseCase
 
 @HiltViewModel
 class WelcomeViewModel @Inject constructor(
-    private val updateUserNameUseCase: UpdateUserNameUseCase,
+    private val updateUserUseCase: UpdateUserUseCase,
     private val linkGoogleAccountUseCase: LinkGoogleAccountUseCase,
     private val googleSignInHelper: GoogleSignInHelper
 ) : BaseViewModel() {
@@ -35,25 +36,32 @@ class WelcomeViewModel @Inject constructor(
     fun onGoogleSignInClick(context: Context) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val credential = googleSignInHelper.signIn(context)
-            if (credential != null) {
-                val result = linkGoogleAccountUseCase(credential.idToken)
-                when (result) {
-                    is Result.Success -> {
-                        val name = credential.displayName
-                        if (name != null) {
-                            updateUserNameUseCase(name)
+            val signInResult = googleSignInHelper.signIn(context)
+            when (signInResult) {
+                is Result.Success -> {
+                    val credential = signInResult.data
+                    val result = linkGoogleAccountUseCase(credential.idToken)
+                    when (result) {
+                        is Result.Success -> {
+                            val name = credential.displayName
+                            val photoUrl = credential.profilePictureUri?.toString()
+                            if (name != null) {
+                                updateUserUseCase(name, photoUrl)
+                            }
+                            _uiState.update { it.copy(isLoading = false, isSaved = true) }
                         }
-                        _uiState.update { it.copy(isLoading = false, isSaved = true) }
-                    }
-                    is Result.Error -> {
-                        _uiState.update { it.copy(isLoading = false) }
-                        sendEvent(UiEvent.ShowSnackbar(result.message))
+                        is Result.Error -> {
+                            _uiState.update { it.copy(isLoading = false) }
+                            sendEvent(UiEvent.ShowSnackbar(result.message))
+                        }
                     }
                 }
-            } else {
-                _uiState.update { it.copy(isLoading = false) }
-                // Cancelled or failed
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoading = false) }
+                    if (signInResult.exception !is GetCredentialCancellationException) {
+                        sendEvent(UiEvent.ShowSnackbar(signInResult.message))
+                    }
+                }
             }
         }
     }
@@ -67,13 +75,11 @@ class WelcomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val result = updateUserNameUseCase(name)
+            val result = updateUserUseCase(name)
             
             when (result) {
                 is Result.Success -> {
                     _uiState.update { it.copy(isLoading = false, isSaved = true) }
-                    // Navigation will be handled by UI observing isSaved or sending event
-                    // We can also send a one-time event
                 }
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoading = false) }

@@ -25,6 +25,8 @@ data class MemberEntity(
     @ColumnInfo(name = "group_id") val groupId: String,
     val name: String,
 
+    @ColumnInfo(name = "photo_url") val photoUrl: String? = null,
+
     @ColumnInfo(name = "is_ghost") val isGhost: Boolean = true,
 
     @ColumnInfo(name = "created_at") val createdAt: Long,

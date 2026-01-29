@@ -26,7 +26,19 @@ class MainViewModel @Inject constructor(
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     init {
-        checkAuthAndNetwork()
+        observeAuthState()
+    }
+
+    private fun observeAuthState() {
+        viewModelScope.launch {
+            authRepository.currentUserId.collect { userId ->
+                if (userId != null) {
+                    handleAuthenticatedUser()
+                } else {
+                    checkAuthAndNetwork()
+                }
+            }
+        }
     }
 
     fun retry() {
@@ -39,19 +51,14 @@ class MainViewModel @Inject constructor(
 
     private fun checkAuthAndNetwork() {
         viewModelScope.launch {
-            _uiState.value = MainUiState.Loading
-
             if (authRepository.hasSession()) {
-                handleAuthenticatedUser()
                 return@launch
             }
 
             networkMonitor.isOnline.collect { isOnline ->
                 if (isOnline) {
                     val result = authRepository.signInAnonymously()
-                    if (result.isSuccess) {
-                        handleAuthenticatedUser()
-                    } else {
+                    if (!result.isSuccess) {
                         _uiState.value = MainUiState.ErrorAuthFailed("Ошибка входа: ${result.exceptionOrNull()?.message}")
                     }
                 } else {

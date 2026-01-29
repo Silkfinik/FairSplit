@@ -9,7 +9,7 @@ sealed interface GroupDetailsUiState {
         val group: Group,
         val members: List<com.silkfinik.fairsplit.core.model.Member>,
         val expenses: List<Expense>,
-        val balances: Map<String, Double> = emptyMap(), // MemberID -> Balance
+        val balances: Map<String, Double> = emptyMap(),
         val currentUserId: String? = null
     ) : GroupDetailsUiState
     data class Error(val message: String) : GroupDetailsUiState

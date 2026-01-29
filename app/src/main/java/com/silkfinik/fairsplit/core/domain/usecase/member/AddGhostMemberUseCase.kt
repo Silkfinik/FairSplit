@@ -27,8 +27,7 @@ class AddGhostMemberUseCase @Inject constructor(
             )
             
             memberRepository.addMember(newMember)
-            
-            // Mark group as dirty to trigger sync
+
             groupRepository.updateGroup(group)
             
             Result.Success(Unit)

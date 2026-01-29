@@ -11,6 +11,8 @@ interface AuthRepository {
 
     suspend fun updateDisplayName(name: String): Result<Unit>
 
+    suspend fun updateProfile(name: String, photoUrl: String?): Result<Unit>
+
     suspend fun linkGoogleAccount(idToken: String): Result<Unit>
 
     fun getUserId(): String?

@@ -8,6 +8,7 @@ fun MemberEntity.asDomainModel(): Member {
         id = id,
         groupId = groupId,
         name = name,
+        photoUrl = photoUrl,
         isGhost = isGhost,
         createdAt = createdAt,
         updatedAt = updatedAt
@@ -19,6 +20,7 @@ fun Member.asEntity(isDirty: Boolean = true): MemberEntity {
         id = id,
         groupId = groupId,
         name = name,
+        photoUrl = photoUrl,
         isGhost = isGhost,
         createdAt = createdAt,
         updatedAt = updatedAt,

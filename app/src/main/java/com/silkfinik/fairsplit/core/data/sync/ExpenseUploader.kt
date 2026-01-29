@@ -18,15 +18,13 @@ class ExpenseUploader @Inject constructor(
 ) {
 
     suspend fun syncLocalChanges() {
-        // Ensure user is logged in
         if (authRepository.getUserId() == null) return
 
         val dirtyExpenses = expenseDao.getDirtyExpenses()
         if (dirtyExpenses.isEmpty()) return
 
         val batch = firestore.batch()
-        
-        // Group dirty expenses by groupId to construct correct paths
+
         val expensesByGroup = dirtyExpenses.groupBy { it.groupId }
 
         expensesByGroup.forEach { (groupId, expenses) ->
@@ -37,8 +35,6 @@ class ExpenseUploader @Inject constructor(
                     .document(entity.id)
                 
                 val dto = entity.asDto()
-                // Use default set (overwrite) to ensure maps like 'splits' are replaced, not merged.
-                // This might clear server-side fields (is_math_valid), but Cloud Functions will restore them.
                 batch.set(docRef, dto)
             }
         }
@@ -46,8 +42,7 @@ class ExpenseUploader @Inject constructor(
         try {
             batch.commit().await()
             Log.d("Sync", "Successfully uploaded ${dirtyExpenses.size} expenses")
-            
-            // Mark as synced locally
+
             dirtyExpenses.forEach { expense ->
                 expenseDao.markExpenseAsSynced(expense.id, expense.updatedAt)
             }
