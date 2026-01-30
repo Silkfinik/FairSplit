@@ -5,6 +5,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.common.util.Result
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -31,9 +32,9 @@ class FirebaseAuthRepository @Inject constructor(
     override suspend fun signInAnonymously(): Result<Unit> {
         return try {
             auth.signInAnonymously().await()
-            Result.success(Unit)
+            Result.Success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.Error(e.message ?: "Ошибка анонимного входа", e)
         }
     }
 
@@ -44,9 +45,9 @@ class FirebaseAuthRepository @Inject constructor(
                 .setDisplayName(name)
                 .build()
             user.updateProfile(profileUpdates).await()
-            Result.success(Unit)
+            Result.Success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.Error(e.message ?: "Ошибка обновления имени", e)
         }
     }
 
@@ -62,9 +63,9 @@ class FirebaseAuthRepository @Inject constructor(
 
             val profileUpdates = builder.build()
             user.updateProfile(profileUpdates).await()
-            Result.success(Unit)
+            Result.Success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.Error(e.message ?: "Ошибка обновления профиля", e)
         }
     }
 
@@ -80,9 +81,9 @@ class FirebaseAuthRepository @Inject constructor(
             } catch (e: Exception) {
                 throw e
             }
-            Result.success(Unit)
+            Result.Success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.Error(e.message ?: "Ошибка привязки аккаунта", e)
         }
     }
 

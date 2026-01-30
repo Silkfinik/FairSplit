@@ -14,34 +14,19 @@ class UpdateUserUseCase @Inject constructor(
     suspend operator fun invoke(name: String, photoUrl: String? = null): Result<Unit> {
         return try {
             val authResult = authRepository.updateProfile(name, photoUrl)
-            if (!authResult.isSuccess) {
-                return Result.Error(authResult.exceptionOrNull()?.message ?: "Ошибка обновления профиля")
+            if (authResult is Result.Error) {
+                return authResult
             }
 
             val userId = authRepository.getUserId() ?: return Result.Error("Пользователь не найден")
-
-            val currentUser = userRepository.getUser(userId).first()
             
-            val isAnon = authRepository.isAnonymous()
-            
-            val updatedUser = currentUser?.copy(
+            val user = User(
+                id = userId,
                 displayName = name,
-                photoUrl = photoUrl ?: currentUser.photoUrl,
-                isAnonymous = isAnon,
-                createdAt = if (currentUser.createdAt == 0L) System.currentTimeMillis() else currentUser.createdAt,
+                photoUrl = photoUrl,
                 updatedAt = System.currentTimeMillis()
             )
-                ?: User(
-                    id = userId,
-                    displayName = name,
-                    photoUrl = photoUrl,
-                    isAnonymous = isAnon,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
-                )
-            
-            userRepository.createOrUpdateUser(updatedUser)
-            
+            userRepository.createOrUpdateUser(user)
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e.message ?: "Ошибка обновления имени")

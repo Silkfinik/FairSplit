@@ -3,6 +3,7 @@ package com.silkfinik.fairsplit.app.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.NetworkMonitor
+import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.repository.UserRepository
@@ -57,10 +58,10 @@ class MainViewModel @Inject constructor(
 
             networkMonitor.isOnline.collect { isOnline ->
                 if (isOnline) {
-                    val result = authRepository.signInAnonymously()
-                    if (!result.isSuccess) {
-                        _uiState.value = MainUiState.ErrorAuthFailed("Ошибка входа: ${result.exceptionOrNull()?.message}")
-                    }
+                    authRepository.signInAnonymously()
+                        .onError { message, _ ->
+                            _uiState.value = MainUiState.ErrorAuthFailed("Ошибка входа: $message")
+                        }
                 } else {
                     _uiState.value = MainUiState.ErrorNoInternet
                 }

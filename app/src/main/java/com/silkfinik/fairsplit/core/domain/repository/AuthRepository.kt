@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.core.domain.repository
 
+import com.silkfinik.fairsplit.core.common.util.Result
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {

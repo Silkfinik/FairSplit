@@ -2,6 +2,8 @@ package com.silkfinik.fairsplit.features.expenses.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.core.common.util.onError
+import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
@@ -200,16 +202,15 @@ class CreateExpenseViewModel @Inject constructor(
                 splits = currentState.splits
             )
 
-            when (val result = saveExpenseUseCase(params)) {
-                is Result.Success -> {
+            saveExpenseUseCase(params)
+                .onSuccess {
                     _uiState.update { it.copy(isLoading = false, isSaved = true) }
                     sendEvent(UiEvent.NavigateBack)
                 }
-                is Result.Error -> {
+                .onError { message, _ ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar(result.message))
+                    sendEvent(UiEvent.ShowSnackbar(message))
                 }
-            }
         }
     }
     

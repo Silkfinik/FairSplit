@@ -3,6 +3,8 @@ package com.silkfinik.fairsplit.features.auth.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.onError
+import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.auth.ui.WelcomeUiState
@@ -36,13 +38,10 @@ class WelcomeViewModel @Inject constructor(
     fun onGoogleSignInClick(context: Context) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val signInResult = googleSignInHelper.signIn(context)
-            when (signInResult) {
-                is Result.Success -> {
-                    val credential = signInResult.data
-                    val result = linkGoogleAccountUseCase(credential.idToken)
-                    when (result) {
-                        is Result.Success -> {
+            googleSignInHelper.signIn(context)
+                .onSuccess { credential ->
+                    linkGoogleAccountUseCase(credential.idToken)
+                        .onSuccess {
                             val name = credential.displayName
                             val photoUrl = credential.profilePictureUri?.toString()
                             if (name != null) {
@@ -50,19 +49,17 @@ class WelcomeViewModel @Inject constructor(
                             }
                             _uiState.update { it.copy(isLoading = false, isSaved = true) }
                         }
-                        is Result.Error -> {
+                        .onError { message, _ ->
                             _uiState.update { it.copy(isLoading = false) }
-                            sendEvent(UiEvent.ShowSnackbar(result.message))
+                            sendEvent(UiEvent.ShowSnackbar(message))
                         }
-                    }
                 }
-                is Result.Error -> {
+                .onError { message, exception ->
                     _uiState.update { it.copy(isLoading = false) }
-                    if (signInResult.exception !is GetCredentialCancellationException) {
-                        sendEvent(UiEvent.ShowSnackbar(signInResult.message))
+                    if (exception !is GetCredentialCancellationException) {
+                        sendEvent(UiEvent.ShowSnackbar(message))
                     }
                 }
-            }
         }
     }
 
@@ -75,17 +72,14 @@ class WelcomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val result = updateUserUseCase(name)
-            
-            when (result) {
-                is Result.Success -> {
+            updateUserUseCase(name)
+                .onSuccess {
                     _uiState.update { it.copy(isLoading = false, isSaved = true) }
                 }
-                is Result.Error -> {
+                .onError { message, _ ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar(result.message))
+                    sendEvent(UiEvent.ShowSnackbar(message))
                 }
-            }
         }
     }
 }

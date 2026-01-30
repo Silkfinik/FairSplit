@@ -2,14 +2,14 @@ package com.silkfinik.fairsplit.features.groups.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.onError
+import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.domain.usecase.group.CreateGroupUseCase
-import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.groups.ui.CreateGroupUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -21,38 +21,32 @@ class CreateGroupViewModel @Inject constructor(
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(CreateGroupUiState())
-    val uiState: StateFlow<CreateGroupUiState> = _uiState.asStateFlow()
+    val uiState = _uiState.asStateFlow()
 
-    fun onNameChange(newValue: String) {
-        _uiState.update { it.copy(name = newValue) }
+    fun onNameChange(name: String) {
+        _uiState.update { it.copy(name = name) }
     }
 
-    fun onCurrencyChange(newCurrency: Currency) {
-        _uiState.update { it.copy(selectedCurrency = newCurrency) }
+    fun onCurrencyChange(currency: com.silkfinik.fairsplit.core.model.Currency) {
+        _uiState.update { it.copy(selectedCurrency = currency) }
     }
 
     fun createGroup(onSuccess: () -> Unit) {
         val currentState = _uiState.value
-        if (currentState.name.isBlank()) {
-            sendEvent(UiEvent.ShowSnackbar("Введите название группы"))
-            return
-        }
+        if (currentState.name.isBlank()) return
 
         _uiState.update { it.copy(isLoading = true) }
 
         viewModelScope.launch {
-            val result = createGroupUseCase(currentState.name, currentState.selectedCurrency)
-            
-            when (result) {
-                is Result.Success -> {
+            createGroupUseCase(currentState.name, currentState.selectedCurrency)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false) }
                     onSuccess()
-                    _uiState.update { it.copy(isLoading = false) }
                 }
-                is Result.Error -> {
+                .onError { message, _ ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar(result.message))
+                    sendEvent(UiEvent.ShowSnackbar(message))
                 }
-            }
         }
     }
 }

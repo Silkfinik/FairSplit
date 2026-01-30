@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.domain.usecase.member.AddGhostMemberUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.member.GetMembersUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.GetCurrentUserIdUseCase
@@ -45,10 +46,10 @@ class MembersViewModel @Inject constructor(
 
     fun addGhostMember(name: String) {
         viewModelScope.launch {
-            val result = addGhostMemberUseCase(groupId, name)
-            if (result is Result.Error) {
-                sendEvent(UiEvent.ShowSnackbar(result.message))
-            }
+            addGhostMemberUseCase(groupId, name)
+                .onError { message, _ ->
+                    sendEvent(UiEvent.ShowSnackbar(message))
+                }
         }
     }
 }

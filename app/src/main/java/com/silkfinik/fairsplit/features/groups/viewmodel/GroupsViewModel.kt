@@ -1,6 +1,8 @@
 package com.silkfinik.fairsplit.features.groups.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.asResult
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupsUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.groups.ui.GroupsUiState
@@ -17,8 +19,13 @@ class GroupsViewModel @Inject constructor(
 ) : BaseViewModel() {
 
     val uiState: StateFlow<GroupsUiState> = getGroupsUseCase()
-        .map { groups ->
-            GroupsUiState(groups = groups, isLoading = false)
+        .asResult()
+        .map { result ->
+            when (result) {
+                is Result.Success -> GroupsUiState(groups = result.data, isLoading = false)
+                is Result.Error -> GroupsUiState(isLoading = false, errorMessage = result.message)
+                is Result.Loading -> GroupsUiState(isLoading = true)
+            }
         }
         .stateIn(
             scope = viewModelScope,
