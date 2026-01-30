@@ -19,6 +19,7 @@ class SaveExpenseUseCase @Inject constructor(
         val expenseId: String? = null,
         val description: String,
         val amount: Double,
+        val category: String,
         val payerId: String,
         val splits: Map<String, Double>
     )
@@ -36,6 +37,7 @@ class SaveExpenseUseCase @Inject constructor(
                 val updatedExpense = existingExpense.copy(
                     description = params.description,
                     amount = params.amount,
+                    category = params.category,
                     payers = mapOf(params.payerId to params.amount),
                     splits = params.splits,
                     updatedAt = System.currentTimeMillis()
@@ -48,6 +50,7 @@ class SaveExpenseUseCase @Inject constructor(
                     description = params.description,
                     amount = params.amount,
                     currency = group.currency,
+                    category = params.category,
                     date = System.currentTimeMillis(),
                     creatorId = userId,
                     payers = mapOf(params.payerId to params.amount),

@@ -13,10 +13,10 @@ class GroupMapperTest {
         id = "group1",
         name = "Trip",
         currency = Currency.EUR,
-        owner_id = "user1",
-        created_at = 1000L,
-        updated_at = 2000L,
-        is_dirty = true
+        ownerId = "user1",
+        createdAt = 1000L,
+        updatedAt = 2000L,
+        isDirty = true
     )
 
     private val testGroup = Group(
@@ -49,7 +49,7 @@ class GroupMapperTest {
     @Test
     fun `Dto to GroupEntity`() {
         val entity = testGroupDto.asEntity()
-        val expectedEntity = testGroupEntity.copy(is_dirty = false)
+        val expectedEntity = testGroupEntity.copy(isDirty = false)
         assertEquals(expectedEntity, entity)
     }
 }

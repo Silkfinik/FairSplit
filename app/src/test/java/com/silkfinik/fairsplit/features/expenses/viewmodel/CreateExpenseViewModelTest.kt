@@ -3,6 +3,7 @@ package com.silkfinik.fairsplit.features.expenses.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SaveExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
@@ -38,6 +39,7 @@ class CreateExpenseViewModelTest {
     private val getMembersUseCase: GetMembersUseCase = mockk()
     private val getExpenseUseCase: GetExpenseUseCase = mockk()
     private val saveExpenseUseCase: SaveExpenseUseCase = mockk()
+    private val authRepository: AuthRepository = mockk()
 
     private val testGroupId = "group1"
     private val testGroup = Group(id = testGroupId, name = "Test Group", currency = Currency.USD)
@@ -63,6 +65,7 @@ class CreateExpenseViewModelTest {
     fun setUp() {
         every { savedStateHandle.get<String>("groupId") } returns testGroupId
         every { savedStateHandle.get<String>("expenseId") } returns null
+        every { authRepository.getUserId() } returns "user1"
 
         coEvery { getGroupUseCase(testGroupId) } returns flowOf(testGroup)
         coEvery { getMembersUseCase(testGroupId) } returns flowOf(testMembers)
@@ -74,7 +77,8 @@ class CreateExpenseViewModelTest {
             getGroupUseCase,
             getMembersUseCase,
             getExpenseUseCase,
-            saveExpenseUseCase
+            saveExpenseUseCase,
+            authRepository
         )
     }
 

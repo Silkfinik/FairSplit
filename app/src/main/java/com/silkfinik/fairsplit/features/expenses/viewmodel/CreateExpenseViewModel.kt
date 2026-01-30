@@ -9,6 +9,7 @@ import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SaveExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.member.GetMembersUseCase
+import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.expenses.ui.CreateExpenseUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -64,6 +65,7 @@ class CreateExpenseViewModel @Inject constructor(
                                 members = members,
                                 description = expense.description,
                                 amount = expense.amount.toString(),
+                                category = ExpenseCategory.fromId(expense.category),
                                 payerId = expense.payers.keys.firstOrNull(),
                                 splits = expense.splits,
                                 selectedSplitMemberIds = expense.splits.keys
@@ -110,6 +112,10 @@ class CreateExpenseViewModel @Inject constructor(
         val error = if (amount.isNotBlank() && (doubleVal == null || doubleVal <= 0)) "Некорректная сумма" else null
         _uiState.update { it.copy(amount = amount, amountError = error) }
         recalculateSplits()
+    }
+    
+    fun onCategoryChange(category: ExpenseCategory) {
+        _uiState.update { it.copy(category = category) }
     }
 
     fun onPayerChange(payerId: String) {
@@ -189,6 +195,7 @@ class CreateExpenseViewModel @Inject constructor(
                 expenseId = expenseId,
                 description = currentState.description,
                 amount = amount,
+                category = currentState.category.id,
                 payerId = currentState.payerId!!,
                 splits = currentState.splits
             )

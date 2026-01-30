@@ -52,6 +52,7 @@ import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.model.Member
+import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
 import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
@@ -191,7 +192,6 @@ fun BalanceSummary(
     members: List<Member>,
     group: Group
 ) {
-    // Only show if there are non-zero balances
     val activeBalances = balances.filter { abs(it.value) > 0.01 }
     
     if (activeBalances.isNotEmpty()) {
@@ -281,8 +281,9 @@ fun ExpenseItem(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val category = ExpenseCategory.fromId(expense.category)
             Icon(
-                imageVector = if (!expense.isMathValid) Icons.Default.Warning else Icons.Default.ReceiptLong,
+                imageVector = if (!expense.isMathValid) Icons.Default.Warning else category.icon,
                 contentDescription = null,
                 tint = if (!expense.isMathValid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)

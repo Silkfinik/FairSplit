@@ -53,8 +53,8 @@ class GroupDetailsViewModelTest {
 
     private val groupId = "group1"
     private val testGroup = Group(groupId, "Test Group", Currency.USD)
-    private val testMember1 = Member("u1", "User 1", groupId, false, 0, 0)
-    private val testMember2 = Member("u2", "User 2", groupId, false, 0, 0)
+    private val testMember1 = Member("u1", groupId, "User 1", null, false, 0, 0)
+    private val testMember2 = Member("u2", groupId, "User 2", null, false, 0, 0)
     private val testMembers = listOf(testMember1, testMember2)
     private val currentUserId = "u1"
 

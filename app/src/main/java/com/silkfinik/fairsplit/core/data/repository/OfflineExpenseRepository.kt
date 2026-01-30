@@ -13,8 +13,11 @@ import javax.inject.Inject
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.silkfinik.fairsplit.core.model.HistoryItem
 import com.silkfinik.fairsplit.core.network.model.HistoryDto
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class OfflineExpenseRepository @Inject constructor(
@@ -24,32 +27,41 @@ class OfflineExpenseRepository @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : ExpenseRepository {
 
-    override suspend fun getExpenseHistory(groupId: String, expenseId: String): List<HistoryItem> {
-        return try {
-            val snapshot = firestore.collection("groups")
-                .document(groupId)
-                .collection("expenses")
-                .document(expenseId)
-                .collection("history")
-                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .get()
-                .await()
-            
-            snapshot.documents.map { doc ->
-                val dto = doc.toObject(HistoryDto::class.java)!!
-                val timestamp = (dto.timestamp as? Timestamp)?.toDate()?.time ?: 0L
-                
-                HistoryItem(
-                    id = doc.id,
-                    action = dto.action,
-                    changes = dto.changes,
-                    timestamp = timestamp,
-                    isMathValid = dto.isMathValid
-                )
+    override fun getExpenseHistory(groupId: String, expenseId: String): Flow<List<HistoryItem>> = callbackFlow {
+        val listenerRegistration = firestore.collection("groups")
+            .document(groupId)
+            .collection("expenses")
+            .document(expenseId)
+            .collection("history")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val items = snapshot.documents.mapNotNull { doc ->
+                        try {
+                            val dto = doc.toObject(HistoryDto::class.java)!!
+                            val timestamp = (dto.timestamp as? Timestamp)?.toDate()?.time ?: 0L
+                            
+                            HistoryItem(
+                                id = doc.id,
+                                action = dto.action,
+                                changes = dto.changes,
+                                timestamp = timestamp,
+                                isMathValid = dto.isMathValid
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                    trySend(items)
+                }
             }
-        } catch (e: Exception) {
-            emptyList()
-        }
+        
+        awaitClose { listenerRegistration.remove() }
     }
 
     override fun getExpensesForGroup(groupId: String): Flow<List<Expense>> {
