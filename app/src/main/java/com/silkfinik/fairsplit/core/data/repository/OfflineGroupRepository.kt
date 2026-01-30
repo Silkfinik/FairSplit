@@ -1,5 +1,8 @@
 package com.silkfinik.fairsplit.core.data.repository
 
+import com.google.firebase.functions.FirebaseFunctions
+import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.asSafeMap
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
 import com.silkfinik.fairsplit.core.database.dao.GroupDao
 import com.silkfinik.fairsplit.core.database.dao.MemberDao
@@ -13,6 +16,7 @@ import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Group
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
 
@@ -21,7 +25,8 @@ class OfflineGroupRepository @Inject constructor(
     private val memberDao: MemberDao,
     private val groupRealtimeListener: GroupRealtimeListener,
     private val workManagerSyncManager: WorkManagerSyncManager,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val functions: FirebaseFunctions
 ) : GroupRepository {
 
     override fun getGroups(): Flow<List<Group>> {
@@ -76,6 +81,48 @@ class OfflineGroupRepository @Inject constructor(
         )
         groupDao.updateGroup(updatedGroup)
         workManagerSyncManager.scheduleSync()
+    }
+    
+    override suspend fun joinGroup(code: String): Result<String> {
+        return try {
+            val result = functions
+                .getHttpsCallable("joinByInviteCode")
+                .call(mapOf("code" to code))
+                .await()
+
+            val data = result.data.asSafeMap()
+            val groupId = data["groupId"] as? String
+
+            if (groupId != null) {
+                // Trigger sync to fetch the new group immediately
+                workManagerSyncManager.scheduleSync()
+                Result.Success(groupId)
+            } else {
+                Result.Error("Не удалось получить ID группы")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Ошибка при вступлении в группу", e)
+        }
+    }
+
+    override suspend fun generateInviteCode(groupId: String): Result<String> {
+        return try {
+            val result = functions
+                .getHttpsCallable("createInviteCode")
+                .call(mapOf("groupId" to groupId))
+                .await()
+
+            val data = result.data.asSafeMap()
+            val code = data["code"] as? String
+
+            if (code != null) {
+                Result.Success(code)
+            } else {
+                Result.Error("Не удалось создать код приглашения")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Ошибка генерации кода", e)
+        }
     }
 
     override fun startSync() {

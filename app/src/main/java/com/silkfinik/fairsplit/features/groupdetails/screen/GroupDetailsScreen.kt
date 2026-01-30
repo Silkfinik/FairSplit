@@ -19,12 +19,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,12 +42,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.core.common.util.CurrencyFormatter
-import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.model.Member
@@ -73,8 +74,11 @@ fun GroupDetailsScreen(
     onMembersClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isGeneratingCode by viewModel.isGeneratingCode.collectAsState()
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
+    var showInviteDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val clipboardManager = LocalClipboardManager.current
 
     ObserveAsEvents(
         flow = viewModel.uiEvent,
@@ -105,6 +109,21 @@ fun GroupDetailsScreen(
         )
     }
 
+    if (showInviteDialog) {
+        val group = (uiState as? GroupDetailsUiState.Success)?.group
+        if (group != null) {
+            InviteDialog(
+                inviteCode = group.inviteCode,
+                isGenerating = isGeneratingCode,
+                onGenerateCode = { viewModel.generateInviteCode() },
+                onCopyCode = { code ->
+                    clipboardManager.setText(AnnotatedString(code))
+                },
+                onDismiss = { showInviteDialog = false }
+            )
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -118,6 +137,9 @@ fun GroupDetailsScreen(
                 onBackClick = onBackClick,
                 actions = {
                     if (uiState is GroupDetailsUiState.Success) {
+                        IconButton(onClick = { showInviteDialog = true }) {
+                            Icon(Icons.Default.PersonAdd, "Пригласить")
+                        }
                         IconButton(onClick = { onMembersClick((uiState as GroupDetailsUiState.Success).group.id) }) {
                             Icon(Icons.Default.Group, "Участники")
                         }
@@ -184,6 +206,60 @@ fun GroupDetailsScreen(
             }
         }
     }
+}
+
+@Composable
+fun InviteDialog(
+    inviteCode: String?,
+    isGenerating: Boolean,
+    onGenerateCode: () -> Unit,
+    onCopyCode: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Пригласить участников") },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally, 
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (inviteCode == null) {
+                    Text(
+                        "Создайте код приглашения, чтобы друзья могли присоединиться к группе.",
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    if (isGenerating) {
+                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    } else {
+                        TextButton(onClick = onGenerateCode) {
+                            Text("Создать код")
+                        }
+                    }
+                } else {
+                    Text("Код приглашения:", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = inviteCode,
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 4.sp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(onClick = { onCopyCode(inviteCode) }) {
+                        Text("Копировать")
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Закрыть")
+            }
+        }
+    )
 }
 
 @Composable

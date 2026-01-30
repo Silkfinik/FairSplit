@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,19 +16,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -48,10 +56,12 @@ fun GroupsListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showJoinDialog by remember { mutableStateOf(false) }
 
     ObserveAsEvents(
         flow = viewModel.uiEvent,
-        snackbarHostState = snackbarHostState
+        snackbarHostState = snackbarHostState,
+        onNavigateToGroupDetails = onNavigateToGroupDetails
     )
 
     LaunchedEffect(uiState.errorMessage) {
@@ -60,15 +70,38 @@ fun GroupsListScreen(
         }
     }
 
+    if (showJoinDialog) {
+        JoinGroupDialog(
+            onDismiss = { showJoinDialog = false },
+            onJoin = { code ->
+                viewModel.joinGroup(code)
+                showJoinDialog = false
+            }
+        )
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             FairSplitTopAppBar(title = "Мои группы")
         },
         floatingActionButton = {
-            if (!uiState.isLoading && uiState.groups.isNotEmpty()) {
-                FloatingActionButton(onClick = onNavigateToCreateGroup) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Создать группу")
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                SmallFloatingActionButton(
+                    onClick = { showJoinDialog = true },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "Вступить в группу")
+                }
+                
+                if (!uiState.isLoading && uiState.groups.isNotEmpty()) {
+                    FloatingActionButton(onClick = onNavigateToCreateGroup) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Создать группу")
+                    }
                 }
             }
         }
@@ -132,4 +165,39 @@ fun GroupItem(group: Group, onClick: () -> Unit) {
             )
         }
     }
+}
+
+@Composable
+fun JoinGroupDialog(
+    onDismiss: () -> Unit,
+    onJoin: (String) -> Unit
+) {
+    var code by remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Вступить в группу") },
+        text = {
+            OutlinedTextField(
+                value = code,
+                onValueChange = { if (it.length <= 6) code = it.uppercase() },
+                label = { Text("Код приглашения") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onJoin(code) },
+                enabled = code.length == 6
+            ) {
+                Text("Вступить")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
 }

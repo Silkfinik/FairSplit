@@ -26,5 +26,9 @@ data class GroupDto(
 
     @get:PropertyName("updated_at")
     @set:PropertyName("updated_at")
-    var updatedAt: Long = 0
+    var updatedAt: Long = 0,
+
+    @get:PropertyName("invite_code")
+    @set:PropertyName("invite_code")
+    var inviteCode: String? = null
 )

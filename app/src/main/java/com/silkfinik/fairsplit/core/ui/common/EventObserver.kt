@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.collectLatest
 fun ObserveAsEvents(
     flow: Flow<UiEvent>,
     snackbarHostState: SnackbarHostState,
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onNavigateToGroupDetails: (String) -> Unit = {}
 ) {
     LaunchedEffect(key1 = true) {
         flow.collectLatest { event ->
@@ -24,6 +25,9 @@ fun ObserveAsEvents(
                 }
                 UiEvent.NavigateBack -> {
                     onNavigateBack()
+                }
+                is UiEvent.NavigateToGroupDetails -> {
+                    onNavigateToGroupDetails(event.groupId)
                 }
             }
         }

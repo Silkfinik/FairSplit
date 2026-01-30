@@ -12,12 +12,15 @@ import com.silkfinik.fairsplit.core.domain.usecase.auth.GetCurrentUserIdUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpensesUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SyncGroupExpensesUseCase
+import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.groupdetails.ui.GroupDetailsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -32,10 +35,14 @@ class GroupDetailsViewModel @Inject constructor(
     private val getCurrentUserIdUseCase: GetCurrentUserIdUseCase,
     private val addGhostMemberUseCase: AddGhostMemberUseCase,
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
-    private val syncGroupExpensesUseCase: SyncGroupExpensesUseCase
+    private val syncGroupExpensesUseCase: SyncGroupExpensesUseCase,
+    private val groupRepository: GroupRepository
 ) : BaseViewModel() {
 
     private val groupId: String = checkNotNull(savedStateHandle["groupId"])
+
+    private val _isGeneratingCode = MutableStateFlow(false)
+    val isGeneratingCode = _isGeneratingCode.asStateFlow()
 
     val uiState: StateFlow<GroupDetailsUiState> = combine(
         getGroupUseCase(groupId),
@@ -113,6 +120,17 @@ class GroupDetailsViewModel @Inject constructor(
                 .onError { message, _ ->
                     sendEvent(UiEvent.ShowSnackbar(message))
                 }
+        }
+    }
+
+    fun generateInviteCode() {
+        viewModelScope.launch {
+            _isGeneratingCode.value = true
+            groupRepository.generateInviteCode(groupId)
+                .onError { message, _ ->
+                    sendEvent(UiEvent.ShowSnackbar(message))
+                }
+            _isGeneratingCode.value = false
         }
     }
 }
