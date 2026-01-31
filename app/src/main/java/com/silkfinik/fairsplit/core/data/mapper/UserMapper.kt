@@ -10,7 +10,7 @@ fun UserDto.asDomainModel(): User {
         displayName = displayName,
         photoUrl = photoUrl,
         isAnonymous = isAnonymous,
-        linkedGhostIds = linkedGhostIds,
+        linkedGhostIds = linkedGhostIds ?: emptyList(),
         fcmToken = fcmToken,
         createdAt = createdAt,
         updatedAt = updatedAt

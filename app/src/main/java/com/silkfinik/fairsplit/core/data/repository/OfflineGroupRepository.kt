@@ -1,6 +1,6 @@
 package com.silkfinik.fairsplit.core.data.repository
 
-import com.google.firebase.functions.FirebaseFunctions
+import com.silkfinik.fairsplit.core.data.datasource.CloudFunctionsDataSource
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.asSafeMap
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
@@ -26,7 +26,7 @@ class OfflineGroupRepository @Inject constructor(
     private val groupRealtimeListener: GroupRealtimeListener,
     private val workManagerSyncManager: WorkManagerSyncManager,
     private val authRepository: AuthRepository,
-    private val functions: FirebaseFunctions
+    private val cloudFunctionsDataSource: CloudFunctionsDataSource
 ) : GroupRepository {
 
     override fun getGroups(): Flow<List<Group>> {
@@ -84,45 +84,15 @@ class OfflineGroupRepository @Inject constructor(
     }
     
     override suspend fun joinGroup(code: String): Result<String> {
-        return try {
-            val result = functions
-                .getHttpsCallable("joinByInviteCode")
-                .call(mapOf("code" to code))
-                .await()
-
-            val data = result.data.asSafeMap()
-            val groupId = data["groupId"] as? String
-
-            if (groupId != null) {
-                // Trigger sync to fetch the new group immediately
-                workManagerSyncManager.scheduleSync()
-                Result.Success(groupId)
-            } else {
-                Result.Error("Не удалось получить ID группы")
-            }
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка при вступлении в группу", e)
+        val result = cloudFunctionsDataSource.joinByInviteCode(code)
+        if (result is Result.Success) {
+            workManagerSyncManager.scheduleSync()
         }
+        return result
     }
 
     override suspend fun generateInviteCode(groupId: String): Result<String> {
-        return try {
-            val result = functions
-                .getHttpsCallable("createInviteCode")
-                .call(mapOf("groupId" to groupId))
-                .await()
-
-            val data = result.data.asSafeMap()
-            val code = data["code"] as? String
-
-            if (code != null) {
-                Result.Success(code)
-            } else {
-                Result.Error("Не удалось создать код приглашения")
-            }
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка генерации кода", e)
-        }
+        return cloudFunctionsDataSource.createInviteCode(groupId)
     }
 
     override fun startSync() {

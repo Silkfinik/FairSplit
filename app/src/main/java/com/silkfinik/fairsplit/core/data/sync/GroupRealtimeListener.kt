@@ -83,8 +83,14 @@ class GroupRealtimeListener @Inject constructor(
                 val newMember = ghostDto.asMemberEntity(ghostId, dto.id)
                 memberDao.insertMember(newMember)
             } else {
-                if (!localMember.isDirty && localMember.name != ghostDto.name) {
-                    memberDao.updateMember(localMember.copy(name = ghostDto.name))
+                if (!localMember.isDirty) {
+                    val updatedMember = localMember.copy(
+                        name = ghostDto.name,
+                        mergedWithUid = ghostDto.mergedWithUid
+                    )
+                    if (updatedMember != localMember) {
+                        memberDao.updateMember(updatedMember)
+                    }
                 }
             }
         }

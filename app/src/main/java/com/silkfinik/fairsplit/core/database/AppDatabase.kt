@@ -13,7 +13,7 @@ import com.silkfinik.fairsplit.core.database.util.Converters
 
 @Database(
     entities = [GroupEntity::class, MemberEntity::class, ExpenseEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

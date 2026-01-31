@@ -20,7 +20,7 @@ data class UserDto(
     
     @get:PropertyName("linked_ghost_ids")
     @set:PropertyName("linked_ghost_ids")
-    var linkedGhostIds: List<String> = emptyList(),
+    var linkedGhostIds: List<String>? = null,
     
     @get:PropertyName("fcm_token")
     @set:PropertyName("fcm_token")

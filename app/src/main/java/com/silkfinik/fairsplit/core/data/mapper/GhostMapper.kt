@@ -17,6 +17,7 @@ fun GhostDto.asMemberEntity(id: String, groupId: String): MemberEntity {
         groupId = groupId,
         name = this.name,
         isGhost = true,
+        mergedWithUid = this.mergedWithUid,
         createdAt = System.currentTimeMillis(),
         updatedAt = System.currentTimeMillis(),
         isDirty = false

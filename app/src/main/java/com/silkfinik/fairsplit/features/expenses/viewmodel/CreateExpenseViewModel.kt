@@ -53,24 +53,42 @@ class CreateExpenseViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val group = getGroupUseCase(groupId).first() ?: throw Exception("Группа не найдена")
-                val members = getMembersUseCase(groupId).first()
+                val allMembers = getMembersUseCase(groupId).first()
+                val redirectMap = allMembers.filter { it.mergedWithUid != null }.associate { it.id to it.mergedWithUid!! }
+                var displayMembers = allMembers.filter { it.mergedWithUid == null }
                 val currentUserId = authRepository.getUserId()
 
                 if (expenseId != null) {
                     val expense = getExpenseUseCase(expenseId).first()
                     if (expense != null) {
+                        var payerId = expense.payers.keys.firstOrNull()
+                        val ghostPayerName = if (redirectMap.containsKey(payerId)) allMembers.find { it.id == payerId }?.name else null
+                        payerId = redirectMap[payerId] ?: payerId
+
+                        val resolvedSplits = expense.splits.mapKeys { (key, _) -> 
+                            redirectMap[key] ?: key 
+                        }
+
+                        displayMembers = displayMembers.map { member ->
+                            var newName = member.name
+                            if (member.id == payerId && ghostPayerName != null) {
+                                newName += " ($ghostPayerName)"
+                            }
+                            member.copy(name = newName)
+                        }
+
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
                                 isEditing = true,
                                 currency = group.currency,
-                                members = members,
+                                members = displayMembers,
                                 description = expense.description,
                                 amount = expense.amount.toString(),
                                 category = ExpenseCategory.fromId(expense.category),
-                                payerId = expense.payers.keys.firstOrNull(),
-                                splits = expense.splits,
-                                selectedSplitMemberIds = expense.splits.keys
+                                payerId = payerId,
+                                splits = resolvedSplits,
+                                selectedSplitMemberIds = resolvedSplits.keys
                             )
                         }
                     } else {
@@ -78,21 +96,21 @@ class CreateExpenseViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 error = "Трата не найдена",
-                                members = members,
+                                members = displayMembers,
                                 currency = group.currency,
                                 currentUserId = currentUserId
                             )
                         }
                     }
                 } else {
-                    val allMemberIds = members.map { it.id }.toSet()
+                    val allMemberIds = displayMembers.map { it.id }.toSet()
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             currency = group.currency,
-                            members = members,
+                            members = displayMembers,
                             currentUserId = currentUserId,
-                            payerId = it.payerId ?: members.firstOrNull()?.id,
+                            payerId = it.payerId ?: displayMembers.firstOrNull()?.id,
                             selectedSplitMemberIds = allMemberIds
                         )
                     }

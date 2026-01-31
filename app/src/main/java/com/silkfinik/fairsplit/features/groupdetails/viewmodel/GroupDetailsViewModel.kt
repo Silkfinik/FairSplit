@@ -11,9 +11,11 @@ import com.silkfinik.fairsplit.core.domain.usecase.expense.DeleteExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.GetCurrentUserIdUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpensesUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.group.CalculateGroupBalanceUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SyncGroupExpensesUseCase
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.model.Expense
+import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.groupdetails.ui.GroupDetailsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,7 +38,8 @@ class GroupDetailsViewModel @Inject constructor(
     private val addGhostMemberUseCase: AddGhostMemberUseCase,
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
     private val syncGroupExpensesUseCase: SyncGroupExpensesUseCase,
-    private val groupRepository: GroupRepository
+    private val groupRepository: GroupRepository,
+    private val calculateGroupBalanceUseCase: CalculateGroupBalanceUseCase
 ) : BaseViewModel() {
 
     private val groupId: String = checkNotNull(savedStateHandle["groupId"])
@@ -56,7 +59,7 @@ class GroupDetailsViewModel @Inject constructor(
         if (group == null) {
             GroupDetailsUiState.Error("Группа не найдена")
         } else {
-            val balances = calculateBalances(expenses)
+            val balances = calculateGroupBalanceUseCase(expenses, members)
             balances.forEach { (id, amount) -> 
                 val found = members.find { it.id == id }
                 Log.d("GroupDetails", "Balance for $id: $amount. Found name: ${found?.name}") 
@@ -83,26 +86,6 @@ class GroupDetailsViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         syncGroupExpensesUseCase.stop(groupId)
-    }
-
-    private fun calculateBalances(expenses: List<Expense>): Map<String, Double> {
-        val balances = mutableMapOf<String, Double>()
-        
-        expenses.forEach { expense ->
-            if (expense.isDeleted) return@forEach
-            
-            // Add what they paid (positive)
-            expense.payers.forEach { (memberId, amount) ->
-                balances[memberId] = (balances[memberId] ?: 0.0) + amount
-            }
-            
-            // Subtract what they owe (negative)
-            expense.splits.forEach { (memberId, amount) ->
-                balances[memberId] = (balances[memberId] ?: 0.0) - amount
-            }
-        }
-        
-        return balances
     }
 
     fun addGhostMember(name: String) {

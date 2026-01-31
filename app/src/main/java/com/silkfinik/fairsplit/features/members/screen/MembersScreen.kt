@@ -60,6 +60,7 @@ fun MembersScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddMemberDialog by remember { mutableStateOf(false) }
+    var memberToClaim by remember { mutableStateOf<Member?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     ObserveAsEvents(
@@ -74,6 +75,29 @@ fun MembersScreen(
             onConfirm = { name ->
                 viewModel.addGhostMember(name)
                 showAddMemberDialog = false
+            }
+        )
+    }
+
+    if (memberToClaim != null) {
+        AlertDialog(
+            onDismissRequest = { memberToClaim = null },
+            title = { Text("Объединение профиля") },
+            text = { Text("Вы действительно хотите объединить свой аккаунт с участником \"${memberToClaim?.name}\"? История трат будет сохранена за вами.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        memberToClaim?.let { viewModel.claimGhost(it.id) }
+                        memberToClaim = null
+                    }
+                ) {
+                    Text("Объединить")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { memberToClaim = null }) {
+                    Text("Отмена")
+                }
             }
         )
     }
@@ -102,7 +126,13 @@ fun MembersScreen(
                     )
                 }
                 is MembersUiState.Success -> {
-                    MembersList(members = state.members, currentUserId = state.currentUserId)
+                    MembersList(
+                        members = state.members,
+                        currentUserId = state.currentUserId,
+                        linkedGhostIds = state.linkedGhostIds,
+                        hasClaimedGhost = state.hasClaimedGhost,
+                        onClaimClick = { memberToClaim = it }
+                    )
                 }
             }
         }
@@ -110,20 +140,49 @@ fun MembersScreen(
 }
 
 @Composable
-fun MembersList(members: List<Member>, currentUserId: String?) {
+fun MembersList(
+    members: List<Member>,
+    currentUserId: String?,
+    linkedGhostIds: List<String>,
+    hasClaimedGhost: Boolean,
+    onClaimClick: (Member) -> Unit
+) {
+    val visibleMembers = members.filter { it.mergedWithUid == null }
+
+    val mergedGhostsMap = members
+        .filter { it.mergedWithUid != null }
+        .groupBy { it.mergedWithUid!! }
+        .mapValues { entry -> entry.value.map { it.name } }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(members) { member ->
-            MemberItem(member = member, currentUserId = currentUserId)
+        items(visibleMembers) { member ->
+            val mergedGhosts = mergedGhostsMap[member.id] ?: emptyList()
+            
+            MemberItem(
+                member = member,
+                currentUserId = currentUserId,
+                isLinked = linkedGhostIds.contains(member.id),
+                mergedGhosts = mergedGhosts,
+                canClaim = !hasClaimedGhost,
+                onClaimClick = { onClaimClick(member) }
+            )
         }
     }
 }
 
 @Composable
-fun MemberItem(member: Member, currentUserId: String?) {
+fun MemberItem(
+    member: Member,
+    currentUserId: String?,
+    isLinked: Boolean,
+    mergedGhosts: List<String>,
+    canClaim: Boolean,
+    onClaimClick: () -> Unit
+) {
     val displayName = if (member.id == currentUserId) "${member.name} (Вы)" else member.name
     
     FairSplitCard {
@@ -137,18 +196,30 @@ fun MemberItem(member: Member, currentUserId: String?) {
                 size = 40.dp
             )
             Spacer(modifier = Modifier.width(16.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = displayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
+                if (mergedGhosts.isNotEmpty()) {
+                    Text(
+                        text = "Связанные профили: ${mergedGhosts.joinToString(", ")}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 if (member.isGhost) {
                     Text(
                         text = "Виртуальный участник",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+            if (member.isGhost && !isLinked && member.mergedWithUid == null && canClaim) {
+                TextButton(onClick = onClaimClick) {
+                    Text("Это я")
                 }
             }
         }

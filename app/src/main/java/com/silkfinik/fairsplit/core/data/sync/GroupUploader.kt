@@ -55,6 +55,7 @@ class GroupUploader @Inject constructor(
 
         dirtyGroups.forEach { group ->
             groupDao.markGroupAsSynced(group.id, group.updatedAt)
+            memberDao.markMembersAsSynced(group.id)
         }
     }
 }

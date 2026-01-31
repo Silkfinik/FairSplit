@@ -28,6 +28,7 @@ data class MemberEntity(
     @ColumnInfo(name = "photo_url") val photoUrl: String? = null,
 
     @ColumnInfo(name = "is_ghost") val isGhost: Boolean = true,
+    @ColumnInfo(name = "merged_with_uid") val mergedWithUid: String? = null,
 
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,

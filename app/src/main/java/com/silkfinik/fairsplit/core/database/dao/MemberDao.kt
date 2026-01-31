@@ -28,4 +28,7 @@ interface MemberDao {
 
     @Query("SELECT * FROM members WHERE group_id = :groupId AND id = :memberId")
     suspend fun getMember(groupId: String, memberId: String): MemberEntity?
+
+    @Query("UPDATE members SET is_dirty = 0 WHERE group_id = :groupId")
+    suspend fun markMembersAsSynced(groupId: String)
 }

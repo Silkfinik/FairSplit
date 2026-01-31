@@ -10,6 +10,7 @@ fun MemberEntity.asDomainModel(): Member {
         name = name,
         photoUrl = photoUrl,
         isGhost = isGhost,
+        mergedWithUid = mergedWithUid,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -22,6 +23,7 @@ fun Member.asEntity(isDirty: Boolean = true): MemberEntity {
         name = name,
         photoUrl = photoUrl,
         isGhost = isGhost,
+        mergedWithUid = mergedWithUid,
         createdAt = createdAt,
         updatedAt = updatedAt,
         isDirty = isDirty
