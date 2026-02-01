@@ -29,13 +29,18 @@ sealed class Screen(val route: String) {
         fun createRoute(groupId: String, expenseId: String) = "expense_history/$groupId/$expenseId"
     }
 
-    data object CreatePayment : Screen("create_payment/{groupId}?receiverId={receiverId}") {
-        fun createRoute(groupId: String, receiverId: String? = null): String {
-            return if (receiverId != null) {
-                "create_payment/$groupId?receiverId=$receiverId"
-            } else {
-                "create_payment/$groupId"
+    data object CreatePayment : Screen("create_payment/{groupId}?receiverId={receiverId}&amount={amount}") {
+        fun createRoute(groupId: String, receiverId: String? = null, amount: String? = null): String {
+            val builder = StringBuilder("create_payment/$groupId")
+            val params = mutableListOf<String>()
+            if (receiverId != null) params.add("receiverId=$receiverId")
+            if (amount != null) params.add("amount=$amount")
+            
+            if (params.isNotEmpty()) {
+                builder.append("?")
+                builder.append(params.joinToString("&"))
             }
+            return builder.toString()
         }
     }
 }

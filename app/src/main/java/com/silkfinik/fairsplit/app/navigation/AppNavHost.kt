@@ -60,8 +60,8 @@ fun AppNavHost(
                 onMembersClick = { groupId ->
                     navController.navigate(Screen.Members.createRoute(groupId))
                 },
-                onSettleUpClick = { groupId, receiverId ->
-                    navController.navigate(Screen.CreatePayment.createRoute(groupId, receiverId))
+                onSettleUpClick = { groupId, receiverId, amount ->
+                    navController.navigate(Screen.CreatePayment.createRoute(groupId, receiverId, amount))
                 }
             )
         }
@@ -116,6 +116,11 @@ fun AppNavHost(
             arguments = listOf(
                 navArgument("groupId") { type = NavType.StringType },
                 navArgument("receiverId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("amount") {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null

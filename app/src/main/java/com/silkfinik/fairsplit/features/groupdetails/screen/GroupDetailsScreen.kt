@@ -37,8 +37,20 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.Info
+import kotlinx.coroutines.launch
+import com.silkfinik.fairsplit.core.ui.component.CategoryIcon
+import com.silkfinik.fairsplit.core.ui.component.UserAvatar
+import com.silkfinik.fairsplit.core.ui.component.FairSplitTabs
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -85,6 +97,7 @@ sealed interface TransactionItem {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupDetailsScreen(
     viewModel: GroupDetailsViewModel = hiltViewModel(),
@@ -92,7 +105,7 @@ fun GroupDetailsScreen(
     onAddExpenseClick: (String) -> Unit,
     onEditExpenseClick: (String, String) -> Unit,
     onMembersClick: (String) -> Unit,
-    onSettleUpClick: (String, String?) -> Unit
+    onSettleUpClick: (String, String?, String?) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isGeneratingCode by viewModel.isGeneratingCode.collectAsState()
@@ -100,6 +113,10 @@ fun GroupDetailsScreen(
     var showInviteDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val clipboardManager = LocalClipboardManager.current
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     ObserveAsEvents(
         flow = viewModel.uiEvent,
@@ -169,7 +186,7 @@ fun GroupDetailsScreen(
             )
         },
         floatingActionButton = {
-            if (uiState is GroupDetailsUiState.Success) {
+            if (uiState is GroupDetailsUiState.Success && selectedTabIndex == 0) {
                 FloatingActionButton(
                     onClick = {
                         onAddExpenseClick((uiState as GroupDetailsUiState.Success).group.id)
@@ -196,31 +213,45 @@ fun GroupDetailsScreen(
                     )
                 }
                 is GroupDetailsUiState.Success -> {
-                    val transactions = remember(state.expenses, state.payments) {
-                        val exps = state.expenses.map { TransactionItem.ExpenseItem(it) }
-                        val pays = state.payments.map { TransactionItem.PaymentItem(it) }
-                        (exps + pays).sortedByDescending { it.date }
-                    }
-
-                    if (transactions.isEmpty()) {
-                        FairSplitEmptyState(
-                            modifier = Modifier.align(Alignment.Center),
-                            icon = Icons.Default.Receipt,
-                            title = "Трат пока нет",
-                            description = "Добавьте первую покупку, чтобы разделить расходы"
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        BalanceSummary(
+                            balances = state.balances,
+                            group = state.group,
+                            currentUserId = state.currentUserId,
+                            onSettleUp = { receiverId, amount -> 
+                                onSettleUpClick(state.group.id, receiverId, amount) 
+                            },
+                            onShowDetails = { showBottomSheet = true }
                         )
-                    } else {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            // Balance Header
-                            BalanceSummary(
-                                balances = state.balances,
-                                members = state.members,
-                                group = state.group,
-                                currentUserId = state.currentUserId,
-                                onSettleUp = { receiverId -> onSettleUpClick(state.group.id, receiverId) }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        FairSplitTabs(
+                            titles = listOf("Траты", "Платежи"),
+                            selectedIndex = selectedTabIndex,
+                            onTabSelected = { selectedTabIndex = it }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        val transactions = remember(state.expenses, state.payments, selectedTabIndex) {
+                            if (selectedTabIndex == 0) {
+                                state.expenses.map { TransactionItem.ExpenseItem(it) }
+                                    .sortedByDescending { it.date }
+                            } else {
+                                state.payments.map { TransactionItem.PaymentItem(it) }
+                                    .sortedByDescending { it.date }
+                            }
+                        }
+
+                        if (transactions.isEmpty()) {
+                            FairSplitEmptyState(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                icon = if (selectedTabIndex == 0) Icons.Default.Receipt else Icons.Default.AttachMoney,
+                                title = if (selectedTabIndex == 0) "Трат пока нет" else "Платежей пока нет",
+                                description = if (selectedTabIndex == 0) "Добавьте первую покупку" else "Здесь будет история возвратов"
                             )
-                            
-                            // Transactions List
+                        } else {
                             TransactionsList(
                                 transactions = transactions,
                                 members = state.members,
@@ -232,6 +263,28 @@ fun GroupDetailsScreen(
                                 },
                                 onPaymentAction = { payment, status ->
                                     viewModel.updatePaymentStatus(payment.id, status)
+                                }
+                            )
+                        }
+                    }
+
+                    if (showBottomSheet) {
+                        ModalBottomSheet(
+                            onDismissRequest = { showBottomSheet = false },
+                            sheetState = sheetState
+                        ) {
+                            FullBalanceList(
+                                balances = state.balances,
+                                members = state.members,
+                                group = state.group,
+                                currentUserId = state.currentUserId,
+                                onSettleUp = { receiverId, amount ->
+                                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                        if (!sheetState.isVisible) {
+                                            showBottomSheet = false
+                                        }
+                                        onSettleUpClick(state.group.id, receiverId, amount)
+                                    }
                                 }
                             )
                         }
@@ -299,68 +352,77 @@ fun InviteDialog(
 @Composable
 fun BalanceSummary(
     balances: Map<String, Double>,
-    members: List<Member>,
     group: Group,
     currentUserId: String?,
-    onSettleUp: (String) -> Unit
+    onSettleUp: (String?, String?) -> Unit,
+    onShowDetails: () -> Unit
 ) {
+    val myBalance = balances[currentUserId] ?: 0.0
     val activeBalances = balances.filter { abs(it.value) > 0.01 }
-    
-    if (activeBalances.isNotEmpty()) {
-        FairSplitCard(
-            modifier = Modifier.padding(16.dp),
-            backgroundColor = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Баланс",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                activeBalances.forEach { (memberId, balance) ->
-                    val memberName = members.find { it.id == memberId }?.name ?: "Неизвестный"
-                    val isCreditor = balance > 0
-                    val amountText = CurrencyFormatter.format(abs(balance), group.currency)
+    val suggestedReceiverId = activeBalances.entries.filter { it.value > 0 }.maxByOrNull { it.value }?.key
+
+    FairSplitCard(
+        modifier = Modifier.padding(16.dp),
+        backgroundColor = MaterialTheme.colorScheme.primaryContainer
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Мой баланс",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                     
-                    val isMe = memberId == currentUserId
-                    
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = memberName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = if (isCreditor) "+$amountText" else "-$amountText",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isCreditor) Color(0xFF006400) else Color(0xFFB00020)
-                            )
-                        }
-                        
-                        // Show "Settle Up" if I owe money (negative balance)
-                        if (isMe && !isCreditor) {
-                            TextButton(
-                                onClick = { /* Logic to find who I owe is complex here, so we just open generic settle up */ onSettleUp("") },
-                                colors = ButtonDefaults.textButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            ) {
-                                Text("Вернуть")
-                            }
-                        }
+                    if (abs(myBalance) < 0.01) {
+                         Text(
+                            text = "Расчет окончен",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    } else if (myBalance > 0) {
+                        Text(
+                            text = "Вам должны: ${CurrencyFormatter.format(myBalance, group.currency)}",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF006400)
+                        )
+                    } else {
+                        Text(
+                            text = "Вы должны: ${CurrencyFormatter.format(abs(myBalance), group.currency)}",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFB00020)
+                        )
                     }
+                }
+
+                IconButton(onClick = onShowDetails) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Подробнее",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            if (myBalance < -0.01) {
+                Spacer(modifier = Modifier.height(16.dp))
+                androidx.compose.material3.Button(
+                    onClick = { onSettleUp(suggestedReceiverId, abs(myBalance).toString()) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        contentColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Вернуть")
                 }
             }
         }
@@ -389,7 +451,8 @@ fun TransactionsList(
                         isEditable = item.expense.creatorId == currentUserId,
                         onDelete = { onDeleteExpense(item.expense) },
                         onEdit = { onEditExpense(item.expense) },
-                        onClick = { onEditExpense(item.expense) }
+                        onClick = { onEditExpense(item.expense) },
+                        members = members
                     )
                 }
                 is TransactionItem.PaymentItem -> {
@@ -409,32 +472,54 @@ fun TransactionsList(
 @Composable
 fun ExpenseItem(
     expense: Expense,
+    members: List<Member>,
     isEditable: Boolean,
     onDelete: () -> Unit,
     onEdit: () -> Unit,
     onClick: () -> Unit
 ) {
+    val category = ExpenseCategory.fromId(expense.category)
+    val payerId = expense.payers.keys.firstOrNull() ?: expense.creatorId
+    val payer = members.find { it.id == payerId }
+
     FairSplitCard(
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier.clickable(onClick = onClick),
+        backgroundColor = if (!expense.isMathValid) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val category = ExpenseCategory.fromId(expense.category)
-            Icon(
-                imageVector = if (!expense.isMathValid) Icons.Default.Warning else category.icon,
-                contentDescription = null,
-                tint = if (!expense.isMathValid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = expense.description,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+            if (!expense.isMathValid) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(40.dp)
                 )
+            } else {
+                CategoryIcon(category = category, size = 48.dp)
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = expense.description,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (payer != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        UserAvatar(
+                            photoUrl = payer.photoUrl, 
+                            name = payer.name, 
+                            size = 20.dp
+                        )
+                    }
+                }
+                
                 if (!expense.isMathValid) {
                     Text(
                         text = "Ошибка в расчетах",
@@ -443,7 +528,7 @@ fun ExpenseItem(
                     )
                 } else {
                     Text(
-                        text = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(expense.date)),
+                        text = SimpleDateFormat("dd MMM", Locale.getDefault()).format(Date(expense.date)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -489,19 +574,31 @@ fun PaymentItem(
 ) {
     FairSplitCard {
         Column(modifier = Modifier.padding(16.dp)) {
+            val payer = members.find { it.id == payment.payerId }
+            val receiver = members.find { it.id == payment.receiverId }
+            
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.AttachMoney,
-                    contentDescription = null,
-                    tint = Color(0xFF006400), // Green for money
-                    modifier = Modifier.size(32.dp)
-                )
+                if (payer != null) {
+                    UserAvatar(
+                        photoUrl = payer.photoUrl,
+                        name = payer.name,
+                        size = 48.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.AttachMoney,
+                        contentDescription = null,
+                        tint = Color(0xFF006400),
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    val payerName = members.find { it.id == payment.payerId }?.name ?: "..."
-                    val receiverName = members.find { it.id == payment.receiverId }?.name ?: "..."
+                    val payerName = payer?.name ?: "..."
+                    val receiverName = receiver?.name ?: "..."
                     
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -512,7 +609,7 @@ fun PaymentItem(
                         Icon(
                             imageVector = Icons.Default.ArrowForward,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp).padding(horizontal = 2.dp),
+                            modifier = Modifier.size(14.dp).padding(horizontal = 4.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
@@ -520,8 +617,17 @@ fun PaymentItem(
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodyMedium
                         )
+                        if (receiver != null) {
+                             Spacer(modifier = Modifier.width(4.dp))
+                             UserAvatar(
+                                photoUrl = receiver.photoUrl,
+                                name = receiver.name,
+                                size = 16.dp
+                             )
+                        }
                     }
                     
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = when(payment.status) {
                             PaymentStatus.PENDING -> "Ожидает подтверждения"
@@ -545,7 +651,6 @@ fun PaymentItem(
                 )
             }
 
-            // Action Buttons for Receiver
             if (currentUserId == payment.receiverId && payment.status == PaymentStatus.PENDING) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(

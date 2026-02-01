@@ -31,7 +31,8 @@ class CreatePaymentViewModel @Inject constructor(
 ) : BaseViewModel() {
 
     private val groupId: String = checkNotNull(savedStateHandle["groupId"])
-    private val prefillReceiverId: String? = savedStateHandle["receiverId"] 
+    private val prefillReceiverId: String? = savedStateHandle["receiverId"]
+    private val prefillAmount: String? = savedStateHandle["amount"]
 
     private val _uiState = MutableStateFlow(CreatePaymentUiState())
     val uiState: StateFlow<CreatePaymentUiState> = _uiState.asStateFlow()
@@ -57,7 +58,8 @@ class CreatePaymentViewModel @Inject constructor(
                         members = displayMembers,
                         currentUserId = currentUserId,
                         payerId = currentUserId,
-                        receiverId = prefillReceiverId
+                        receiverId = prefillReceiverId,
+                        amount = prefillAmount ?: ""
                     )
                 }
             } catch (e: Exception) {

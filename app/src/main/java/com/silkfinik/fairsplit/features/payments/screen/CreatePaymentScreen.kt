@@ -29,7 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
-import com.silkfinik.fairsplit.features.expenses.screen.PayerDropdown
+import com.silkfinik.fairsplit.features.expenses.screen.PayerSelectorPill
+import com.silkfinik.fairsplit.features.expenses.screen.BigAmountInput
 import com.silkfinik.fairsplit.features.payments.viewmodel.CreatePaymentViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +68,15 @@ fun CreatePaymentScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
+                    BigAmountInput(
+                        amount = uiState.amount,
+                        onAmountChange = viewModel::onAmountChange,
+                        currency = uiState.currency,
+                        readOnly = false
+                    )
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+
                     Text(
                         text = "Кому переводим",
                         style = MaterialTheme.typography.titleMedium,
@@ -82,31 +92,14 @@ fun CreatePaymentScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    // Filter out current user from receiver list
                     val possibleReceivers = uiState.members.filter { it.id != uiState.currentUserId }
                     
-                    PayerDropdown(
+                    PayerSelectorPill(
                         members = possibleReceivers,
-                        selectedPayerId = uiState.receiverId, // Reusing PayerDropdown for generic member selection
+                        selectedPayerId = uiState.receiverId,
                         currentUserId = uiState.currentUserId,
                         onPayerSelected = viewModel::onReceiverChange,
-                        isError = uiState.receiverError != null
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedTextField(
-                        value = uiState.amount,
-                        onValueChange = viewModel::onAmountChange,
-                        label = { Text("Сумма (${uiState.currency.symbol})") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
-                        isError = uiState.amountError != null,
-                        supportingText = {
-                            if (uiState.amountError != null) {
-                                Text(uiState.amountError!!)
-                            }
-                        }
+                        enabled = true
                     )
                     
                     Spacer(modifier = Modifier.height(24.dp))
