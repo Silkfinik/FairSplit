@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.groupdetails.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,13 +17,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -53,7 +57,9 @@ import com.silkfinik.fairsplit.core.common.util.CurrencyFormatter
 import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.model.Member
+import com.silkfinik.fairsplit.core.model.Payment
 import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
+import com.silkfinik.fairsplit.core.model.enums.PaymentStatus
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
 import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
@@ -65,13 +71,28 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
+sealed interface TransactionItem {
+    val id: String
+    val date: Long
+    
+    data class ExpenseItem(val expense: Expense) : TransactionItem {
+        override val id = expense.id
+        override val date = expense.date
+    }
+    data class PaymentItem(val payment: Payment) : TransactionItem {
+        override val id = payment.id
+        override val date = payment.createdAt
+    }
+}
+
 @Composable
 fun GroupDetailsScreen(
     viewModel: GroupDetailsViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
     onAddExpenseClick: (String) -> Unit,
     onEditExpenseClick: (String, String) -> Unit,
-    onMembersClick: (String) -> Unit
+    onMembersClick: (String) -> Unit,
+    onSettleUpClick: (String, String?) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isGeneratingCode by viewModel.isGeneratingCode.collectAsState()
@@ -175,7 +196,13 @@ fun GroupDetailsScreen(
                     )
                 }
                 is GroupDetailsUiState.Success -> {
-                    if (state.expenses.isEmpty()) {
+                    val transactions = remember(state.expenses, state.payments) {
+                        val exps = state.expenses.map { TransactionItem.ExpenseItem(it) }
+                        val pays = state.payments.map { TransactionItem.PaymentItem(it) }
+                        (exps + pays).sortedByDescending { it.date }
+                    }
+
+                    if (transactions.isEmpty()) {
                         FairSplitEmptyState(
                             modifier = Modifier.align(Alignment.Center),
                             icon = Icons.Default.Receipt,
@@ -188,16 +215,23 @@ fun GroupDetailsScreen(
                             BalanceSummary(
                                 balances = state.balances,
                                 members = state.members,
-                                group = state.group
+                                group = state.group,
+                                currentUserId = state.currentUserId,
+                                onSettleUp = { receiverId -> onSettleUpClick(state.group.id, receiverId) }
                             )
                             
-                            // Expenses List
-                            ExpensesList(
-                                expenses = state.expenses,
+                            // Transactions List
+                            TransactionsList(
+                                transactions = transactions,
+                                members = state.members,
                                 currentUserId = state.currentUserId,
+                                group = state.group,
                                 onDeleteExpense = { expenseToDelete = it },
                                 onEditExpense = { expense ->
                                     onEditExpenseClick(state.group.id, expense.id)
+                                },
+                                onPaymentAction = { payment, status ->
+                                    viewModel.updatePaymentStatus(payment.id, status)
                                 }
                             )
                         }
@@ -266,7 +300,9 @@ fun InviteDialog(
 fun BalanceSummary(
     balances: Map<String, Double>,
     members: List<Member>,
-    group: Group
+    group: Group,
+    currentUserId: String?,
+    onSettleUp: (String) -> Unit
 ) {
     val activeBalances = balances.filter { abs(it.value) > 0.01 }
     
@@ -288,34 +324,42 @@ fun BalanceSummary(
                     val memberName = members.find { it.id == memberId }?.name ?: "Неизвестный"
                     val isCreditor = balance > 0
                     val amountText = CurrencyFormatter.format(abs(balance), group.currency)
-                    val text = if (isCreditor) {
-                        "$memberName должны вернуть $amountText"
-                    } else {
-                        "$memberName должен $amountText"
-                    }
-                    val textColor = if (isCreditor) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                         // A bit reddish for debt, but still readable on container
-                        Color(0xFFB00020) 
-                    }
-
+                    
+                    val isMe = memberId == currentUserId
+                    
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = memberName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = if (isCreditor) "+$amountText" else "-$amountText",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isCreditor) Color(0xFF006400) else Color(0xFFB00020)
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = memberName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = if (isCreditor) "+$amountText" else "-$amountText",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isCreditor) Color(0xFF006400) else Color(0xFFB00020)
+                            )
+                        }
+                        
+                        // Show "Settle Up" if I owe money (negative balance)
+                        if (isMe && !isCreditor) {
+                            TextButton(
+                                onClick = { /* Logic to find who I owe is complex here, so we just open generic settle up */ onSettleUp("") },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            ) {
+                                Text("Вернуть")
+                            }
+                        }
                     }
                 }
             }
@@ -324,23 +368,40 @@ fun BalanceSummary(
 }
 
 @Composable
-fun ExpensesList(
-    expenses: List<Expense>,
+fun TransactionsList(
+    transactions: List<TransactionItem>,
+    members: List<Member>,
     currentUserId: String?,
+    group: Group,
     onDeleteExpense: (Expense) -> Unit,
-    onEditExpense: (Expense) -> Unit
+    onEditExpense: (Expense) -> Unit,
+    onPaymentAction: (Payment, PaymentStatus) -> Unit
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(expenses) { expense ->
-            ExpenseItem(
-                expense = expense,
-                isEditable = expense.creatorId == currentUserId,
-                onDelete = { onDeleteExpense(expense) },
-                onEdit = { onEditExpense(expense) }
-            )
+        items(transactions) { item ->
+            when (item) {
+                is TransactionItem.ExpenseItem -> {
+                    ExpenseItem(
+                        expense = item.expense,
+                        isEditable = item.expense.creatorId == currentUserId,
+                        onDelete = { onDeleteExpense(item.expense) },
+                        onEdit = { onEditExpense(item.expense) },
+                        onClick = { onEditExpense(item.expense) }
+                    )
+                }
+                is TransactionItem.PaymentItem -> {
+                    PaymentItem(
+                        payment = item.payment,
+                        members = members,
+                        group = group,
+                        currentUserId = currentUserId,
+                        onAction = { status -> onPaymentAction(item.payment, status) }
+                    )
+                }
+            }
         }
     }
 }
@@ -350,9 +411,12 @@ fun ExpenseItem(
     expense: Expense,
     isEditable: Boolean,
     onDelete: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onClick: () -> Unit
 ) {
-    FairSplitCard {
+    FairSplitCard(
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -409,6 +473,98 @@ fun ExpenseItem(
                         contentDescription = "Удалить",
                         tint = MaterialTheme.colorScheme.error
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PaymentItem(
+    payment: Payment,
+    members: List<Member>,
+    group: Group,
+    currentUserId: String?,
+    onAction: (PaymentStatus) -> Unit
+) {
+    FairSplitCard {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AttachMoney,
+                    contentDescription = null,
+                    tint = Color(0xFF006400), // Green for money
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    val payerName = members.find { it.id == payment.payerId }?.name ?: "..."
+                    val receiverName = members.find { it.id == payment.receiverId }?.name ?: "..."
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = payerName,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp).padding(horizontal = 2.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = receiverName,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    
+                    Text(
+                        text = when(payment.status) {
+                            PaymentStatus.PENDING -> "Ожидает подтверждения"
+                            PaymentStatus.CONFIRMED -> "Подтверждено"
+                            PaymentStatus.REJECTED -> "Отклонено"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = when(payment.status) {
+                            PaymentStatus.PENDING -> MaterialTheme.colorScheme.primary
+                            PaymentStatus.CONFIRMED -> Color(0xFF006400)
+                            PaymentStatus.REJECTED -> MaterialTheme.colorScheme.error
+                        }
+                    )
+                }
+                
+                Text(
+                    text = CurrencyFormatter.format(payment.amount, group.currency),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF006400)
+                )
+            }
+
+            // Action Buttons for Receiver
+            if (currentUserId == payment.receiverId && payment.status == PaymentStatus.PENDING) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = { onAction(PaymentStatus.REJECTED) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Отклонить")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = { onAction(PaymentStatus.CONFIRMED) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF006400))
+                    ) {
+                        Text("Подтвердить")
+                    }
                 }
             }
         }

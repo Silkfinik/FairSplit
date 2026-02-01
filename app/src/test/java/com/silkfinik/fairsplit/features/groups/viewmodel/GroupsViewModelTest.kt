@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.groups.viewmodel
 
+import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupsUseCase
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Group
@@ -25,6 +26,7 @@ class GroupsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getGroupsUseCase: GetGroupsUseCase = mockk()
+    private val groupRepository: GroupRepository = mockk()
     private lateinit var viewModel: GroupsViewModel
 
     @Test
@@ -35,7 +37,7 @@ class GroupsViewModelTest {
         )
         every { getGroupsUseCase() } returns flowOf(groups)
 
-        viewModel = GroupsViewModel(getGroupsUseCase)
+        viewModel = GroupsViewModel(getGroupsUseCase, groupRepository)
 
         val collectJob = launch(UnconfinedTestDispatcher()) {
             viewModel.uiState.collect()

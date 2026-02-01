@@ -2,6 +2,7 @@ package com.silkfinik.fairsplit.features.groupdetails.ui
 
 import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.model.Group
+import com.silkfinik.fairsplit.core.model.Payment
 
 sealed interface GroupDetailsUiState {
     data object Loading : GroupDetailsUiState
@@ -9,6 +10,7 @@ sealed interface GroupDetailsUiState {
         val group: Group,
         val members: List<com.silkfinik.fairsplit.core.model.Member>,
         val expenses: List<Expense>,
+        val payments: List<Payment> = emptyList(),
         val balances: Map<String, Double> = emptyMap(),
         val currentUserId: String? = null
     ) : GroupDetailsUiState

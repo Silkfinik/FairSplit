@@ -1,11 +1,11 @@
 package com.silkfinik.fairsplit.features.groupdetails.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.common.util.onError
+import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.member.AddGhostMemberUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.DeleteExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.GetCurrentUserIdUseCase
@@ -13,6 +13,8 @@ import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpensesUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.CalculateGroupBalanceUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SyncGroupExpensesUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.payment.GetGroupPaymentsUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.payment.SyncGroupPaymentsUseCase
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.model.Member
@@ -33,13 +35,16 @@ class GroupDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getGroupUseCase: GetGroupUseCase,
     private val getExpensesUseCase: GetExpensesUseCase,
+    private val getGroupPaymentsUseCase: GetGroupPaymentsUseCase,
     private val getMembersUseCase: com.silkfinik.fairsplit.core.domain.usecase.member.GetMembersUseCase,
     private val getCurrentUserIdUseCase: GetCurrentUserIdUseCase,
     private val addGhostMemberUseCase: AddGhostMemberUseCase,
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
     private val syncGroupExpensesUseCase: SyncGroupExpensesUseCase,
+    private val syncGroupPaymentsUseCase: SyncGroupPaymentsUseCase,
     private val groupRepository: GroupRepository,
-    private val calculateGroupBalanceUseCase: CalculateGroupBalanceUseCase
+    private val calculateGroupBalanceUseCase: CalculateGroupBalanceUseCase,
+    private val updatePaymentStatusUseCase: com.silkfinik.fairsplit.core.domain.usecase.payment.UpdatePaymentStatusUseCase
 ) : BaseViewModel() {
 
     private val groupId: String = checkNotNull(savedStateHandle["groupId"])
@@ -50,25 +55,20 @@ class GroupDetailsViewModel @Inject constructor(
     val uiState: StateFlow<GroupDetailsUiState> = combine(
         getGroupUseCase(groupId),
         getExpensesUseCase(groupId),
+        getGroupPaymentsUseCase(groupId),
         getMembersUseCase(groupId),
         getCurrentUserIdUseCase()
-    ) { group, expenses, members, userId ->
-        Log.d("GroupDetails", "UI Update for group $groupId. Members found: ${members.size}. Expenses: ${expenses.size}")
-        members.forEach { m -> Log.d("GroupDetails", "Member in list: ${m.id} (${m.name})") }
-        
+    ) { group, expenses, payments, members, userId ->
         if (group == null) {
             GroupDetailsUiState.Error("Группа не найдена")
         } else {
-            val balances = calculateGroupBalanceUseCase(expenses, members)
-            balances.forEach { (id, amount) -> 
-                val found = members.find { it.id == id }
-                Log.d("GroupDetails", "Balance for $id: $amount. Found name: ${found?.name}") 
-            }
+            val balances = calculateGroupBalanceUseCase(expenses, members, payments)
             
             GroupDetailsUiState.Success(
                 group = group, 
                 members = members,
                 expenses = expenses,
+                payments = payments,
                 balances = balances,
                 currentUserId = userId
             )
@@ -81,11 +81,13 @@ class GroupDetailsViewModel @Inject constructor(
 
     init {
         syncGroupExpensesUseCase.start(groupId)
+        syncGroupPaymentsUseCase.start(groupId)
     }
 
     override fun onCleared() {
         super.onCleared()
         syncGroupExpensesUseCase.stop(groupId)
+        syncGroupPaymentsUseCase.stop(groupId)
     }
 
     fun addGhostMember(name: String) {
@@ -102,6 +104,18 @@ class GroupDetailsViewModel @Inject constructor(
             deleteExpenseUseCase(expenseId)
                 .onError { message, _ ->
                     sendEvent(UiEvent.ShowSnackbar(message))
+                }
+        }
+    }
+
+    fun updatePaymentStatus(paymentId: String, newStatus: com.silkfinik.fairsplit.core.model.enums.PaymentStatus) {
+        viewModelScope.launch {
+            updatePaymentStatusUseCase(paymentId, newStatus)
+                .onError { message, _ ->
+                    sendEvent(UiEvent.ShowSnackbar(message))
+                }
+                .onSuccess {
+                    sendEvent(UiEvent.ShowSnackbar("Статус обновлен"))
                 }
         }
     }

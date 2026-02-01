@@ -15,6 +15,15 @@ data class ExpenseDto(
     
     val payers: Map<String, Double> = emptyMap(),
     val splits: Map<String, Double> = emptyMap(),
+
+    @get:PropertyName("split_type")
+    @set:PropertyName("split_type")
+    var splitType: String = "EQUAL",
+
+    @get:PropertyName("split_data")
+    @set:PropertyName("split_data")
+    var splitData: Map<String, Double> = emptyMap(),
+
     val category: String? = null,
     
     @get:PropertyName("is_deleted")

@@ -12,6 +12,7 @@ import com.silkfinik.fairsplit.core.domain.usecase.expense.SaveExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.member.GetMembersUseCase
 import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
+import com.silkfinik.fairsplit.core.model.enums.SplitType
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.expenses.ui.CreateExpenseUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlin.math.round
 
 @HiltViewModel
 class CreateExpenseViewModel @Inject constructor(
@@ -61,34 +63,78 @@ class CreateExpenseViewModel @Inject constructor(
                 if (expenseId != null) {
                     val expense = getExpenseUseCase(expenseId).first()
                     if (expense != null) {
-                        var payerId = expense.payers.keys.firstOrNull()
-                        val ghostPayerName = if (redirectMap.containsKey(payerId)) allMembers.find { it.id == payerId }?.name else null
-                        payerId = redirectMap[payerId] ?: payerId
+                        val originalPayerId = expense.payers.keys.firstOrNull()
+                        val payerId = redirectMap[originalPayerId] ?: originalPayerId
 
-                        val resolvedSplits = expense.splits.mapKeys { (key, _) -> 
-                            redirectMap[key] ?: key 
+                        // Merge splits logic: Sum amounts if multiple original members map to the same target user
+                        val resolvedSplits = mutableMapOf<String, Double>()
+                        expense.splits.forEach { (originalId, amount) ->
+                            val targetId = redirectMap[originalId] ?: originalId
+                            val currentAmount = resolvedSplits[targetId] ?: 0.0
+                            resolvedSplits[targetId] = currentAmount + amount
+                        }
+                        
+                        // Merge splitData logic
+                        val resolvedSplitData = mutableMapOf<String, Double>()
+                        expense.splitData.forEach { (originalId, value) ->
+                            val targetId = redirectMap[originalId] ?: originalId
+                            val currentValue = resolvedSplitData[targetId] ?: 0.0
+                            resolvedSplitData[targetId] = currentValue + value
                         }
 
-                        displayMembers = displayMembers.map { member ->
-                            var newName = member.name
-                            if (member.id == payerId && ghostPayerName != null) {
-                                newName += " ($ghostPayerName)"
+                        // Collect names of ghosts involved in this expense
+                        val redirectedNamesMap = mutableMapOf<String, MutableSet<String>>()
+                        
+                        // Check payer redirect
+                        if (originalPayerId != null && redirectMap.containsKey(originalPayerId)) {
+                            val targetId = redirectMap[originalPayerId]!!
+                            allMembers.find { it.id == originalPayerId }?.name?.let { 
+                                redirectedNamesMap.getOrPut(targetId) { mutableSetOf() }.add(it)
                             }
-                            member.copy(name = newName)
+                        }
+                        
+                        // Check splits redirect
+                        expense.splits.keys.forEach { originalId ->
+                            if (redirectMap.containsKey(originalId)) {
+                                val targetId = redirectMap[originalId]!!
+                                allMembers.find { it.id == originalId }?.name?.let {
+                                    redirectedNamesMap.getOrPut(targetId) { mutableSetOf() }.add(it)
+                                }
+                            }
+                        }
+                        
+                        // Rename members
+                        displayMembers = displayMembers.map { member ->
+                            val ghostNames = redirectedNamesMap[member.id]
+                            if (!ghostNames.isNullOrEmpty()) {
+                                member.copy(name = "${member.name} (${ghostNames.joinToString(", ")})")
+                            } else {
+                                member
+                            }
+                        }
+                        
+                        val initialSelected = if (expense.splitType == SplitType.EQUAL) {
+                            resolvedSplits.keys
+                        } else {
+                             resolvedSplitData.keys.ifEmpty { resolvedSplits.keys }
                         }
 
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
                                 isEditing = true,
+                                isReadOnly = expense.creatorId != currentUserId,
                                 currency = group.currency,
                                 members = displayMembers,
                                 description = expense.description,
                                 amount = expense.amount.toString(),
                                 category = ExpenseCategory.fromId(expense.category),
                                 payerId = payerId,
+                                currentUserId = currentUserId,
                                 splits = resolvedSplits,
-                                selectedSplitMemberIds = resolvedSplits.keys
+                                splitType = expense.splitType,
+                                splitData = resolvedSplitData,
+                                selectedSplitMemberIds = initialSelected
                             )
                         }
                     } else {
@@ -142,7 +188,35 @@ class CreateExpenseViewModel @Inject constructor(
         _uiState.update { it.copy(payerId = payerId, payerError = null) }
     }
 
+    fun onSplitTypeChange(type: SplitType) {
+        _uiState.update { it.copy(splitType = type, splitError = null) }
+        recalculateSplits()
+    }
+
+    fun onSplitDataChange(memberId: String, value: String) {
+        val doubleValue = value.toDoubleOrNull()
+        
+        val currentSplitData = _uiState.value.splitData.toMutableMap()
+        if (doubleValue != null && doubleValue >= 0) {
+            currentSplitData[memberId] = doubleValue
+        } else {
+            currentSplitData.remove(memberId)
+        }
+        
+        // Update selected members based on data input for non-equal splits
+        val currentSelected = _uiState.value.selectedSplitMemberIds.toMutableSet()
+        if (value.isNotBlank() && doubleValue != null && doubleValue > 0) {
+            currentSelected.add(memberId)
+        } else {
+            currentSelected.remove(memberId)
+        }
+
+        _uiState.update { it.copy(splitData = currentSplitData, selectedSplitMemberIds = currentSelected) }
+        recalculateSplits()
+    }
+
     fun onSplitMemberToggle(memberId: String) {
+        // Only for EQUAL split or just toggling selection state
         val currentIds = _uiState.value.selectedSplitMemberIds.toMutableSet()
         if (currentIds.contains(memberId)) {
             currentIds.remove(memberId)
@@ -165,19 +239,65 @@ class CreateExpenseViewModel @Inject constructor(
     }
 
     private fun recalculateSplits() {
-        val amount = _uiState.value.amount.toDoubleOrNull() ?: 0.0
-        val selectedIds = _uiState.value.selectedSplitMemberIds
-        val count = selectedIds.size
+        val state = _uiState.value
+        val amount = state.amount.toDoubleOrNull() ?: 0.0
+        val selectedIds = state.selectedSplitMemberIds
+        val splitData = state.splitData
+        
+        var newSplits = emptyMap<String, Double>()
+        var error: String? = null
 
-        val newSplits = if (count > 0 && amount > 0) {
-            val splitAmount = amount / count
-            selectedIds.associateWith { splitAmount }
-        } else {
-            emptyMap()
+        if (amount <= 0) {
+            _uiState.update { it.copy(splits = emptyMap(), splitError = null) }
+            return
         }
 
-        val splitError = if (selectedIds.isEmpty()) "Выберите хотя бы одного" else null
-        _uiState.update { it.copy(splits = newSplits, splitError = splitError) }
+        when (state.splitType) {
+            SplitType.EQUAL -> {
+                val count = selectedIds.size
+                if (count > 0) {
+                    val splitAmount = amount / count
+                    newSplits = selectedIds.associateWith { splitAmount }
+                } else {
+                    error = "Выберите хотя бы одного"
+                }
+            }
+            SplitType.EXACT -> {
+                // Sum of entered amounts
+                val currentSum = splitData.values.sum()
+                newSplits = splitData.filterValues { it > 0 }
+                
+                if (abs(amount - currentSum) > 0.02) {
+                     val diff = amount - currentSum
+                     val diffStr = String.format("%.2f", abs(diff))
+                     error = if (diff > 0) "Осталось распределить: $diffStr" else "Перебор: $diffStr"
+                }
+            }
+            SplitType.PERCENT -> {
+                 val currentPercentSum = splitData.values.sum()
+                 if (abs(100.0 - currentPercentSum) > 0.01) {
+                     val diff = 100.0 - currentPercentSum
+                     val diffStr = String.format("%.2f", abs(diff))
+                     error = if (diff > 0) "Осталось: $diffStr%" else "Перебор: $diffStr%"
+                 }
+                 
+                 newSplits = splitData.filterValues { it > 0 }.mapValues { (_, percent) ->
+                     amount * (percent / 100.0)
+                 }
+            }
+            SplitType.SHARES -> {
+                val totalShares = splitData.values.sum()
+                if (totalShares > 0) {
+                    newSplits = splitData.filterValues { it > 0 }.mapValues { (_, share) ->
+                         amount * (share / totalShares)
+                    }
+                } else {
+                    error = "Введите доли"
+                }
+            }
+        }
+
+        _uiState.update { it.copy(splits = newSplits, splitError = error) }
     }
 
     fun onSaveClick() {
@@ -187,9 +307,14 @@ class CreateExpenseViewModel @Inject constructor(
         val amountVal = currentState.amount.toDoubleOrNull()
         val amountError = if (amountVal == null || amountVal <= 0) "Введите сумму" else null
         val payerError = if (currentState.payerId == null) "Выберите плательщика" else null
-        val splitError = if (currentState.splits.isEmpty()) "Выберите, на кого делить" else null
+        
+        // Re-validate logic based on recalculateSplits
+        recalculateSplits() // Ensure state is fresh
+        val updatedState = _uiState.value
+        val splitError = updatedState.splitError
 
-        val totalSplit = currentState.splits.values.sum()
+        // Extra check for split sum matching total (mostly for EXACT mode, but good safety net)
+        val totalSplit = updatedState.splits.values.sum()
         val difference = if (amountVal != null) abs(amountVal - totalSplit) else 0.0
         val balanceError = if (difference > 0.02) "Сумма сплита не совпадает с общей суммой" else null
 
@@ -217,7 +342,9 @@ class CreateExpenseViewModel @Inject constructor(
                 amount = amount,
                 category = currentState.category.id,
                 payerId = currentState.payerId!!,
-                splits = currentState.splits
+                splits = currentState.splits,
+                splitType = currentState.splitType,
+                splitData = currentState.splitData
             )
 
             saveExpenseUseCase(params)
@@ -234,5 +361,9 @@ class CreateExpenseViewModel @Inject constructor(
     
     fun isMemberSelected(memberId: String): Boolean {
         return _uiState.value.selectedSplitMemberIds.contains(memberId)
+    }
+    
+    fun getSplitValue(memberId: String): String {
+        return _uiState.value.splitData[memberId]?.toString()?.removeSuffix(".0") ?: ""
     }
 }

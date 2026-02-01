@@ -28,4 +28,14 @@ sealed class Screen(val route: String) {
     data object ExpenseHistory : Screen("expense_history/{groupId}/{expenseId}") {
         fun createRoute(groupId: String, expenseId: String) = "expense_history/$groupId/$expenseId"
     }
+
+    data object CreatePayment : Screen("create_payment/{groupId}?receiverId={receiverId}") {
+        fun createRoute(groupId: String, receiverId: String? = null): String {
+            return if (receiverId != null) {
+                "create_payment/$groupId?receiverId=$receiverId"
+            } else {
+                "create_payment/$groupId"
+            }
+        }
+    }
 }

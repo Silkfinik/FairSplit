@@ -2,6 +2,7 @@ package com.silkfinik.fairsplit.core.database.util
 
 import androidx.room.TypeConverter
 import com.silkfinik.fairsplit.core.model.Currency
+import com.silkfinik.fairsplit.core.model.enums.PaymentStatus
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -17,6 +18,20 @@ class Converters {
             Currency.valueOf(value)
         } catch (e: IllegalArgumentException) {
             Currency.USD
+        }
+    }
+
+    @TypeConverter
+    fun fromPaymentStatus(status: PaymentStatus): String {
+        return status.name
+    }
+
+    @TypeConverter
+    fun toPaymentStatus(value: String): PaymentStatus {
+        return try {
+            PaymentStatus.valueOf(value)
+        } catch (e: IllegalArgumentException) {
+            PaymentStatus.PENDING
         }
     }
 

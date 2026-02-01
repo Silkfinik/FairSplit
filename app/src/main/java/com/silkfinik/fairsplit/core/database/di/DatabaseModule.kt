@@ -6,6 +6,7 @@ import com.silkfinik.fairsplit.core.database.AppDatabase
 import com.silkfinik.fairsplit.core.database.dao.ExpenseDao
 import com.silkfinik.fairsplit.core.database.dao.GroupDao
 import com.silkfinik.fairsplit.core.database.dao.MemberDao
+import com.silkfinik.fairsplit.core.database.dao.PaymentDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -44,5 +45,10 @@ object DatabaseModule {
     @Provides
     fun provideExpenseDao(database: AppDatabase): ExpenseDao {
         return database.expenseDao()
+    }
+
+    @Provides
+    fun providePaymentDao(database: AppDatabase): PaymentDao {
+        return database.paymentDao()
     }
 }

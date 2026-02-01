@@ -3,6 +3,7 @@ package com.silkfinik.fairsplit.core.data.mapper
 import com.silkfinik.fairsplit.core.database.entity.ExpenseEntity
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Expense
+import com.silkfinik.fairsplit.core.model.enums.SplitType
 import com.silkfinik.fairsplit.core.network.model.ExpenseDto
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -19,6 +20,8 @@ class ExpenseMapperTest {
         creatorId = "user1",
         payers = mapOf("user1" to 100.0),
         splits = mapOf("user1" to 50.0, "user2" to 50.0),
+        splitType = SplitType.EQUAL,
+        splitData = emptyMap(),
         category = "Food",
         isDeleted = false,
         createdAt = 2000L,
@@ -36,6 +39,8 @@ class ExpenseMapperTest {
         creatorId = "user1",
         payers = mapOf("user1" to 100.0),
         splits = mapOf("user1" to 50.0, "user2" to 50.0),
+        splitType = SplitType.EQUAL,
+        splitData = emptyMap(),
         category = "Food",
         isDeleted = false,
         createdAt = 2000L,
@@ -51,6 +56,8 @@ class ExpenseMapperTest {
         creatorId = "user1",
         payers = mapOf("user1" to 100.0),
         splits = mapOf("user1" to 50.0, "user2" to 50.0),
+        splitType = "EQUAL",
+        splitData = emptyMap(),
         category = "Food",
         isDeleted = false,
         createdAt = 2000L,

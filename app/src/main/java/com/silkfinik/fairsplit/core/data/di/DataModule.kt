@@ -5,10 +5,12 @@ import com.silkfinik.fairsplit.core.data.repository.FirebaseUserRepository
 import com.silkfinik.fairsplit.core.data.repository.OfflineExpenseRepository
 import com.silkfinik.fairsplit.core.data.repository.OfflineGroupRepository
 import com.silkfinik.fairsplit.core.data.repository.OfflineMemberRepository
+import com.silkfinik.fairsplit.core.data.repository.PaymentRepositoryImpl
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.ExpenseRepository
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.repository.MemberRepository
+import com.silkfinik.fairsplit.core.domain.repository.PaymentRepository
 import com.silkfinik.fairsplit.core.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
@@ -43,4 +45,9 @@ abstract class DataModule {
     abstract fun bindUserRepository(
         impl: FirebaseUserRepository
     ): UserRepository
+
+    @Binds
+    abstract fun bindPaymentRepository(
+        impl: PaymentRepositoryImpl
+    ): PaymentRepository
 }

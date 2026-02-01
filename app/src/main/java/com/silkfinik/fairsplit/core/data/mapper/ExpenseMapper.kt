@@ -3,6 +3,7 @@ package com.silkfinik.fairsplit.core.data.mapper
 import com.silkfinik.fairsplit.core.database.entity.ExpenseEntity
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Expense
+import com.silkfinik.fairsplit.core.model.enums.SplitType
 import com.silkfinik.fairsplit.core.network.model.ExpenseDto
 
 fun ExpenseEntity.asDomainModel(): Expense {
@@ -16,6 +17,8 @@ fun ExpenseEntity.asDomainModel(): Expense {
         creatorId = creatorId,
         payers = payers,
         splits = splits,
+        splitType = splitType,
+        splitData = splitData,
         category = category,
         isDeleted = isDeleted,
         isMathValid = isMathValid,
@@ -35,6 +38,8 @@ fun Expense.asEntity(isDirty: Boolean = true): ExpenseEntity {
         creatorId = creatorId,
         payers = payers,
         splits = splits,
+        splitType = splitType,
+        splitData = splitData,
         category = category,
         isDeleted = isDeleted,
         isMathValid = isMathValid,
@@ -54,6 +59,8 @@ fun ExpenseEntity.asDto(): ExpenseDto {
         creatorId = creatorId,
         payers = payers,
         splits = splits,
+        splitType = splitType.name,
+        splitData = splitData,
         category = category,
         isDeleted = isDeleted,
         isMathValid = isMathValid,
@@ -73,6 +80,8 @@ fun ExpenseDto.asEntity(groupId: String): ExpenseEntity {
         creatorId = creatorId,
         payers = payers,
         splits = splits,
+        splitType = SplitType.fromName(splitType),
+        splitData = splitData,
         category = category,
         isDeleted = isDeleted,
         isMathValid = isMathValid,

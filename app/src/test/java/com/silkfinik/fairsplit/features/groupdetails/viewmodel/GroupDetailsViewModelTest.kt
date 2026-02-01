@@ -3,10 +3,12 @@ package com.silkfinik.fairsplit.features.groupdetails.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.usecase.auth.GetCurrentUserIdUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.DeleteExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpensesUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SyncGroupExpensesUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.group.CalculateGroupBalanceUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.member.AddGhostMemberUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.member.GetMembersUseCase
@@ -48,13 +50,33 @@ class GroupDetailsViewModelTest {
     private val addGhostMemberUseCase: AddGhostMemberUseCase = mockk()
     private val deleteExpenseUseCase: DeleteExpenseUseCase = mockk()
     private val syncGroupExpensesUseCase: SyncGroupExpensesUseCase = mockk(relaxed = true)
+    private val groupRepository: GroupRepository = mockk(relaxed = true)
+    private val calculateGroupBalanceUseCase = CalculateGroupBalanceUseCase() // Real instance as it has no dependencies
 
     private lateinit var viewModel: GroupDetailsViewModel
 
     private val groupId = "group1"
     private val testGroup = Group(groupId, "Test Group", Currency.USD)
-    private val testMember1 = Member("u1", groupId, "User 1", null, false, 0, 0)
-    private val testMember2 = Member("u2", groupId, "User 2", null, false, 0, 0)
+    private val testMember1 = Member(
+        id = "u1",
+        groupId = groupId,
+        name = "User 1",
+        photoUrl = null,
+        isGhost = false,
+        mergedWithUid = null,
+        createdAt = 0,
+        updatedAt = 0
+    )
+    private val testMember2 = Member(
+        id = "u2",
+        groupId = groupId,
+        name = "User 2",
+        photoUrl = null,
+        isGhost = false,
+        mergedWithUid = null,
+        createdAt = 0,
+        updatedAt = 0
+    )
     private val testMembers = listOf(testMember1, testMember2)
     private val currentUserId = "u1"
 
@@ -77,7 +99,9 @@ class GroupDetailsViewModelTest {
             getCurrentUserIdUseCase,
             addGhostMemberUseCase,
             deleteExpenseUseCase,
-            syncGroupExpensesUseCase
+            syncGroupExpensesUseCase,
+            groupRepository,
+            calculateGroupBalanceUseCase
         )
     }
 

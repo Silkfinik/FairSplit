@@ -3,6 +3,7 @@ package com.silkfinik.fairsplit.features.expenses.ui
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
+import com.silkfinik.fairsplit.core.model.enums.SplitType
 
 data class CreateExpenseUiState(
     val isLoading: Boolean = false,
@@ -14,6 +15,8 @@ data class CreateExpenseUiState(
     val payerId: String? = null,
     val currentUserId: String? = null,
     val selectedSplitMemberIds: Set<String> = emptySet(),
+    val splitType: SplitType = SplitType.EQUAL,
+    val splitData: Map<String, Double> = emptyMap(),
     val splits: Map<String, Double> = emptyMap(),
     val error: String? = null,
     val descriptionError: String? = null,
@@ -21,6 +24,7 @@ data class CreateExpenseUiState(
     val payerError: String? = null,
     val splitError: String? = null,
     val isEditing: Boolean = false,
+    val isReadOnly: Boolean = false,
     val isSaved: Boolean = false
 ) {
     val isValid: Boolean

@@ -1,5 +1,7 @@
 package com.silkfinik.fairsplit.core.model
 
+import com.silkfinik.fairsplit.core.model.enums.SplitType
+
 data class Expense(
     val id: String,
     val groupId: String,
@@ -10,6 +12,8 @@ data class Expense(
     val creatorId: String,
     val payers: Map<String, Double>,
     val splits: Map<String, Double>,
+    val splitType: SplitType = SplitType.EQUAL,
+    val splitData: Map<String, Double> = emptyMap(),
     val category: String? = null,
     val isDeleted: Boolean = false,
     val isMathValid: Boolean = true,

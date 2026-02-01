@@ -27,6 +27,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+import com.silkfinik.fairsplit.core.model.enums.SplitType
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateExpenseViewModelTest {
 
@@ -175,5 +177,64 @@ class CreateExpenseViewModelTest {
         
         assertEquals("Введите описание", viewModel.uiState.value.descriptionError)
         coVerify(exactly = 0) { saveExpenseUseCase(any()) }
+    }
+
+    @Test
+    fun `recalculateSplits EXACT works correctly`() = runTest {
+        createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onAmountChange("100")
+        viewModel.onSplitTypeChange(SplitType.EXACT)
+        viewModel.onSplitDataChange(testMember1.id, "40")
+        viewModel.onSplitDataChange(testMember2.id, "60")
+
+        val state = viewModel.uiState.value
+        assertEquals(40.0, state.splits[testMember1.id])
+        assertEquals(60.0, state.splits[testMember2.id])
+        assertNull(state.splitError)
+    }
+
+    @Test
+    fun `recalculateSplits PERCENT works correctly`() = runTest {
+        createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onAmountChange("200")
+        viewModel.onSplitTypeChange(SplitType.PERCENT)
+        viewModel.onSplitDataChange(testMember1.id, "50")
+        viewModel.onSplitDataChange(testMember2.id, "50")
+
+        val state = viewModel.uiState.value
+        assertEquals(100.0, state.splits[testMember1.id])
+        assertEquals(100.0, state.splits[testMember2.id])
+        assertNull(state.splitError)
+    }
+
+    @Test
+    fun `recalculateSplits SHARES works correctly`() = runTest {
+        createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onAmountChange("300")
+        viewModel.onSplitTypeChange(SplitType.SHARES)
+        viewModel.onSplitDataChange(testMember1.id, "1")
+        viewModel.onSplitDataChange(testMember2.id, "2")
+
+        val state = viewModel.uiState.value
+        assertEquals(100.0, state.splits[testMember1.id])
+        assertEquals(200.0, state.splits[testMember2.id])
+        assertNull(state.splitError)
+    }
+
+    @Test
+    fun `onSplitDataChange updates splitData`() = runTest {
+        createViewModel()
+        advanceUntilIdle()
+
+        viewModel.onSplitDataChange(testMember1.id, "10.5")
+        
+        val state = viewModel.uiState.value
+        assertEquals(10.5, state.splitData[testMember1.id])
     }
 }

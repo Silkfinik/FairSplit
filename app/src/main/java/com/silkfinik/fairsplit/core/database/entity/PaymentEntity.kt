@@ -6,11 +6,10 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.silkfinik.fairsplit.core.model.Currency
-
-import com.silkfinik.fairsplit.core.model.enums.SplitType
+import com.silkfinik.fairsplit.core.model.enums.PaymentStatus
 
 @Entity(
-    tableName = "expenses",
+    tableName = "payments",
     foreignKeys = [
         ForeignKey(
             entity = GroupEntity::class,
@@ -21,22 +20,14 @@ import com.silkfinik.fairsplit.core.model.enums.SplitType
     ],
     indices = [Index(value = ["group_id"])]
 )
-data class ExpenseEntity(
+data class PaymentEntity(
     @PrimaryKey val id: String,
     @ColumnInfo(name = "group_id") val groupId: String,
-    val description: String,
+    @ColumnInfo(name = "payer_id") val payerId: String,
+    @ColumnInfo(name = "receiver_id") val receiverId: String,
     val amount: Double,
     val currency: Currency,
-    val date: Long,
-    @ColumnInfo(name = "creator_id") val creatorId: String,
-    val payers: Map<String, Double>,
-    val splits: Map<String, Double>,
-    @ColumnInfo(name = "split_type") val splitType: SplitType = SplitType.EQUAL,
-    @ColumnInfo(name = "split_data") val splitData: Map<String, Double> = emptyMap(),
-    val category: String? = null,
-    @ColumnInfo(name = "is_deleted") val isDeleted: Boolean = false,
-    @ColumnInfo(name = "is_math_valid") val isMathValid: Boolean = true,
-
+    val status: PaymentStatus,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     @ColumnInfo(name = "is_dirty") val isDirty: Boolean = true

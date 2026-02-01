@@ -14,6 +14,8 @@ import com.silkfinik.fairsplit.features.groups.screen.CreateGroupScreen
 import com.silkfinik.fairsplit.features.groups.screen.GroupsListScreen
 import com.silkfinik.fairsplit.features.members.screen.MembersScreen
 
+import com.silkfinik.fairsplit.features.payments.screen.CreatePaymentScreen
+
 @Composable
 fun AppNavHost(
     navController: NavHostController,
@@ -57,6 +59,9 @@ fun AppNavHost(
                 },
                 onMembersClick = { groupId ->
                     navController.navigate(Screen.Members.createRoute(groupId))
+                },
+                onSettleUpClick = { groupId, receiverId ->
+                    navController.navigate(Screen.CreatePayment.createRoute(groupId, receiverId))
                 }
             )
         }
@@ -102,6 +107,22 @@ fun AppNavHost(
             arguments = listOf(navArgument("groupId") { type = NavType.StringType })
         ) {
             MembersScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.CreatePayment.route,
+            arguments = listOf(
+                navArgument("groupId") { type = NavType.StringType },
+                navArgument("receiverId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
+            CreatePaymentScreen(
                 onBack = { navController.popBackStack() }
             )
         }

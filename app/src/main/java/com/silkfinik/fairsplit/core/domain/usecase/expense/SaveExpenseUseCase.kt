@@ -5,6 +5,7 @@ import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.ExpenseRepository
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.model.Expense
+import com.silkfinik.fairsplit.core.model.enums.SplitType
 import kotlinx.coroutines.flow.first
 import java.util.UUID
 import javax.inject.Inject
@@ -21,7 +22,9 @@ class SaveExpenseUseCase @Inject constructor(
         val amount: Double,
         val category: String,
         val payerId: String,
-        val splits: Map<String, Double>
+        val splits: Map<String, Double>,
+        val splitType: SplitType,
+        val splitData: Map<String, Double>
     )
 
     suspend operator fun invoke(params: Params): Result<Unit> {
@@ -40,6 +43,8 @@ class SaveExpenseUseCase @Inject constructor(
                     category = params.category,
                     payers = mapOf(params.payerId to params.amount),
                     splits = params.splits,
+                    splitType = params.splitType,
+                    splitData = params.splitData,
                     updatedAt = System.currentTimeMillis()
                 )
                 expenseRepository.updateExpense(updatedExpense)
@@ -55,6 +60,8 @@ class SaveExpenseUseCase @Inject constructor(
                     creatorId = userId,
                     payers = mapOf(params.payerId to params.amount),
                     splits = params.splits,
+                    splitType = params.splitType,
+                    splitData = params.splitData,
                     createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis()
                 )

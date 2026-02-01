@@ -37,6 +37,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -57,6 +59,7 @@ import com.silkfinik.fairsplit.core.common.util.CurrencyFormatter
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
+import com.silkfinik.fairsplit.core.model.enums.SplitType
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.features.expenses.viewmodel.CreateExpenseViewModel
@@ -81,7 +84,11 @@ fun CreateExpenseScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             FairSplitTopAppBar(
-                title = if (uiState.isEditing) "Редактирование траты" else "Новая трата",
+                title = when {
+                    uiState.isReadOnly -> "Детали траты"
+                    uiState.isEditing -> "Редактирование траты"
+                    else -> "Новая трата"
+                },
                 onBackClick = onBack,
                 actions = {
                     if (uiState.isEditing) {
@@ -93,7 +100,9 @@ fun CreateExpenseScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Box(modifier = Modifier
+            .padding(padding)
+            .fillMaxSize()) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
@@ -102,12 +111,14 @@ fun CreateExpenseScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
+                    // --- Input Fields (Description, Amount, Category, Payer) ---
                     OutlinedTextField(
                         value = uiState.description,
                         onValueChange = viewModel::onDescriptionChange,
                         label = { Text("Описание") },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        readOnly = uiState.isReadOnly,
                         isError = uiState.descriptionError != null,
                         supportingText = {
                             if (uiState.descriptionError != null) {
@@ -122,6 +133,7 @@ fun CreateExpenseScreen(
                         label = { Text("Сумма") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
+                        readOnly = uiState.isReadOnly,
                         isError = uiState.amountError != null,
                         supportingText = {
                             if (uiState.amountError != null) {
@@ -139,7 +151,8 @@ fun CreateExpenseScreen(
                     )
                     CategorySelector(
                         selectedCategory = uiState.category,
-                        onCategorySelected = viewModel::onCategoryChange
+                        onCategorySelected = viewModel::onCategoryChange,
+                        enabled = !uiState.isReadOnly
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -163,57 +176,95 @@ fun CreateExpenseScreen(
                         selectedPayerId = uiState.payerId,
                         currentUserId = uiState.currentUserId,
                         onPayerSelected = viewModel::onPayerChange,
-                        isError = uiState.payerError != null
+                        isError = uiState.payerError != null,
+                        enabled = !uiState.isReadOnly
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "На кого делить",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (uiState.splitError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    // --- Split Section ---
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "На кого делить",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (uiState.splitError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                        )
+                        
+                        // Split Type Tabs
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (!uiState.isReadOnly) {
+                            SplitTypeSelector(
+                                selectedType = uiState.splitType,
+                                onTypeSelected = viewModel::onSplitTypeChange
                             )
-                            if (uiState.splitError != null) {
-                                Text(
-                                    text = uiState.splitError!!,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
+                        } else {
+                            Text(
+                                text = when (uiState.splitType) {
+                                    SplitType.EQUAL -> "Поровну"
+                                    SplitType.EXACT -> "Точные суммы"
+                                    SplitType.PERCENT -> "Проценты"
+                                    SplitType.SHARES -> "Доли"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                         
-                        val allSelected = uiState.splits.size == uiState.members.size
-                        TextButton(onClick = { viewModel.toggleAllMembers(!allSelected) }) {
-                            Text(if (allSelected) "Снять все" else "Выбрать все")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Error / Status Message
+                        if (uiState.splitError != null) {
+                            Text(
+                                text = uiState.splitError!!,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        // Select All (Only for Equal)
+                        if (!uiState.isReadOnly && uiState.splitType == SplitType.EQUAL) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                val allSelected = uiState.splits.size == uiState.members.size
+                                TextButton(onClick = { viewModel.toggleAllMembers(!allSelected) }) {
+                                    Text(if (allSelected) "Снять все" else "Выбрать все")
+                                }
+                            }
                         }
                     }
 
                     LazyColumn(modifier = Modifier.weight(1f)) {
                         items(uiState.members) { member ->
                             val displayName = if (member.id == uiState.currentUserId) "${member.name} (Вы)" else member.name
+                            val isSelected = viewModel.isMemberSelected(member.id)
+                            
                             SplitMemberItem(
                                 name = displayName,
-                                isSelected = viewModel.isMemberSelected(member.id),
+                                isSelected = isSelected,
+                                splitType = uiState.splitType,
                                 amount = uiState.splits[member.id] ?: 0.0,
+                                inputValue = viewModel.getSplitValue(member.id),
                                 currency = uiState.currency,
-                                onToggle = { viewModel.onSplitMemberToggle(member.id) }
+                                onToggle = { viewModel.onSplitMemberToggle(member.id) },
+                                onValueChange = { viewModel.onSplitDataChange(member.id, it) },
+                                enabled = !uiState.isReadOnly
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = viewModel::onSaveClick,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Сохранить")
+                    if (!uiState.isReadOnly) {
+                        Button(
+                            onClick = viewModel::onSaveClick,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Сохранить")
+                        }
                     }
                 }
             }
@@ -222,9 +273,33 @@ fun CreateExpenseScreen(
 }
 
 @Composable
+fun SplitTypeSelector(
+    selectedType: SplitType,
+    onTypeSelected: (SplitType) -> Unit
+) {
+    val types = listOf(
+        SplitType.EQUAL to "Поровну",
+        SplitType.EXACT to "Сумма",
+        SplitType.PERCENT to "%",
+        SplitType.SHARES to "Доли"
+    )
+    
+    TabRow(selectedTabIndex = types.indexOfFirst { it.first == selectedType }) {
+        types.forEach { (type, title) ->
+            Tab(
+                selected = selectedType == type,
+                onClick = { onTypeSelected(type) },
+                text = { Text(title) }
+            )
+        }
+    }
+}
+
+@Composable
 fun CategorySelector(
     selectedCategory: ExpenseCategory,
-    onCategorySelected: (ExpenseCategory) -> Unit
+    onCategorySelected: (ExpenseCategory) -> Unit,
+    enabled: Boolean = true
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -242,6 +317,7 @@ fun CategorySelector(
                         modifier = Modifier.size(18.dp)
                     )
                 },
+                enabled = enabled,
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -256,33 +332,73 @@ fun CategorySelector(
 fun SplitMemberItem(
     name: String,
     isSelected: Boolean,
+    splitType: SplitType,
     amount: Double,
+    inputValue: String,
     currency: Currency,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    onValueChange: (String) -> Unit,
+    enabled: Boolean = true
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggle() }
+            .clickable(enabled = enabled && splitType == SplitType.EQUAL) { onToggle() }
             .padding(vertical = 4.dp)
     ) {
-        Checkbox(
-            checked = isSelected,
-            onCheckedChange = { onToggle() }
-        )
+        if (splitType == SplitType.EQUAL) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onToggle() },
+                enabled = enabled
+            )
+        } else {
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        
         Text(
             text = name,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge
         )
-        if (isSelected && amount > 0) {
-            Text(
-                text = CurrencyFormatter.format(amount, currency),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
+        
+        if (splitType == SplitType.EQUAL) {
+            if (isSelected && amount > 0) {
+                Text(
+                    text = CurrencyFormatter.format(amount, currency),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+             Row(verticalAlignment = Alignment.CenterVertically) {
+                 if (amount > 0 && splitType != SplitType.EXACT) {
+                     Text(
+                        text = CurrencyFormatter.format(amount, currency),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                 }
+                 
+                 OutlinedTextField(
+                     value = inputValue,
+                     onValueChange = onValueChange,
+                     modifier = Modifier.width(80.dp),
+                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                     singleLine = true,
+                     enabled = enabled,
+                     placeholder = {
+                         Text(when(splitType) {
+                             SplitType.PERCENT -> "%"
+                             SplitType.SHARES -> "1"
+                             else -> currency.symbol
+                         })
+                     }
+                 )
+             }
         }
     }
 }
@@ -293,7 +409,8 @@ fun PayerDropdown(
     selectedPayerId: String?,
     currentUserId: String?,
     onPayerSelected: (String) -> Unit,
-    isError: Boolean = false
+    isError: Boolean = false,
+    enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedMember = members.find { it.id == selectedPayerId }
@@ -306,6 +423,7 @@ fun PayerDropdown(
             value = selectedName,
             onValueChange = {},
             readOnly = true,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = {
                 Icon(Icons.Default.ArrowDropDown, "Выбрать")
@@ -315,7 +433,7 @@ fun PayerDropdown(
                 .also { interactionSource ->
                     LaunchedEffect(interactionSource) {
                         interactionSource.interactions.collect {
-                            if (it is PressInteraction.Release) {
+                            if (enabled && it is PressInteraction.Release) {
                                 expanded = true
                             }
                         }
