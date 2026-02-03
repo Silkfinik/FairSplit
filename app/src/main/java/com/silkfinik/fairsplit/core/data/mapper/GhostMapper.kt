@@ -6,8 +6,8 @@ import com.silkfinik.fairsplit.core.network.model.GhostDto
 fun MemberEntity.asGhostDto(): GhostDto {
     return GhostDto(
         name = this.name,
-        isMerged = false,
-        mergedWithUid = null
+        isMerged = this.mergedWithUid != null,
+        mergedWithUid = this.mergedWithUid
     )
 }
 

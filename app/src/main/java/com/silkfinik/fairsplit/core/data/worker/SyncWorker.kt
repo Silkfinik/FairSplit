@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.silkfinik.fairsplit.core.data.sync.ExpenseUploader
 import com.silkfinik.fairsplit.core.data.sync.GroupUploader
+import com.silkfinik.fairsplit.core.data.sync.PaymentUploader
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -14,13 +15,16 @@ class SyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val groupUploader: GroupUploader,
-    private val expenseUploader: ExpenseUploader
+    private val expenseUploader: ExpenseUploader,
+    private val paymentUploader: PaymentUploader
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
         return try {
             groupUploader.syncLocalChanges()
             expenseUploader.syncLocalChanges()
+            paymentUploader.syncLocalChanges()
+
             Result.success()
         } catch (e: Exception) {
             Result.retry()

@@ -7,6 +7,7 @@ import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
 import com.silkfinik.fairsplit.core.data.mapper.asDto
 import com.silkfinik.fairsplit.core.data.mapper.asEntity
+import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
 import com.silkfinik.fairsplit.core.database.dao.PaymentDao
 import com.silkfinik.fairsplit.core.domain.repository.PaymentRepository
 import com.silkfinik.fairsplit.core.model.Payment
@@ -18,8 +19,7 @@ import javax.inject.Inject
 
 class PaymentRepositoryImpl @Inject constructor(
     private val paymentDao: PaymentDao,
-    private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
+    private val workManagerSyncManager: WorkManagerSyncManager
 ) : PaymentRepository {
 
     override fun getPayments(groupId: String): Flow<List<Payment>> {
@@ -34,43 +34,15 @@ class PaymentRepositoryImpl @Inject constructor(
 
     override suspend fun createPayment(payment: Payment) {
         paymentDao.insertPayment(payment.asEntity(isDirty = true))
+        workManagerSyncManager.scheduleSync()
     }
 
     override suspend fun updatePayment(payment: Payment) {
         paymentDao.updatePayment(payment.asEntity(isDirty = true))
+        workManagerSyncManager.scheduleSync()
     }
 
     override suspend fun syncPayments(groupId: String) {
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            return
-        }
-
-        try {
-            val collectionRef = firestore.collection("groups").document(groupId).collection("payments")
-
-            val dirtyPayments = paymentDao.getDirtyPayments().filter { it.groupId == groupId }
-            
-            for (paymentEntity in dirtyPayments) {
-                val dto = paymentEntity.asDto()
-                collectionRef.document(paymentEntity.id).set(dto).await()
-                paymentDao.markAsSynced(paymentEntity.id)
-            }
-
-            val snapshot = collectionRef
-                .orderBy("updated_at", Query.Direction.DESCENDING)
-                .get()
-                .await()
-
-            val remotePayments = snapshot.documents.mapNotNull { doc ->
-                doc.toObject(PaymentDto::class.java)?.copy(id = doc.id)
-            }
-
-            val paymentEntities = remotePayments.map { it.asEntity(groupId) }
-            paymentDao.insertPayments(paymentEntities)
-
-        } catch (e: Exception) {
-            throw e
-        }
+        workManagerSyncManager.scheduleSync()
     }
 }

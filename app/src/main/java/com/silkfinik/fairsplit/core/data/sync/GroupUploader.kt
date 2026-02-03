@@ -34,14 +34,14 @@ class GroupUploader @Inject constructor(
         for (entity in dirtyGroups) {
             val docRef = groupsCollection.document(entity.id)
             val members = memberDao.getMembersSync(entity.id)
-            
+
             var dto = entity.asDto()
-            
+
             val realMemberIds = members.filter { !it.isGhost }.map { it.id }
             val ghostsMap = members.filter { it.isGhost }.associate { member ->
                 member.id to member.asGhostDto()
             }
-            
+
             dto = dto.copy(
                 members = realMemberIds,
                 ghosts = ghostsMap
@@ -50,12 +50,17 @@ class GroupUploader @Inject constructor(
             batch.set(docRef, dto, SetOptions.merge())
         }
 
-        batch.commit().await()
-        Log.d("Sync", "Successfully sent ${dirtyGroups.size} groups")
+        try {
+            batch.commit().await()
+            Log.d("Sync", "Successfully sent ${dirtyGroups.size} groups")
 
-        dirtyGroups.forEach { group ->
-            groupDao.markGroupAsSynced(group.id, group.updatedAt)
-            memberDao.markMembersAsSynced(group.id)
+            dirtyGroups.forEach { group ->
+                groupDao.markGroupAsSynced(group.id, group.updatedAt)
+                memberDao.markMembersAsSynced(group.id)
+            }
+        } catch (e: Exception) {
+            Log.e("Sync", "Failed to commit batch", e)
+            throw e
         }
     }
 }

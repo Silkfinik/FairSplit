@@ -16,7 +16,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.silkfinik.fairsplit"
+        applicationId = "com.silkfinik.fairsplit.app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

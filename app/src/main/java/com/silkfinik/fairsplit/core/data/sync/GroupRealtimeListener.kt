@@ -79,10 +79,23 @@ class GroupRealtimeListener @Inject constructor(
 
     private suspend fun syncMembers(dto: GroupDto) {
         val currentUserId = authRepository.getUserId()
-        Log.d("Sync", "Syncing members for group ${dto.name} (${dto.id}). Members: ${dto.members.size}, Profiles: ${dto.memberProfiles?.size ?: 0}")
-        
+        Log.d("Sync", "Syncing members for group ${dto.name} (${dto.id}).")
+
+        val localMembers = memberDao.getMembersSync(dto.id)
+        val serverMemberIds = dto.members.toSet() + dto.ghosts.keys
+
+        val membersToDelete = localMembers.filter { localMember ->
+            val missingOnServer = localMember.id !in serverMemberIds
+            missingOnServer && !localMember.isDirty
+        }
+
+        membersToDelete.forEach { memberToDelete ->
+            Log.d("Sync", "Deleting member ${memberToDelete.name} (${memberToDelete.id}) - missing on server and clean locally")
+            memberDao.deleteMember(memberToDelete)
+        }
+
         dto.ghosts.forEach { (ghostId, ghostDto) ->
-            val localMember = memberDao.getMember(dto.id, ghostId)
+            val localMember = localMembers.find { it.id == ghostId }
             if (localMember == null) {
                 val newMember = ghostDto.asMemberEntity(ghostId, dto.id)
                 memberDao.insertMember(newMember)
@@ -101,20 +114,19 @@ class GroupRealtimeListener @Inject constructor(
 
         dto.members.forEach { memberId ->
             val profile = dto.memberProfiles?.get(memberId)
-            Log.d("Sync", "Processing member $memberId. Profile found: ${profile != null}, Name: ${profile?.displayName}")
-            
+
             var memberName = profile?.displayName?.takeIf { it.isNotBlank() }
             val photoUrl = profile?.photoUrl
-            
+
             if (memberName == null && memberId == currentUserId) {
                 memberName = authRepository.getUserName()
             }
-            
+
             val finalName = memberName ?: "Участник"
-            
-            val localMember = memberDao.getMember(dto.id, memberId)
+
+            val localMember = localMembers.find { it.id == memberId }
             if (localMember == null) {
-                 val newMember = MemberEntity(
+                val newMember = MemberEntity(
                     id = memberId,
                     groupId = dto.id,
                     name = finalName,
@@ -125,11 +137,9 @@ class GroupRealtimeListener @Inject constructor(
                     isDirty = false
                 )
                 memberDao.insertMember(newMember)
-                Log.d("Sync", "Inserted new member $memberId with name $finalName")
             } else {
                 if (!localMember.isDirty && (localMember.name != finalName || localMember.photoUrl != photoUrl)) {
                     memberDao.updateMember(localMember.copy(name = finalName, photoUrl = photoUrl))
-                    Log.d("Sync", "Updated member $memberId to name $finalName")
                 }
             }
         }
