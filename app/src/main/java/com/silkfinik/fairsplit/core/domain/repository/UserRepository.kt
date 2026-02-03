@@ -7,4 +7,6 @@ interface UserRepository {
     fun getUser(uid: String): Flow<User?>
     suspend fun createOrUpdateUser(user: User)
     suspend fun userExists(uid: String): Boolean
+    suspend fun updateFcmToken(uid: String, token: String?)
+    suspend fun deleteUser(uid: String)
 }

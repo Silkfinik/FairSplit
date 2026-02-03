@@ -48,11 +48,14 @@ import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.features.groups.viewmodel.GroupsViewModel
 
+import androidx.compose.material.icons.filled.AccountCircle
+
 @Composable
 fun GroupsListScreen(
     viewModel: GroupsViewModel = hiltViewModel(),
     onNavigateToCreateGroup: () -> Unit,
-    onNavigateToGroupDetails: (String) -> Unit
+    onNavigateToGroupDetails: (String) -> Unit,
+    onNavigateToAccount: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -83,7 +86,17 @@ fun GroupsListScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            FairSplitTopAppBar(title = "Мои группы")
+            FairSplitTopAppBar(
+                title = "Мои группы",
+                actions = {
+                    androidx.compose.material3.IconButton(onClick = onNavigateToAccount) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Профиль"
+                        )
+                    }
+                }
+            )
         },
         floatingActionButton = {
             Column(

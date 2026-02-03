@@ -7,13 +7,13 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.silkfinik.fairsplit.features.account.ui.AccountScreen
 import com.silkfinik.fairsplit.features.expenses.screen.CreateExpenseScreen
 import com.silkfinik.fairsplit.features.expenses.screen.ExpenseHistoryScreen
 import com.silkfinik.fairsplit.features.groupdetails.screen.GroupDetailsScreen
 import com.silkfinik.fairsplit.features.groups.screen.CreateGroupScreen
 import com.silkfinik.fairsplit.features.groups.screen.GroupsListScreen
 import com.silkfinik.fairsplit.features.members.screen.MembersScreen
-
 import com.silkfinik.fairsplit.features.payments.screen.CreatePaymentScreen
 
 @Composable
@@ -33,7 +33,16 @@ fun AppNavHost(
                 },
                 onNavigateToGroupDetails = { groupId ->
                     navController.navigate(Screen.GroupDetails.createRoute(groupId))
+                },
+                onNavigateToAccount = {
+                    navController.navigate(Screen.Account.route)
                 }
+            )
+        }
+
+        composable(Screen.Account.route) {
+            AccountScreen(
+                onBack = { navController.popBackStack() }
             )
         }
 

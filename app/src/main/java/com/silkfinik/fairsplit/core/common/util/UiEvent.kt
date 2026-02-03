@@ -5,4 +5,5 @@ sealed interface UiEvent {
     data class ShowError(val message: String) : UiEvent
     data object NavigateBack : UiEvent
     data class NavigateToGroupDetails(val groupId: String) : UiEvent
+    data object Success : UiEvent
 }

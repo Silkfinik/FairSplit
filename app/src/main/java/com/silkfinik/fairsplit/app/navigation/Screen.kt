@@ -43,4 +43,6 @@ sealed class Screen(val route: String) {
             return builder.toString()
         }
     }
+
+    data object Account : Screen("account")
 }

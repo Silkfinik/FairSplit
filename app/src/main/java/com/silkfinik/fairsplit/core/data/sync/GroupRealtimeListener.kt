@@ -38,7 +38,11 @@ class GroupRealtimeListener @Inject constructor(
 
         groupListener = query.addSnapshotListener { snapshot, e ->
             if (e != null) {
-                Log.e("Sync", "Listen failed.", e)
+                if (e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                    Log.w("Sync", "Permission denied for groups. Likely signed out.")
+                } else {
+                    Log.e("Sync", "Listen failed.", e)
+                }
                 return@addSnapshotListener
             }
 

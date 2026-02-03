@@ -175,9 +175,6 @@ fun GroupDetailsScreen(
                 onBackClick = onBackClick,
                 actions = {
                     if (uiState is GroupDetailsUiState.Success) {
-                        IconButton(onClick = { showInviteDialog = true }) {
-                            Icon(Icons.Default.PersonAdd, "Пригласить")
-                        }
                         IconButton(onClick = { onMembersClick((uiState as GroupDetailsUiState.Success).group.id) }) {
                             Icon(Icons.Default.Group, "Участники")
                         }

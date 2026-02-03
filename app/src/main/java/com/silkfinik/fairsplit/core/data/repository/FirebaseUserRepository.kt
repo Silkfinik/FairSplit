@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.core.data.repository
 
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
@@ -12,7 +13,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class FirebaseUserRepository @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : UserRepository {
@@ -21,7 +24,12 @@ class FirebaseUserRepository @Inject constructor(
         val listener = firestore.collection("users").document(uid)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
-                    close(e)
+                    if (e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                        // User likely signed out or lost access. Close gracefully.
+                        close() 
+                    } else {
+                        close(e)
+                    }
                     return@addSnapshotListener
                 }
                 
@@ -37,8 +45,26 @@ class FirebaseUserRepository @Inject constructor(
 
     override suspend fun createOrUpdateUser(user: User) {
         val dto = user.asDto()
+        
+        // Convert to map to filter out nulls (especially createdAt if it was 0/null)
+        val updates = mutableMapOf<String, Any?>()
+        updates["uid"] = dto.uid
+        updates["display_name"] = dto.displayName
+        updates["photo_url"] = dto.photoUrl
+        updates["is_anonymous"] = dto.isAnonymous
+        updates["updated_at"] = dto.updatedAt
+        
+        if (dto.email != null) updates["email"] = dto.email
+        if (dto.linkedGhostIds != null) updates["linked_ghost_ids"] = dto.linkedGhostIds
+        if (dto.fcmToken != null) updates["fcm_token"] = dto.fcmToken
+        
+        // Only include createdAt if it's set (not null)
+        if (dto.createdAt != null) {
+            updates["created_at"] = dto.createdAt
+        }
+
         firestore.collection("users").document(user.id)
-            .set(dto, SetOptions.merge())
+            .set(updates, SetOptions.merge())
             .await()
     }
 
@@ -46,5 +72,18 @@ class FirebaseUserRepository @Inject constructor(
         val snapshot = firestore.collection("users").document(uid).get().await()
         return snapshot.exists()
     }
-}
 
+    override suspend fun updateFcmToken(uid: String, token: String?) {
+        val updates = mapOf(
+            "fcm_token" to token,
+            "updated_at" to System.currentTimeMillis()
+        )
+        firestore.collection("users").document(uid)
+            .set(updates, SetOptions.merge())
+            .await()
+    }
+
+    override suspend fun deleteUser(uid: String) {
+        firestore.collection("users").document(uid).delete().await()
+    }
+}

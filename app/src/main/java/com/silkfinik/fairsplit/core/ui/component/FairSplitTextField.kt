@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.foundation.text.KeyboardActions
+
 @Composable
 fun FairSplitTextField(
     value: String,
@@ -18,6 +20,7 @@ fun FairSplitTextField(
     label: String,
     modifier: Modifier = Modifier,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     readOnly: Boolean = false,
     isError: Boolean = false,
     supportingText: String? = null,
@@ -39,6 +42,7 @@ fun FairSplitTextField(
             errorBorderColor = MaterialTheme.colorScheme.error,
         ),
         keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         readOnly = readOnly,
         isError = isError,
         supportingText = if (supportingText != null) {

@@ -20,12 +20,15 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
+import androidx.compose.ui.unit.TextUnit
+
 @Composable
 fun UserAvatar(
     photoUrl: String?,
     name: String,
     modifier: Modifier = Modifier,
-    size: Dp = 40.dp
+    size: Dp = 40.dp,
+    fontSize: TextUnit = TextUnit.Unspecified
 ) {
     if (photoUrl != null) {
         AsyncImage(
@@ -52,7 +55,8 @@ fun UserAvatar(
                 Text(
                     text = initials,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontSize = fontSize
                 )
             } else {
                  Icon(

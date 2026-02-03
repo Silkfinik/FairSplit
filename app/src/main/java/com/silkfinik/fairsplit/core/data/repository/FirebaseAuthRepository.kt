@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import androidx.core.net.toUri
+import javax.inject.Singleton
 
+@Singleton
 class FirebaseAuthRepository @Inject constructor(
     private val auth: FirebaseAuth
 ) : AuthRepository {
@@ -69,6 +71,16 @@ class FirebaseAuthRepository @Inject constructor(
         }
     }
 
+    override suspend fun signInWithGoogle(idToken: String): Result<Unit> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            auth.signInWithCredential(credential).await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Ошибка входа через Google", e)
+        }
+    }
+
     override suspend fun linkGoogleAccount(idToken: String): Result<Unit> {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
@@ -85,6 +97,10 @@ class FirebaseAuthRepository @Inject constructor(
         } catch (e: Exception) {
             Result.Error(e.message ?: "Ошибка привязки аккаунта", e)
         }
+    }
+
+    override suspend fun signOut() {
+        auth.signOut()
     }
 
     override fun getUserId(): String? = auth.currentUser?.uid

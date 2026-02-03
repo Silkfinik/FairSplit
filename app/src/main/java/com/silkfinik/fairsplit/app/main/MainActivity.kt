@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
                             val navController = rememberNavController()
                             AppNavHost(navController = navController)
                         }
-                        MainUiState.NeedsName -> {
+                        MainUiState.Welcome -> {
                             WelcomeScreen(
                                 onContinue = { viewModel.onNameEntered() }
                             )

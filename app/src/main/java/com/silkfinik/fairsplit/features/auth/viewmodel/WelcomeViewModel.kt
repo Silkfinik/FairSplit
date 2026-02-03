@@ -20,12 +20,14 @@ import android.content.Context
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.silkfinik.fairsplit.core.common.auth.GoogleSignInHelper
 import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkGoogleAccountUseCase
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 
 @HiltViewModel
 class WelcomeViewModel @Inject constructor(
     private val updateUserUseCase: UpdateUserUseCase,
     private val linkGoogleAccountUseCase: LinkGoogleAccountUseCase,
-    private val googleSignInHelper: GoogleSignInHelper
+    private val googleSignInHelper: GoogleSignInHelper,
+    private val authRepository: AuthRepository
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(WelcomeUiState())
@@ -40,19 +42,35 @@ class WelcomeViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             googleSignInHelper.signIn(context)
                 .onSuccess { credential ->
-                    linkGoogleAccountUseCase(credential.idToken)
-                        .onSuccess {
-                            val name = credential.displayName
-                            val photoUrl = credential.profilePictureUri?.toString()
-                            if (name != null) {
-                                updateUserUseCase(name, photoUrl)
-                            }
-                            _uiState.update { it.copy(isLoading = false, isSaved = true) }
+                    val result = if (authRepository.hasSession()) {
+                        linkGoogleAccountUseCase(credential.idToken)
+                    }
+                    else {
+                        authRepository.signInWithGoogle(credential.idToken)
+                    }
+                    
+                    result.onSuccess {
+                        val name = credential.displayName
+                        val photoUrl = credential.profilePictureUri?.toString()
+                        // Use id (which is email for GoogleIdTokenCredential often, but strictly strictly strictly id is subject)
+                        // Actually, credential.id is the email in many cases for GoogleIdTokenCredential if set so.
+                        // But let's check GoogleSignInHelper again.
+                        // GoogleIdTokenCredential has `id` which IS the email address usually.
+                        val email = credential.id
+                        
+                        if (name != null) {
+                            updateUserUseCase(name, photoUrl, email)
+                        } else {
+                            val currentName = authRepository.getUserName() ?: "User"
+                            updateUserUseCase(currentName, photoUrl, email)
                         }
-                        .onError { message, _ ->
-                            _uiState.update { it.copy(isLoading = false) }
-                            sendEvent(UiEvent.ShowSnackbar(message))
-                        }
+                        _uiState.update { it.copy(isLoading = false) }
+                        sendEvent(UiEvent.Success)
+                    }
+                    .onError { message, _ ->
+                        _uiState.update { it.copy(isLoading = false) }
+                        sendEvent(UiEvent.ShowSnackbar(message))
+                    }
                 }
                 .onError { message, exception ->
                     _uiState.update { it.copy(isLoading = false) }
@@ -72,9 +90,20 @@ class WelcomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+            
+            if (!authRepository.hasSession()) {
+                val signInResult = authRepository.signInAnonymously()
+                if (signInResult is Result.Error) {
+                    _uiState.update { it.copy(isLoading = false) }
+                    sendEvent(UiEvent.ShowSnackbar("Не удалось создать профиль: ${signInResult.message}"))
+                    return@launch
+                }
+            }
+
             updateUserUseCase(name)
                 .onSuccess {
-                    _uiState.update { it.copy(isLoading = false, isSaved = true) }
+                    _uiState.update { it.copy(isLoading = false) }
+                    sendEvent(UiEvent.Success)
                 }
                 .onError { message, _ ->
                     _uiState.update { it.copy(isLoading = false) }

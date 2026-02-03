@@ -12,7 +12,8 @@ fun ObserveAsEvents(
     flow: Flow<UiEvent>,
     snackbarHostState: SnackbarHostState,
     onNavigateBack: () -> Unit = {},
-    onNavigateToGroupDetails: (String) -> Unit = {}
+    onNavigateToGroupDetails: (String) -> Unit = {},
+    onEvent: (UiEvent) -> Unit = {}
 ) {
     LaunchedEffect(key1 = true) {
         flow.collectLatest { event ->
@@ -28,6 +29,9 @@ fun ObserveAsEvents(
                 }
                 is UiEvent.NavigateToGroupDetails -> {
                     onNavigateToGroupDetails(event.groupId)
+                }
+                UiEvent.Success -> {
+                    onEvent(event)
                 }
             }
         }

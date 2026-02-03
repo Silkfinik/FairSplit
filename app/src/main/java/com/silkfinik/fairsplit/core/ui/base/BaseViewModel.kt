@@ -7,14 +7,17 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
 abstract class BaseViewModel : ViewModel() {
 
-    private val _uiEvent = Channel<UiEvent>()
-    val uiEvent = _uiEvent.receiveAsFlow()
+    private val _uiEvent = MutableSharedFlow<UiEvent>(replay = 0, extraBufferCapacity = 1)
+    val uiEvent = _uiEvent.asSharedFlow()
 
     protected fun sendEvent(event: UiEvent) {
         viewModelScope.launch {
-            _uiEvent.send(event)
+            _uiEvent.emit(event)
         }
     }
 }

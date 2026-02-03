@@ -19,7 +19,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class OfflineGroupRepository @Inject constructor(
     private val groupDao: GroupDao,
     private val memberDao: MemberDao,

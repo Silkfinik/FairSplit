@@ -28,9 +28,9 @@ data class UserDto(
     
     @get:PropertyName("created_at")
     @set:PropertyName("created_at")
-    var createdAt: Long = 0,
+    var createdAt: Long? = null,
     
     @get:PropertyName("updated_at")
     @set:PropertyName("updated_at")
-    var updatedAt: Long = 0
+    var updatedAt: Long? = null
 )

@@ -8,7 +8,8 @@ sealed interface MembersUiState {
         val members: List<Member>,
         val currentUserId: String? = null,
         val linkedGhostIds: List<String> = emptyList(),
-        val hasClaimedGhost: Boolean = false
+        val hasClaimedGhost: Boolean = false,
+        val inviteCode: String? = null
     ) : MembersUiState
     data class Error(val message: String) : MembersUiState
 }

@@ -12,8 +12,8 @@ fun UserDto.asDomainModel(): User {
         isAnonymous = isAnonymous,
         linkedGhostIds = linkedGhostIds ?: emptyList(),
         fcmToken = fcmToken,
-        createdAt = createdAt,
-        updatedAt = updatedAt
+        createdAt = createdAt ?: 0,
+        updatedAt = updatedAt ?: 0
     )
 }
 
@@ -26,7 +26,7 @@ fun User.asDto(): UserDto {
         isAnonymous = isAnonymous,
         linkedGhostIds = linkedGhostIds,
         fcmToken = fcmToken,
-        createdAt = createdAt,
+        createdAt = if (createdAt == 0L) null else createdAt,
         updatedAt = updatedAt
     )
 }
