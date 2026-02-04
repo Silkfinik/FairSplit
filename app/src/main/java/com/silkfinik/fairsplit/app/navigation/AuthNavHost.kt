@@ -13,6 +13,7 @@ import com.silkfinik.fairsplit.features.auth.screen.WelcomeScreen
 @Composable
 fun AuthNavHost(
     onAnonymousLogin: () -> Unit,
+    onAuthSuccess: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
 ) {
@@ -34,15 +35,14 @@ fun AuthNavHost(
             LoginScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToRegister = { navController.navigate(Screen.Register.route) },
-                onLoginSuccess = {  }
+                onLoginSuccess = { onAuthSuccess() }
             )
         }
 
-        // Экран регистрации
         composable(Screen.Register.route) {
             RegisterScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onRegistrationSuccess = {  }
+                onRegistrationSuccess = { onAuthSuccess() }
             )
         }
     }

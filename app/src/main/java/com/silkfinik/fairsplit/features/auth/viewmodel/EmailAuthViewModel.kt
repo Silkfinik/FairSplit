@@ -3,7 +3,10 @@ package com.silkfinik.fairsplit.features.auth.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.onError
+import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.auth.ui.EmailAuthUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +19,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EmailAuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val updateUserUseCase: UpdateUserUseCase
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(EmailAuthUiState())
@@ -39,7 +43,7 @@ class EmailAuthViewModel @Inject constructor(
     }
 
     fun signIn() {
-        val email = uiState.value.email
+        val email = uiState.value.email.trim()
         val password = uiState.value.password
 
         if (email.isBlank() || password.isBlank()) {
@@ -50,26 +54,30 @@ class EmailAuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            when (val result = authRepository.signInWithEmail(email, password)) {
-                is Result.Success -> {
+            val result = authRepository.signInWithEmail(email, password)
+
+            result.onSuccess {
+                val currentName = authRepository.getUserName() ?: "User"
+
+                updateUserUseCase(
+                    name = currentName,
+                    photoUrl = null,
+                    email = email
+                ).onSuccess {
                     _uiState.update { it.copy(isLoading = false) }
                     sendEvent(UiEvent.Success)
+                }.onError { message, _ ->
+                    _uiState.update { it.copy(isLoading = false, error = "Ошибка синхронизации профиля: $message") }
                 }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(isLoading = false, error = result.message)
-                    }
-                }
-                is Result.Loading -> {
-                    _uiState.update { it.copy(isLoading = true) }
-                }
+            }.onError { message, _ ->
+                _uiState.update { it.copy(isLoading = false, error = message) }
             }
         }
     }
 
     fun signUp() {
-        val name = uiState.value.name
-        val email = uiState.value.email
+        val name = uiState.value.name.trim()
+        val email = uiState.value.email.trim()
         val password = uiState.value.password
         val confirmPassword = uiState.value.confirmPassword
 
@@ -91,19 +99,21 @@ class EmailAuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            when (val result = authRepository.signUpWithEmail(name, email, password)) {
-                is Result.Success -> {
+            val authResult = authRepository.signUpWithEmail(name, email, password)
+
+            authResult.onSuccess {
+                updateUserUseCase(
+                    name = name,
+                    photoUrl = null,
+                    email = email
+                ).onSuccess {
                     _uiState.update { it.copy(isLoading = false) }
                     sendEvent(UiEvent.Success)
+                }.onError { message, _ ->
+                    _uiState.update { it.copy(isLoading = false, error = "Ошибка создания профиля: $message") }
                 }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(isLoading = false, error = result.message)
-                    }
-                }
-                is Result.Loading -> {
-                    _uiState.update { it.copy(isLoading = true) }
-                }
+            }.onError { message, _ ->
+                _uiState.update { it.copy(isLoading = false, error = message) }
             }
         }
     }

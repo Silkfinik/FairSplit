@@ -25,7 +25,6 @@ class FirebaseUserRepository @Inject constructor(
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
                     if (e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                        // User likely signed out or lost access. Close gracefully.
                         close() 
                     } else {
                         close(e)
@@ -45,8 +44,7 @@ class FirebaseUserRepository @Inject constructor(
 
     override suspend fun createOrUpdateUser(user: User) {
         val dto = user.asDto()
-        
-        // Convert to map to filter out nulls (especially createdAt if it was 0/null)
+
         val updates = mutableMapOf<String, Any?>()
         updates["uid"] = dto.uid
         updates["display_name"] = dto.displayName
@@ -57,8 +55,7 @@ class FirebaseUserRepository @Inject constructor(
         if (dto.email != null) updates["email"] = dto.email
         if (dto.linkedGhostIds != null) updates["linked_ghost_ids"] = dto.linkedGhostIds
         if (dto.fcmToken != null) updates["fcm_token"] = dto.fcmToken
-        
-        // Only include createdAt if it's set (not null)
+
         if (dto.createdAt != null) {
             updates["created_at"] = dto.createdAt
         }

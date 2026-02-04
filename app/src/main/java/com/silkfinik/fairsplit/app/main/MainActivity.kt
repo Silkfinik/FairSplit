@@ -49,7 +49,8 @@ class MainActivity : ComponentActivity() {
                         }
                         MainUiState.Welcome -> {
                             com.silkfinik.fairsplit.app.navigation.AuthNavHost(
-                                onAnonymousLogin = { viewModel.onNameEntered() }
+                                onAnonymousLogin = { viewModel.onNameEntered() },
+                                onAuthSuccess = { viewModel.retry() }
                             )
                         }
                         MainUiState.ErrorNoInternet -> {
