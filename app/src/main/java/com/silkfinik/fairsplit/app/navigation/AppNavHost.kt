@@ -7,6 +7,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+// Why???
+//import com.silkfinik.fairsplit.features.account.screen.AccountScreen
 import com.silkfinik.fairsplit.features.account.ui.AccountScreen
 import com.silkfinik.fairsplit.features.expenses.screen.CreateExpenseScreen
 import com.silkfinik.fairsplit.features.expenses.screen.ExpenseHistoryScreen

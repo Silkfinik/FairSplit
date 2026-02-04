@@ -1,11 +1,11 @@
 package com.silkfinik.fairsplit.features.auth.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.domain.repository.UserRepository
 import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.auth.ui.EmailAuthUiState
@@ -20,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class EmailAuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val updateUserUseCase: UpdateUserUseCase
+    private val updateUserUseCase: UpdateUserUseCase,
+    private val userRepository: UserRepository
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(EmailAuthUiState())
@@ -57,17 +58,24 @@ class EmailAuthViewModel @Inject constructor(
             val result = authRepository.signInWithEmail(email, password)
 
             result.onSuccess {
-                val currentName = authRepository.getUserName() ?: "User"
+                val uid = authRepository.getUserId()
 
-                updateUserUseCase(
-                    name = currentName,
-                    photoUrl = null,
-                    email = email
-                ).onSuccess {
+                if (uid != null && userRepository.userExists(uid)) {
                     _uiState.update { it.copy(isLoading = false) }
                     sendEvent(UiEvent.Success)
-                }.onError { message, _ ->
-                    _uiState.update { it.copy(isLoading = false, error = "Ошибка синхронизации профиля: $message") }
+                } else {
+                    val currentName = authRepository.getUserName() ?: "User"
+
+                    updateUserUseCase(
+                        name = currentName,
+                        photoUrl = null,
+                        email = email
+                    ).onSuccess {
+                        _uiState.update { it.copy(isLoading = false) }
+                        sendEvent(UiEvent.Success)
+                    }.onError { message, _ ->
+                        _uiState.update { it.copy(isLoading = false, error = "Ошибка синхронизации профиля: $message") }
+                    }
                 }
             }.onError { message, _ ->
                 _uiState.update { it.copy(isLoading = false, error = message) }

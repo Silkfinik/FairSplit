@@ -1,46 +1,27 @@
 package com.silkfinik.fairsplit.features.account.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -60,11 +41,10 @@ fun AccountScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    
-    // For editing name locally before submitting
+
     var nameState by remember(uiState.user) { mutableStateOf(uiState.user?.displayName ?: "") }
 
     ObserveAsEvents(
@@ -81,18 +61,14 @@ fun AccountScreen(
                 TextButton(onClick = {
                     showSignOutDialog = false
                     viewModel.onSignOut()
-                }) {
-                    Text("Выйти")
-                }
+                }) { Text("Выйти") }
             },
             dismissButton = {
-                TextButton(onClick = { showSignOutDialog = false }) {
-                    Text("Отмена")
-                }
+                TextButton(onClick = { showSignOutDialog = false }) { Text("Отмена") }
             }
         )
     }
-    
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -105,14 +81,10 @@ fun AccountScreen(
                         viewModel.onDeleteAccount()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Удалить")
-                }
+                ) { Text("Удалить") }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Отмена")
-                }
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
             }
         )
     }
@@ -128,14 +100,10 @@ fun AccountScreen(
     ) { padding ->
         if (uiState.isLoading && uiState.user == null) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            ) { CircularProgressIndicator() }
         } else {
             Column(
                 modifier = Modifier
@@ -145,15 +113,14 @@ fun AccountScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Header
                 ProfileHeader(
                     user = uiState.user,
                     name = nameState,
                     onNameChange = { nameState = it },
-                    onNameSubmit = { viewModel.onNameChange(nameState) }
+                    onNameSubmit = { viewModel.onNameChange(nameState) },
+                    onAvatarSelected = viewModel::onAvatarSelected
                 )
-                
-                // Settings & Actions grouped
+
                 SettingsSection(
                     isNotificationsEnabled = uiState.isNotificationsEnabled,
                     onToggleNotifications = viewModel::onToggleNotifications,
@@ -170,8 +137,18 @@ fun ProfileHeader(
     user: com.silkfinik.fairsplit.core.model.User?,
     name: String,
     onNameChange: (String) -> Unit,
-    onNameSubmit: () -> Unit
+    onNameSubmit: () -> Unit,
+    onAvatarSelected: (Uri) -> Unit
 ) {
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            if (uri != null) {
+                onAvatarSelected(uri)
+            }
+        }
+    )
+
     FairSplitCard {
         Column(
             modifier = Modifier
@@ -179,15 +156,40 @@ fun ProfileHeader(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            UserAvatar(
-                photoUrl = user?.photoUrl,
-                name = user?.displayName ?: "?",
-                size = 100.dp,
-                fontSize = 40.sp
-            )
-            
+            Box(
+                contentAlignment = Alignment.BottomEnd,
+                modifier = Modifier.clickable {
+                    photoPickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
+            ) {
+                UserAvatar(
+                    photoUrl = user?.photoUrl,
+                    name = user?.displayName ?: "?",
+                    size = 100.dp,
+                    fontSize = 40.sp
+                )
+
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .offset(x = 4.dp, y = 4.dp),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Изменить фото",
+                        modifier = Modifier.padding(6.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             if (user?.email != null) {
                 Text(
                     text = user.email,
@@ -196,7 +198,7 @@ fun ProfileHeader(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
-            
+
             FairSplitTextField(
                 value = name,
                 onValueChange = onNameChange,
@@ -205,7 +207,7 @@ fun ProfileHeader(
                 singleLine = true,
                 placeholder = "Введите ваше имя"
             )
-            
+
             if (name != user?.displayName && name.isNotBlank()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -238,7 +240,7 @@ fun SettingsSection(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
-            
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -260,13 +262,12 @@ fun SettingsSection(
                     onCheckedChange = onToggleNotifications
                 )
             }
-            
+
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 8.dp),
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             )
-            
-            // Actions
+
             ListItem(
                 headlineContent = { Text("Выйти") },
                 leadingContent = {
@@ -277,17 +278,12 @@ fun SettingsSection(
                     )
                 },
                 modifier = Modifier.clickable(onClick = onSignOut),
-                colors = ListItemDefaults.colors(
-                    containerColor = Color.Transparent
-                )
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
-            
+
             ListItem(
-                headlineContent = { 
-                    Text(
-                        "Удалить аккаунт", 
-                        color = MaterialTheme.colorScheme.error
-                    ) 
+                headlineContent = {
+                    Text("Удалить аккаунт", color = MaterialTheme.colorScheme.error)
                 },
                 leadingContent = {
                     Icon(
@@ -297,9 +293,7 @@ fun SettingsSection(
                     )
                 },
                 modifier = Modifier.clickable(onClick = onDeleteAccount),
-                colors = ListItemDefaults.colors(
-                    containerColor = Color.Transparent
-                )
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
             )
         }
     }

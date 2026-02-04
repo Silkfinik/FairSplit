@@ -2,6 +2,7 @@ package com.silkfinik.fairsplit.core.domain.repository
 
 import com.silkfinik.fairsplit.core.model.User
 import kotlinx.coroutines.flow.Flow
+import com.silkfinik.fairsplit.core.common.util.Result
 
 interface UserRepository {
     fun getUser(uid: String): Flow<User?>
@@ -9,4 +10,5 @@ interface UserRepository {
     suspend fun userExists(uid: String): Boolean
     suspend fun updateFcmToken(uid: String, token: String?)
     suspend fun deleteUser(uid: String)
+    suspend fun uploadUserAvatar(uid: String, imageUri: String): Result<String>
 }

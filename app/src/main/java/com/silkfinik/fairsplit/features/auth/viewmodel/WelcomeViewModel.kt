@@ -1,10 +1,16 @@
 package com.silkfinik.fairsplit.features.auth.viewmodel
 
+import android.content.Context
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.core.common.auth.GoogleSignInHelper
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.domain.repository.UserRepository
+import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkGoogleAccountUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.auth.ui.WelcomeUiState
@@ -16,18 +22,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-import android.content.Context
-import androidx.credentials.exceptions.GetCredentialCancellationException
-import com.silkfinik.fairsplit.core.common.auth.GoogleSignInHelper
-import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkGoogleAccountUseCase
-import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
-
 @HiltViewModel
 class WelcomeViewModel @Inject constructor(
     private val updateUserUseCase: UpdateUserUseCase,
     private val linkGoogleAccountUseCase: LinkGoogleAccountUseCase,
     private val googleSignInHelper: GoogleSignInHelper,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val userRepository: UserRepository
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(WelcomeUiState())
@@ -36,7 +37,7 @@ class WelcomeViewModel @Inject constructor(
     fun onNameChange(name: String) {
         _uiState.update { it.copy(name = name, nameError = null) }
     }
-    
+
     fun onGoogleSignInClick(context: Context) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -44,33 +45,38 @@ class WelcomeViewModel @Inject constructor(
                 .onSuccess { credential ->
                     val result = if (authRepository.hasSession()) {
                         linkGoogleAccountUseCase(credential.idToken)
-                    }
-                    else {
+                    } else {
                         authRepository.signInWithGoogle(credential.idToken)
                     }
-                    
+
                     result.onSuccess {
-                        val name = credential.displayName
-                        val photoUrl = credential.profilePictureUri?.toString()
-                        // Use id (which is email for GoogleIdTokenCredential often, but strictly strictly strictly id is subject)
-                        // Actually, credential.id is the email in many cases for GoogleIdTokenCredential if set so.
-                        // But let's check GoogleSignInHelper again.
-                        // GoogleIdTokenCredential has `id` which IS the email address usually.
-                        val email = credential.id
-                        
-                        if (name != null) {
-                            updateUserUseCase(name, photoUrl, email)
+                        val uid = authRepository.getUserId()
+
+                        if (uid != null && userRepository.userExists(uid)) {
+                            _uiState.update { it.copy(isLoading = false) }
+                            sendEvent(UiEvent.Success)
                         } else {
-                            val currentName = authRepository.getUserName() ?: "User"
-                            updateUserUseCase(currentName, photoUrl, email)
+                            val name = credential.displayName
+                            val photoUrl = credential.profilePictureUri?.toString()
+                            val email = credential.id
+
+                            val nameToUpdate = name ?: authRepository.getUserName() ?: "User"
+
+                            updateUserUseCase(nameToUpdate, photoUrl, email)
+                                .onSuccess {
+                                    _uiState.update { it.copy(isLoading = false) }
+                                    sendEvent(UiEvent.Success)
+                                }
+                                .onError { message, _ ->
+                                    _uiState.update { it.copy(isLoading = false) }
+                                    sendEvent(UiEvent.ShowSnackbar(message))
+                                }
                         }
-                        _uiState.update { it.copy(isLoading = false) }
-                        sendEvent(UiEvent.Success)
                     }
-                    .onError { message, _ ->
-                        _uiState.update { it.copy(isLoading = false) }
-                        sendEvent(UiEvent.ShowSnackbar(message))
-                    }
+                        .onError { message, _ ->
+                            _uiState.update { it.copy(isLoading = false) }
+                            sendEvent(UiEvent.ShowSnackbar(message))
+                        }
                 }
                 .onError { message, exception ->
                     _uiState.update { it.copy(isLoading = false) }
@@ -90,7 +96,7 @@ class WelcomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            
+
             if (!authRepository.hasSession()) {
                 val signInResult = authRepository.signInAnonymously()
                 if (signInResult is Result.Error) {

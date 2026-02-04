@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.account.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
@@ -22,20 +23,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.silkfinik.fairsplit.core.database.AppDatabase
 import com.google.firebase.messaging.FirebaseMessaging
+import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserAvatarUseCase
+import com.silkfinik.fairsplit.features.account.ui.AccountUiState
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.Job
-
-data class AccountUiState(
-    val isLoading: Boolean = false,
-    val user: User? = null,
-    val isNotificationsEnabled: Boolean = false
-)
 
 @HiltViewModel
 class AccountViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val appDatabase: AppDatabase
+    private val appDatabase: AppDatabase,
+    private val updateUserAvatarUseCase: UpdateUserAvatarUseCase
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(AccountUiState())
@@ -69,6 +67,22 @@ class AccountViewModel @Inject constructor(
             } else {
                 _uiState.update { it.copy(isLoading = false) }
             }
+        }
+    }
+
+    fun onAvatarSelected(uri: Uri) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            updateUserAvatarUseCase(uri.toString())
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false) }
+                    sendEvent(UiEvent.ShowSnackbar("Аватар успешно обновлен"))
+                }
+                .onError { message, _ ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    sendEvent(UiEvent.ShowSnackbar("Ошибка: $message"))
+                }
         }
     }
 
