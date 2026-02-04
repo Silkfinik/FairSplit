@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
+import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
+import com.silkfinik.fairsplit.core.ui.component.FairSplitButtonStyle
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTextField
 import com.silkfinik.fairsplit.features.auth.viewmodel.WelcomeViewModel
@@ -52,7 +54,8 @@ import com.silkfinik.fairsplit.features.auth.viewmodel.WelcomeViewModel
 @Composable
 fun WelcomeScreen(
     viewModel: WelcomeViewModel = hiltViewModel(),
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -83,8 +86,7 @@ fun WelcomeScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Spacer(modifier = Modifier.weight(1f))
-                    
-                    // Logo / Icon placeholder
+
                     Image(
                         painter = painterResource(id = R.drawable.ic_launcher_foreground),
                         contentDescription = null,
@@ -176,9 +178,6 @@ fun WelcomeScreen(
                             contentColor = MaterialTheme.colorScheme.onSurface
                         )
                     ) {
-                        // Using a generic icon if google logo is not available, 
-                        // or just text if we want to be safe. 
-                        // Assuming we don't have google icon resource, we use text or a generic cloud icon.
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
                             contentDescription = null,
@@ -187,8 +186,15 @@ fun WelcomeScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Text("Войти через Google", fontSize = 16.sp)
                     }
-                    
-                    Spacer(modifier = Modifier.weight(1f))
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    FairSplitButton(
+                        text = "Войти через почту",
+                        onClick = { onNavigateToLogin() },
+                        style = FairSplitButtonStyle.Secondary,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }

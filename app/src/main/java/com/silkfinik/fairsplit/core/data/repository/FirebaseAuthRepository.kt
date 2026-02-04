@@ -40,6 +40,33 @@ class FirebaseAuthRepository @Inject constructor(
         }
     }
 
+    override suspend fun signInWithEmail(email: String, password: String): Result<Unit> {
+        return try {
+            auth.signInWithEmailAndPassword(email, password).await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Ошибка входа по почте", e)
+        }
+    }
+
+    override suspend fun signUpWithEmail(name: String, email: String, password: String): Result<Unit> {
+        return try {
+            auth.createUserWithEmailAndPassword(email, password).await()
+
+            val user = auth.currentUser
+            if (user != null) {
+                val profileUpdates = UserProfileChangeRequest.Builder()
+                    .setDisplayName(name)
+                    .build()
+                user.updateProfile(profileUpdates).await()
+            }
+
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Ошибка регистрации", e)
+        }
+    }
+
     override suspend fun updateDisplayName(name: String): Result<Unit> {
         return try {
             val user = auth.currentUser ?: throw Exception("User not logged in")

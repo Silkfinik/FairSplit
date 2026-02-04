@@ -48,8 +48,8 @@ class MainActivity : ComponentActivity() {
                             AppNavHost(navController = navController)
                         }
                         MainUiState.Welcome -> {
-                            WelcomeScreen(
-                                onContinue = { viewModel.onNameEntered() }
+                            com.silkfinik.fairsplit.app.navigation.AuthNavHost(
+                                onAnonymousLogin = { viewModel.onNameEntered() }
                             )
                         }
                         MainUiState.ErrorNoInternet -> {

@@ -8,10 +8,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.VisualTransformation
 
 @Composable
 fun FairSplitTextField(
@@ -21,6 +21,7 @@ fun FairSplitTextField(
     modifier: Modifier = Modifier,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     readOnly: Boolean = false,
     isError: Boolean = false,
     supportingText: String? = null,
@@ -43,6 +44,7 @@ fun FairSplitTextField(
         ),
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
+        visualTransformation = visualTransformation,
         readOnly = readOnly,
         isError = isError,
         supportingText = if (supportingText != null) {
