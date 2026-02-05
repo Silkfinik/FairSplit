@@ -61,14 +61,22 @@ class MainViewModel @Inject constructor(
     private suspend fun handleAuthenticatedUser() {
         val userId = authRepository.getUserId()
         if (userId != null) {
-            val name = authRepository.getUserName()
-            
-            groupRepository.startSync()
-            
-            if (name.isNullOrBlank()) {
-                _uiState.value = MainUiState.Welcome
+            authRepository.reloadUser()
+
+            val isAnonymous = authRepository.isAnonymous()
+            val isVerified = authRepository.isEmailVerified()
+
+            if (isAnonymous || isVerified) {
+                val name = authRepository.getUserName()
+                groupRepository.startSync()
+
+                if (name.isNullOrBlank()) {
+                    _uiState.value = MainUiState.Welcome
+                } else {
+                    _uiState.value = MainUiState.Success
+                }
             } else {
-                _uiState.value = MainUiState.Success
+                _uiState.value = MainUiState.EmailVerification
             }
         } else {
             _uiState.value = MainUiState.Welcome

@@ -33,6 +33,30 @@ class FirebaseAuthRepository @Inject constructor(
         return auth.currentUser != null
     }
 
+    override suspend fun sendEmailVerification(): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: throw Exception("Пользователь не авторизован")
+            user.sendEmailVerification().await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Ошибка отправки письма подтверждения", e)
+        }
+    }
+
+    override suspend fun reloadUser(): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: throw Exception("Пользователь не авторизован")
+            user.reload().await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Ошибка обновления данных пользователя", e)
+        }
+    }
+
+    override fun isEmailVerified(): Boolean {
+        return auth.currentUser?.isEmailVerified == true
+    }
+
     override suspend fun signInAnonymously(): Result<Unit> {
         return try {
             auth.signInAnonymously().await()

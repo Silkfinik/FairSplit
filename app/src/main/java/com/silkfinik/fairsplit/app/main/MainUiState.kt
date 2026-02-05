@@ -4,6 +4,7 @@ sealed interface MainUiState {
     data object Loading : MainUiState
     data object Success : MainUiState
     data object Welcome : MainUiState
+    data object EmailVerification : MainUiState
     data object ErrorNoInternet : MainUiState
     data class ErrorAuthFailed(val message: String) : MainUiState
 }

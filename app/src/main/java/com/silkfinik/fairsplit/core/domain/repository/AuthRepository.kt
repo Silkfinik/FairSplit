@@ -8,6 +8,10 @@ interface AuthRepository {
 
     fun hasSession(): Boolean
 
+    suspend fun sendEmailVerification(): Result<Unit>
+    suspend fun reloadUser(): Result<Unit>
+    fun isEmailVerified(): Boolean
+
     suspend fun signInAnonymously(): Result<Unit>
 
     suspend fun signInWithEmail(email: String, password: String): Result<Unit>

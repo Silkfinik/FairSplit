@@ -115,6 +115,7 @@ class EmailAuthViewModel @Inject constructor(
                     photoUrl = null,
                     email = email
                 ).onSuccess {
+                    authRepository.sendEmailVerification()
                     _uiState.update { it.copy(isLoading = false) }
                     sendEvent(UiEvent.Success)
                 }.onError { message, _ ->

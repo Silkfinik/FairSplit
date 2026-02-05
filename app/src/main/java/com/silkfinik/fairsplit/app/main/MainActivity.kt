@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import com.silkfinik.fairsplit.app.navigation.AppNavHost
 import com.silkfinik.fairsplit.core.ui.theme.FairSplitTheme
+import com.silkfinik.fairsplit.features.auth.screen.EmailVerificationScreen
 import com.silkfinik.fairsplit.features.auth.screen.WelcomeScreen
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -51,6 +52,13 @@ class MainActivity : ComponentActivity() {
                             com.silkfinik.fairsplit.app.navigation.AuthNavHost(
                                 onAnonymousLogin = { viewModel.onNameEntered() },
                                 onAuthSuccess = { viewModel.retry() }
+                            )
+                        }
+                        MainUiState.EmailVerification -> {
+                            EmailVerificationScreen(
+                                onVerificationConfirmed = {
+                                    viewModel.retry()
+                                }
                             )
                         }
                         MainUiState.ErrorNoInternet -> {
