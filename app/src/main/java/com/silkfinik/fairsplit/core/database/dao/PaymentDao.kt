@@ -29,5 +29,5 @@ interface PaymentDao {
     suspend fun getDirtyPayments(): List<PaymentEntity>
 
     @Query("UPDATE payments SET is_dirty = 0 WHERE id = :id")
-    suspend fun markAsSynced(id: String)
+    suspend fun markPaymentAsSynced(id: String)
 }

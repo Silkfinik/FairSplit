@@ -1,19 +1,19 @@
 package com.silkfinik.fairsplit.core.data.repository
 
-import android.net.Uri
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
-import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.safeCall
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
 import androidx.core.net.toUri
-import com.google.firebase.auth.EmailAuthProvider
+import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
@@ -29,162 +29,103 @@ class FirebaseAuthRepository @Inject constructor(
         awaitClose { auth.removeAuthStateListener(listener) }
     }
 
-    override fun hasSession(): Boolean {
-        return auth.currentUser != null
+    override fun hasSession(): Boolean = auth.currentUser != null
+
+    override fun isEmailVerified(): Boolean = auth.currentUser?.isEmailVerified == true
+
+    override fun getUserId(): String? = auth.currentUser?.uid
+
+    override fun getUserName(): String? = auth.currentUser?.displayName
+
+    override fun getUserEmail(): String? = auth.currentUser?.email
+
+    override fun getPhotoUrl(): String = auth.currentUser?.photoUrl.toString()
+
+    override fun isAnonymous(): Boolean = auth.currentUser?.isAnonymous == true
+
+    override suspend fun sendEmailVerification(): Result<Unit> = safeCall("Ошибка отправки письма") {
+        auth.currentUser?.sendEmailVerification()?.await()
     }
 
-    override suspend fun sendEmailVerification(): Result<Unit> {
-        return try {
-            auth.currentUser?.sendEmailVerification()?.await()
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка отправки письма", e)
-        }
-    }
-
-    override suspend fun updateEmail(newEmail: String): Result<Unit> {
-        return try {
-            val user = auth.currentUser ?: throw Exception("User not found")
+    override suspend fun updateEmail(newEmail: String): Result<Unit> = safeCall("Ошибка обновления почты") {
+        val user = auth.currentUser ?: throw Exception("User not found")
+        try {
             user.verifyBeforeUpdateEmail(newEmail).await()
-
-            Result.Success(Unit)
         } catch (e: Exception) {
             if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
-                return Result.Error("В целях безопасности нужно выйти и войти заново, чтобы сменить почту.", e)
+                throw Exception("В целях безопасности нужно выйти и войти заново, чтобы сменить почту.", e)
             }
-            Result.Error(e.message ?: "Ошибка обновления почты", e)
+            throw e
         }
     }
 
-    override suspend fun reloadUser(): Result<Unit> {
-        return try {
-            auth.currentUser?.reload()?.await()
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка обновления данных", e)
-        }
+    override suspend fun reloadUser(): Result<Unit> = safeCall("Ошибка обновления данных") {
+        auth.currentUser?.reload()?.await()
     }
 
-    override fun isEmailVerified(): Boolean {
-        return auth.currentUser?.isEmailVerified == true
+    override suspend fun signInAnonymously(): Result<Unit> = safeCall("Ошибка анонимного входа") {
+        auth.signInAnonymously().await()
     }
 
-    override suspend fun signInAnonymously(): Result<Unit> {
-        return try {
-            auth.signInAnonymously().await()
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка анонимного входа", e)
-        }
+    override suspend fun signInWithEmail(email: String, password: String): Result<Unit> = safeCall("Ошибка входа по почте") {
+        auth.signInWithEmailAndPassword(email, password).await()
     }
 
-    override suspend fun signInWithEmail(email: String, password: String): Result<Unit> {
-        return try {
-            auth.signInWithEmailAndPassword(email, password).await()
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка входа по почте", e)
-        }
-    }
+    override suspend fun signUpWithEmail(name: String, email: String, password: String): Result<Unit> = safeCall("Ошибка регистрации") {
+        auth.createUserWithEmailAndPassword(email, password).await()
 
-    override suspend fun signUpWithEmail(name: String, email: String, password: String): Result<Unit> {
-        return try {
-            auth.createUserWithEmailAndPassword(email, password).await()
-
-            val user = auth.currentUser
-            if (user != null) {
-                val profileUpdates = UserProfileChangeRequest.Builder()
-                    .setDisplayName(name)
-                    .build()
-                user.updateProfile(profileUpdates).await()
-            }
-
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка регистрации", e)
-        }
-    }
-
-    override suspend fun linkEmailAccount(email: String, password: String): Result<Unit> {
-        return try {
-            val user = auth.currentUser ?: throw Exception("User not logged in")
-            val credential = EmailAuthProvider.getCredential(email, password)
-            user.linkWithCredential(credential).await()
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка привязки почты", e)
-        }
-    }
-
-    override suspend fun updateDisplayName(name: String): Result<Unit> {
-        return try {
-            val user = auth.currentUser ?: throw Exception("User not logged in")
+        val user = auth.currentUser
+        if (user != null) {
             val profileUpdates = UserProfileChangeRequest.Builder()
                 .setDisplayName(name)
                 .build()
             user.updateProfile(profileUpdates).await()
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка обновления имени", e)
         }
     }
 
-    override suspend fun updateProfile(name: String, photoUrl: String?): Result<Unit> {
-        return try {
-            val user = auth.currentUser ?: throw Exception("User not logged in")
-            val builder = UserProfileChangeRequest.Builder()
-                .setDisplayName(name)
-
-            if (photoUrl != null) {
-                builder.setPhotoUri(photoUrl.toUri())
-            }
-
-            val profileUpdates = builder.build()
-            user.updateProfile(profileUpdates).await()
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка обновления профиля", e)
-        }
+    override suspend fun linkEmailAccount(email: String, password: String): Result<Unit> = safeCall("Ошибка привязки почты") {
+        val user = auth.currentUser ?: throw Exception("User not logged in")
+        val credential = EmailAuthProvider.getCredential(email, password)
+        user.linkWithCredential(credential).await()
     }
 
-    override suspend fun signInWithGoogle(idToken: String): Result<Unit> {
-        return try {
-            val credential = GoogleAuthProvider.getCredential(idToken, null)
+    override suspend fun updateDisplayName(name: String): Result<Unit> = safeCall("Ошибка обновления имени") {
+        val user = auth.currentUser ?: throw Exception("User not logged in")
+        val profileUpdates = UserProfileChangeRequest.Builder()
+            .setDisplayName(name)
+            .build()
+        user.updateProfile(profileUpdates).await()
+    }
+
+    override suspend fun updateProfile(name: String, photoUrl: String?): Result<Unit> = safeCall("Ошибка обновления профиля") {
+        val user = auth.currentUser ?: throw Exception("User not logged in")
+        val builder = UserProfileChangeRequest.Builder()
+            .setDisplayName(name)
+
+        if (photoUrl != null) {
+            builder.setPhotoUri(photoUrl.toUri())
+        }
+
+        user.updateProfile(builder.build()).await()
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): Result<Unit> = safeCall("Ошибка входа через Google") {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential).await()
+    }
+
+    override suspend fun linkGoogleAccount(idToken: String): Result<Unit> = safeCall("Ошибка привязки аккаунта") {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        val user = auth.currentUser ?: throw Exception("User not logged in")
+
+        try {
+            user.linkWithCredential(credential).await()
+        } catch (e: FirebaseAuthUserCollisionException) {
             auth.signInWithCredential(credential).await()
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка входа через Google", e)
-        }
-    }
-
-    override suspend fun linkGoogleAccount(idToken: String): Result<Unit> {
-        return try {
-            val credential = GoogleAuthProvider.getCredential(idToken, null)
-            val user = auth.currentUser ?: throw Exception("User not logged in")
-            
-            try {
-                user.linkWithCredential(credential).await()
-            } catch (e: FirebaseAuthUserCollisionException) {
-                auth.signInWithCredential(credential).await()
-            } catch (e: Exception) {
-                throw e
-            }
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка привязки аккаунта", e)
         }
     }
 
     override suspend fun signOut() {
         auth.signOut()
     }
-
-    override fun getUserId(): String? = auth.currentUser?.uid
-    
-    override fun getUserName(): String? = auth.currentUser?.displayName
-
-    override fun getUserEmail(): String? = auth.currentUser?.email
-    override fun getPhotoUrl(): String = auth.currentUser?.photoUrl.toString()
-
-    override fun isAnonymous(): Boolean = auth.currentUser?.isAnonymous == true
 }

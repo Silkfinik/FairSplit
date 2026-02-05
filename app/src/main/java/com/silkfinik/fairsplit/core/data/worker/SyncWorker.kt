@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.silkfinik.fairsplit.core.data.sync.ExpenseUploader
-import com.silkfinik.fairsplit.core.data.sync.GroupUploader
-import com.silkfinik.fairsplit.core.data.sync.PaymentUploader
+import com.silkfinik.fairsplit.core.data.sync.uploader.ExpenseUploader
+import com.silkfinik.fairsplit.core.data.sync.uploader.GroupUploader
+import com.silkfinik.fairsplit.core.data.sync.uploader.PaymentUploader
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 

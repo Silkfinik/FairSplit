@@ -1,14 +1,15 @@
-package com.silkfinik.fairsplit.core.data.sync
+package com.silkfinik.fairsplit.core.data.sync.listener
 
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.silkfinik.fairsplit.core.common.di.ApplicationScope
 import com.silkfinik.fairsplit.core.data.mapper.asEntity
 import com.silkfinik.fairsplit.core.data.mapper.asMemberEntity
+import com.silkfinik.fairsplit.core.data.sync.FirestoreRoutes
 import com.silkfinik.fairsplit.core.database.dao.GroupDao
 import com.silkfinik.fairsplit.core.database.dao.MemberDao
-import com.silkfinik.fairsplit.core.database.entity.GroupEntity
 import com.silkfinik.fairsplit.core.database.entity.MemberEntity
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.network.model.GroupDto
@@ -24,7 +25,7 @@ class GroupRealtimeListener @Inject constructor(
     private val memberDao: MemberDao,
     private val authRepository: AuthRepository,
     @param:ApplicationScope private val externalScope: CoroutineScope
-) {
+) : BaseFirestoreListener() {
 
     private var groupListener: ListenerRegistration? = null
 
@@ -33,12 +34,12 @@ class GroupRealtimeListener @Inject constructor(
 
         groupListener?.remove()
 
-        val query = firestore.collection("groups")
-            .whereArrayContains("members", userId)
+        val query = firestore.collection(FirestoreRoutes.GROUPS)
+            .whereArrayContains(FirestoreRoutes.MEMBERS, userId)
 
         groupListener = query.addSnapshotListener { snapshot, e ->
             if (e != null) {
-                if (e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
                     Log.w("Sync", "Permission denied for groups. Likely signed out.")
                 } else {
                     Log.e("Sync", "Listen failed.", e)
@@ -64,15 +65,23 @@ class GroupRealtimeListener @Inject constructor(
         dtos.forEach { dto ->
             val localEntity = groupDao.getGroupById(dto.id)
 
-            if (shouldUpdateLocal(localEntity, dto)) {
+            val shouldUpdate = shouldUpdate(
+                localEntityExists = localEntity != null,
+                localIsDirty = localEntity?.isDirty == true,
+                localUpdatedAt = localEntity?.updatedAt ?: 0L,
+                serverUpdatedAt = dto.updatedAt
+            )
+
+            if (shouldUpdate) {
                 if (localEntity != null) {
                     groupDao.updateGroup(dto.asEntity())
                 } else {
+                    Log.d("Sync", "Group ${dto.name} (ID: ${dto.id}) is new -> saving.")
                     groupDao.insertGroup(dto.asEntity())
                 }
                 syncMembers(dto)
             } else {
-                Log.d("Sync", "Skipping update for ${dto.name}")
+                Log.d("Sync", "Skipping update for ${dto.name}: local changes exist or server is older.")
             }
         }
     }
@@ -90,7 +99,6 @@ class GroupRealtimeListener @Inject constructor(
         }
 
         membersToDelete.forEach { memberToDelete ->
-            Log.d("Sync", "Deleting member ${memberToDelete.name} (${memberToDelete.id}) - missing on server and clean locally")
             memberDao.deleteMember(memberToDelete)
         }
 
@@ -143,21 +151,5 @@ class GroupRealtimeListener @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun shouldUpdateLocal(localEntity: GroupEntity?, dto: GroupDto): Boolean {
-        if (localEntity == null) {
-            Log.d("Sync", "Group ${dto.name} (ID: ${dto.id}) is new -> saving.")
-            return true
-        }
-        
-        if (!localEntity.isDirty) {
-            Log.d("Sync", "Group ${dto.name} is locally clean -> updating from server.")
-            return true
-        }
-
-        val isServerNewer = dto.updatedAt > localEntity.updatedAt
-        Log.d("Sync", "Conflict for ${dto.name}: LocalTime=${localEntity.updatedAt}, ServerTime=${dto.updatedAt}. ServerNewer=$isServerNewer")
-        return isServerNewer
     }
 }

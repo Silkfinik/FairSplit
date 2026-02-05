@@ -2,13 +2,12 @@ package com.silkfinik.fairsplit.core.data.repository
 
 import com.silkfinik.fairsplit.core.data.datasource.CloudFunctionsDataSource
 import com.silkfinik.fairsplit.core.common.util.Result
-import com.silkfinik.fairsplit.core.common.util.asSafeMap
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
 import com.silkfinik.fairsplit.core.database.dao.GroupDao
 import com.silkfinik.fairsplit.core.database.dao.MemberDao
 import com.silkfinik.fairsplit.core.database.entity.GroupEntity
 import com.silkfinik.fairsplit.core.database.entity.MemberEntity
-import com.silkfinik.fairsplit.core.data.sync.GroupRealtimeListener
+import com.silkfinik.fairsplit.core.data.sync.listener.GroupRealtimeListener
 import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
@@ -16,7 +15,6 @@ import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Group
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton

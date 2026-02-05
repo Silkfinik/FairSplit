@@ -6,9 +6,9 @@ import com.silkfinik.fairsplit.core.common.util.Result
 
 interface UserRepository {
     fun getUser(uid: String): Flow<User?>
-    suspend fun createOrUpdateUser(user: User)
+    suspend fun createOrUpdateUser(user: User): Result<Unit>
     suspend fun userExists(uid: String): Boolean
-    suspend fun updateFcmToken(uid: String, token: String?)
-    suspend fun deleteUser(uid: String)
+    suspend fun updateFcmToken(uid: String, token: String?): Result<Unit>
+    suspend fun deleteUser(uid: String): Result<Unit>
     suspend fun uploadUserAvatar(uid: String, imageUri: String): Result<String>
 }

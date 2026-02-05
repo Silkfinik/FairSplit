@@ -35,7 +35,6 @@ class FairSplitMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        // Here we could handle foreground messages if needed
     }
 
     override fun onDestroy() {

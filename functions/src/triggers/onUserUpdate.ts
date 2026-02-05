@@ -52,6 +52,7 @@ export const onUserUpdate = onDocumentUpdated(
       // Update specific key in the map using dot notation
       batch.update(doc.ref, {
         [`member_profiles.${userId}`]: newProfile,
+        updated_at: Date.now(),
       });
     });
 

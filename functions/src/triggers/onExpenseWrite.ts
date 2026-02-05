@@ -92,5 +92,10 @@ export const onExpenseWrite = onDocumentWritten(
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
       is_math_valid: isMathValid,
     });
+
+    const groupId = event.params.groupId;
+    await admin.firestore().collection("groups").doc(groupId).update({
+      updated_at: Date.now(),
+    });
   }
 );

@@ -63,6 +63,7 @@ export const onGroupWrite = onDocumentWritten(
     }));
 
     if (Object.keys(updates).length > 0) {
+      updates["updated_at"] = Date.now();
       await change.after.ref.update(updates);
     }
   }

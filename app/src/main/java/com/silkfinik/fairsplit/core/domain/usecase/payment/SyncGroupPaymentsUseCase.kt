@@ -1,6 +1,6 @@
 package com.silkfinik.fairsplit.core.domain.usecase.payment
 
-import com.silkfinik.fairsplit.core.data.sync.PaymentRealtimeListener
+import com.silkfinik.fairsplit.core.data.sync.listener.PaymentRealtimeListener
 import com.silkfinik.fairsplit.core.domain.repository.PaymentRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

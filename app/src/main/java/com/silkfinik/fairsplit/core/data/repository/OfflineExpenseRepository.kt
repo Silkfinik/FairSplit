@@ -3,7 +3,7 @@ package com.silkfinik.fairsplit.core.data.repository
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
 import com.silkfinik.fairsplit.core.data.mapper.asEntity
 import com.silkfinik.fairsplit.core.database.dao.ExpenseDao
-import com.silkfinik.fairsplit.core.data.sync.ExpenseRealtimeListener
+import com.silkfinik.fairsplit.core.data.sync.listener.ExpenseRealtimeListener
 import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
 import com.silkfinik.fairsplit.core.domain.repository.ExpenseRepository
 import com.silkfinik.fairsplit.core.model.Expense
@@ -18,7 +18,6 @@ import com.silkfinik.fairsplit.core.model.HistoryItem
 import com.silkfinik.fairsplit.core.network.model.HistoryDto
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
 
 class OfflineExpenseRepository @Inject constructor(
     private val expenseDao: ExpenseDao,
