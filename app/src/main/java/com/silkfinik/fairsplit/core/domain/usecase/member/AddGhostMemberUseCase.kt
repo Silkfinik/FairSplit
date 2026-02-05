@@ -14,9 +14,9 @@ class AddGhostMemberUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(groupId: String, name: String): Result<Unit> {
         return try {
-            val group = groupRepository.getGroup(groupId).first() 
+            val group = groupRepository.getGroup(groupId).first()
                 ?: return Result.Error("Группа не найдена")
-            
+
             val newMember = Member(
                 id = UUID.randomUUID().toString(),
                 groupId = groupId,
@@ -25,11 +25,12 @@ class AddGhostMemberUseCase @Inject constructor(
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
-            
-            memberRepository.addMember(newMember)
+
+            val addResult = memberRepository.addMember(newMember)
+            if (addResult is Result.Error) return addResult
 
             groupRepository.updateGroup(group)
-            
+
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e.message ?: "Ошибка при добавлении участника", e)

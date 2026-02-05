@@ -80,8 +80,51 @@ class GroupRealtimeListener @Inject constructor(
                     groupDao.insertGroup(dto.asEntity())
                 }
                 syncMembers(dto)
+            } else if (localEntity != null && localEntity.isDirty) {
+                var mergedGroup = localEntity
+                var hasChanges = false
+
+                if (dto.inviteCode != null && dto.inviteCode != localEntity.inviteCode) {
+                    mergedGroup = mergedGroup.copy(inviteCode = dto.inviteCode)
+                    hasChanges = true
+                }
+
+                if (hasChanges) {
+                    Log.d("Sync", "Smart merge applied for group ${dto.name}")
+                    groupDao.updateGroup(mergedGroup)
+                }
+
+                syncGhostsOnly(dto)
             } else {
                 Log.d("Sync", "Skipping update for ${dto.name}: local changes exist or server is older.")
+            }
+        }
+    }
+
+    private suspend fun syncGhostsOnly(dto: GroupDto) {
+        val localMembers = memberDao.getMembersSync(dto.id)
+
+        dto.ghosts.forEach { (ghostId, ghostDto) ->
+            val localMember = localMembers.find { it.id == ghostId }
+
+            if (localMember != null) {
+                var updatedMember = localMember.copy(
+                    mergedWithUid = ghostDto.mergedWithUid
+                )
+
+                val isMergedOnServer = ghostDto.mergedWithUid != null
+
+                if (isMergedOnServer) {
+                    updatedMember = updatedMember.copy(name = ghostDto.name)
+                } else {
+                    if (!localMember.isDirty) {
+                        updatedMember = updatedMember.copy(name = ghostDto.name)
+                    }
+                }
+
+                if (updatedMember != localMember) {
+                    memberDao.updateMember(updatedMember)
+                }
             }
         }
     }

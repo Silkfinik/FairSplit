@@ -106,6 +106,7 @@ export const createInviteCode = onCall(
 
     batch.update(groupRef, {
       invite_code: code,
+      updated_at: Date.now(),
     });
 
     await batch.commit();
@@ -147,6 +148,7 @@ export const joinByInviteCode = onCall(
     // We use arrayUnion to safely add without duplicates
     await groupRef.update({
       members: admin.firestore.FieldValue.arrayUnion(uid),
+      updated_at: Date.now(),
     });
 
     // 4. Return Group Info (so client can navigate immediately)

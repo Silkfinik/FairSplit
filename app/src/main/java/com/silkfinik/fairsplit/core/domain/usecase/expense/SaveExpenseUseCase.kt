@@ -29,14 +29,21 @@ class SaveExpenseUseCase @Inject constructor(
 
     suspend operator fun invoke(params: Params): Result<Unit> {
         return try {
-            val group = groupRepository.getGroup(params.groupId).first() 
-                ?: return Result.Error("Группа не найдена")
-            val userId = authRepository.getUserId() 
+            val userId = authRepository.getUserId()
                 ?: return Result.Error("Не авторизован")
 
+            val currency = if (params.expenseId == null) {
+                val group = groupRepository.getGroup(params.groupId).first()
+                    ?: return Result.Error("Группа не найдена")
+                group.currency
+            } else {
+                null
+            }
+
             if (params.expenseId != null) {
-                val existingExpense = expenseRepository.getExpense(params.expenseId).first() 
+                val existingExpense = expenseRepository.getExpense(params.expenseId).first()
                     ?: return Result.Error("Трата не найдена")
+
                 val updatedExpense = existingExpense.copy(
                     description = params.description,
                     amount = params.amount,
@@ -54,7 +61,7 @@ class SaveExpenseUseCase @Inject constructor(
                     groupId = params.groupId,
                     description = params.description,
                     amount = params.amount,
-                    currency = group.currency,
+                    currency = currency!!,
                     category = params.category,
                     date = System.currentTimeMillis(),
                     creatorId = userId,
@@ -65,9 +72,13 @@ class SaveExpenseUseCase @Inject constructor(
                     createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis()
                 )
-                expenseRepository.createExpense(expense)
+
+                when (val result = expenseRepository.createExpense(expense)) {
+                    is Result.Success -> Result.Success(Unit)
+                    is Result.Error -> Result.Error(result.message, result.exception)
+                    is Result.Loading -> Result.Loading
+                }
             }
-            Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e.message ?: "Произошла ошибка при сохранении", e)
         }

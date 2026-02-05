@@ -1,14 +1,15 @@
 package com.silkfinik.fairsplit.core.data.repository
 
+import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.safeCall
 import com.silkfinik.fairsplit.core.data.datasource.CloudFunctionsDataSource
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
 import com.silkfinik.fairsplit.core.data.mapper.asEntity
+import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
 import com.silkfinik.fairsplit.core.database.dao.MemberDao
+import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.MemberRepository
 import com.silkfinik.fairsplit.core.model.Member
-import com.silkfinik.fairsplit.core.common.util.Result
-import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
-import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -26,18 +27,18 @@ class OfflineMemberRepository @Inject constructor(
         }
     }
 
-    override suspend fun addMember(member: Member) {
+    override suspend fun addMember(member: Member): Result<Unit> = safeCall("Ошибка добавления участника") {
         memberDao.insertMember(member.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
 
-    override suspend fun updateMember(member: Member) {
+    override suspend fun updateMember(member: Member): Result<Unit> = safeCall("Ошибка обновления участника") {
         memberDao.updateMember(member.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
 
-    override suspend fun deleteMember(groupId: String, memberId: String) {
-        val memberEntity = memberDao.getMember(groupId, memberId) ?: return
+    override suspend fun deleteMember(groupId: String, memberId: String): Result<Unit> = safeCall("Ошибка удаления") {
+        val memberEntity = memberDao.getMember(groupId, memberId) ?: throw Exception("Участник не найден")
         memberDao.deleteMember(memberEntity)
         workManagerSyncManager.scheduleSync()
     }

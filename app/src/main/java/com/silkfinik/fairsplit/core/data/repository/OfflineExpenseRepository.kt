@@ -1,23 +1,24 @@
 package com.silkfinik.fairsplit.core.data.repository
 
-import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
-import com.silkfinik.fairsplit.core.data.mapper.asEntity
-import com.silkfinik.fairsplit.core.database.dao.ExpenseDao
-import com.silkfinik.fairsplit.core.data.sync.listener.ExpenseRealtimeListener
-import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
-import com.silkfinik.fairsplit.core.domain.repository.ExpenseRepository
-import com.silkfinik.fairsplit.core.model.Expense
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import javax.inject.Inject
-
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.safeCall
+import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
+import com.silkfinik.fairsplit.core.data.mapper.asEntity
+import com.silkfinik.fairsplit.core.data.sync.listener.ExpenseRealtimeListener
+import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
+import com.silkfinik.fairsplit.core.database.dao.ExpenseDao
+import com.silkfinik.fairsplit.core.domain.repository.ExpenseRepository
+import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.model.HistoryItem
 import com.silkfinik.fairsplit.core.network.model.HistoryDto
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
 class OfflineExpenseRepository @Inject constructor(
     private val expenseDao: ExpenseDao,
@@ -44,7 +45,7 @@ class OfflineExpenseRepository @Inject constructor(
                         try {
                             val dto = doc.toObject(HistoryDto::class.java)!!
                             val timestamp = (dto.timestamp as? Timestamp)?.toDate()?.time ?: 0L
-                            
+
                             HistoryItem(
                                 id = doc.id,
                                 action = dto.action,
@@ -59,7 +60,7 @@ class OfflineExpenseRepository @Inject constructor(
                     trySend(items)
                 }
             }
-        
+
         awaitClose { listenerRegistration.remove() }
     }
 
@@ -73,20 +74,20 @@ class OfflineExpenseRepository @Inject constructor(
         return expenseDao.getExpense(expenseId).map { it?.asDomainModel() }
     }
 
-    override suspend fun createExpense(expense: Expense): String {
+    override suspend fun createExpense(expense: Expense): Result<String> = safeCall("Ошибка создания траты") {
         expenseDao.insertExpense(expense.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
-        return expense.id
+        expense.id
     }
 
-    override suspend fun updateExpense(expense: Expense) {
+    override suspend fun updateExpense(expense: Expense): Result<Unit> = safeCall("Ошибка обновления траты") {
         val updatedExpense = expense.copy(updatedAt = System.currentTimeMillis())
         expenseDao.updateExpense(updatedExpense.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
 
-    override suspend fun deleteExpense(expenseId: String) {
-        val expenseEntity = expenseDao.getExpenseById(expenseId) ?: return
+    override suspend fun deleteExpense(expenseId: String): Result<Unit> = safeCall("Ошибка удаления траты") {
+        val expenseEntity = expenseDao.getExpenseById(expenseId) ?: throw Exception("Трата не найдена")
         val deletedExpense = expenseEntity.copy(
             isDeleted = true,
             updatedAt = System.currentTimeMillis(),
@@ -104,4 +105,3 @@ class OfflineExpenseRepository @Inject constructor(
         expenseRealtimeListener.stopListening(groupId)
     }
 }
-

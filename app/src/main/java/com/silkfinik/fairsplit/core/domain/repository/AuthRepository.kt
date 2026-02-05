@@ -29,14 +29,11 @@ interface AuthRepository {
 
     suspend fun linkGoogleAccount(idToken: String): Result<Unit>
 
-    suspend fun signOut()
+    suspend fun signOut(): Result<Unit>
 
     fun getUserId(): String?
-    
     fun getUserName(): String?
-
     fun isAnonymous(): Boolean
-
     fun getUserEmail(): String?
     fun getPhotoUrl(): String?
 }

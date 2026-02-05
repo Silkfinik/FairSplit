@@ -9,9 +9,9 @@ interface GroupRepository {
     fun getGroups(): Flow<List<Group>>
     fun getGroup(id: String): Flow<Group?>
 
-    suspend fun createGroup(name: String, currency: Currency, ownerId: String): String
-    suspend fun updateGroup(group: Group)
-    
+    suspend fun createGroup(name: String, currency: Currency, ownerId: String): Result<String>
+    suspend fun updateGroup(group: Group): Result<Unit>
+
     suspend fun joinGroup(code: String): Result<String>
     suspend fun generateInviteCode(groupId: String): Result<String>
 

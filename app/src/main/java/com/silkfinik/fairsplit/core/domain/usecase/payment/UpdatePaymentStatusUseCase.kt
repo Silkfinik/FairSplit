@@ -18,24 +18,13 @@ class UpdatePaymentStatusUseCase @Inject constructor(
                 return Result.Error("Статус платежа уже изменен")
             }
 
-            // In a real app, we should check permissions (only Receiver can Confirm/Reject).
-            // But we'll trust the UI/Caller for now or add check if we pass currentUserId.
-            
             val updatedPayment = payment.copy(
                 status = newStatus,
                 updatedAt = System.currentTimeMillis()
             )
-            
+
             paymentRepository.updatePayment(updatedPayment)
-            
-            // Trigger sync to push the update
-            try {
-                paymentRepository.syncPayments(payment.groupId)
-            } catch (e: Exception) {
-                // Ignore sync errors here
-            }
-            
-            Result.Success(Unit)
+
         } catch (e: Exception) {
             Result.Error(e.message ?: "Ошибка обновления статуса", e)
         }

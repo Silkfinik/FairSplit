@@ -69,7 +69,7 @@ export const claimGhost = onCall(
     batch.update(groupRef, {
       [`ghosts.${ghostId}.is_merged`]: true,
       [`ghosts.${ghostId}.merged_with_uid`]: uid,
-      updated_at: Date.now(), // Trigger sync
+      updated_at: Date.now(),
     });
 
     // Update User: Add ghost ID to linked list

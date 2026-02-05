@@ -8,11 +8,6 @@ class DeleteExpenseUseCase @Inject constructor(
     private val expenseRepository: ExpenseRepository
 ) {
     suspend operator fun invoke(expenseId: String): Result<Unit> {
-        return try {
-            expenseRepository.deleteExpense(expenseId)
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка при удалении траты", e)
-        }
+        return expenseRepository.deleteExpense(expenseId)
     }
 }

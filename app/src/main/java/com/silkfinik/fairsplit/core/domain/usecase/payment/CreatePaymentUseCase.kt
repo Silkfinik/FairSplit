@@ -23,20 +23,15 @@ class CreatePaymentUseCase @Inject constructor(
     )
 
     suspend operator fun invoke(params: Params): Result<Unit> {
+        if (params.amount <= 0) return Result.Error("Сумма должна быть больше 0")
+        if (params.payerId == params.receiverId) return Result.Error("Нельзя перевести самому себе")
+
         return try {
-            if (params.amount <= 0) return Result.Error("Сумма должна быть больше 0")
-            if (params.payerId == params.receiverId) return Result.Error("Нельзя перевести самому себе")
-
-            val group = groupRepository.getGroup(params.groupId).first() 
+            val group = groupRepository.getGroup(params.groupId).first()
                 ?: return Result.Error("Группа не найдена")
-            val currentUserId = authRepository.getUserId() 
-                ?: return Result.Error("Не авторизован")
 
-            // Ensure the creator is the payer (Debtor creates the payment to say 'I paid')
-            // Wait, spec says "Pending: Создал должник".
-            // So PayerId must be current user OR if current user is admin managing ghosts.
-            // For now, let's assume strict rule or just allow it. The spec says "Pending: Создал должник".
-            
+            if (!authRepository.hasSession()) return Result.Error("Не авторизован")
+
             val payment = Payment(
                 id = UUID.randomUUID().toString(),
                 groupId = params.groupId,
@@ -48,17 +43,9 @@ class CreatePaymentUseCase @Inject constructor(
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
-            
+
             paymentRepository.createPayment(payment)
-            
-            // Trigger sync to push the new payment
-            try {
-                paymentRepository.syncPayments(payment.groupId)
-            } catch (e: Exception) {
-                // Ignore sync errors here, offline-first
-            }
-            
-            Result.Success(Unit)
+
         } catch (e: Exception) {
             Result.Error(e.message ?: "Ошибка создания платежа", e)
         }

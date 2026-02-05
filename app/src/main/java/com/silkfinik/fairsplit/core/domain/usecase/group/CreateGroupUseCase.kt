@@ -11,12 +11,12 @@ class CreateGroupUseCase @Inject constructor(
     private val authRepository: AuthRepository
 ) {
     suspend operator fun invoke(name: String, currency: Currency): Result<Unit> {
-        return try {
-            val userId = authRepository.getUserId() ?: return Result.Error("Не авторизован")
-            groupRepository.createGroup(name, currency, userId)
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка при создании группы", e)
+        val userId = authRepository.getUserId() ?: return Result.Error("Не авторизован")
+
+        return when (val result = groupRepository.createGroup(name, currency, userId)) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(result.message, result.exception)
+            is Result.Loading -> Result.Loading
         }
     }
 }

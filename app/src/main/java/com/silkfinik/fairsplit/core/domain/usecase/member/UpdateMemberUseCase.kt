@@ -9,11 +9,6 @@ class UpdateMemberUseCase @Inject constructor(
     private val memberRepository: MemberRepository
 ) {
     suspend operator fun invoke(member: Member): Result<Unit> {
-        return try {
-            memberRepository.updateMember(member.copy(updatedAt = System.currentTimeMillis()))
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка при обновлении участника", e)
-        }
+        return memberRepository.updateMember(member.copy(updatedAt = System.currentTimeMillis()))
     }
 }

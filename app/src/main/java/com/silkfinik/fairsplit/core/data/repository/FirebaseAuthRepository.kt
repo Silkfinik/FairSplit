@@ -13,12 +13,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import androidx.core.net.toUri
+import com.silkfinik.fairsplit.core.database.AppDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class FirebaseAuthRepository @Inject constructor(
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val appDatabase: AppDatabase
 ) : AuthRepository {
 
     override val currentUserId: Flow<String?> = callbackFlow {
@@ -39,7 +43,7 @@ class FirebaseAuthRepository @Inject constructor(
 
     override fun getUserEmail(): String? = auth.currentUser?.email
 
-    override fun getPhotoUrl(): String = auth.currentUser?.photoUrl.toString()
+    override fun getPhotoUrl(): String? = auth.currentUser?.photoUrl?.toString()
 
     override fun isAnonymous(): Boolean = auth.currentUser?.isAnonymous == true
 
@@ -125,7 +129,11 @@ class FirebaseAuthRepository @Inject constructor(
         }
     }
 
-    override suspend fun signOut() {
+    override suspend fun signOut(): Result<Unit> = safeCall("Ошибка выхода") {
+        withContext(Dispatchers.IO) {
+            appDatabase.clearAllTables()
+        }
+
         auth.signOut()
     }
 }

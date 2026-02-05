@@ -1,16 +1,17 @@
 package com.silkfinik.fairsplit.core.data.repository
 
-import com.silkfinik.fairsplit.core.data.datasource.CloudFunctionsDataSource
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.safeCall
+import com.silkfinik.fairsplit.core.data.datasource.CloudFunctionsDataSource
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
+import com.silkfinik.fairsplit.core.data.sync.listener.GroupRealtimeListener
+import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
 import com.silkfinik.fairsplit.core.database.dao.GroupDao
 import com.silkfinik.fairsplit.core.database.dao.MemberDao
 import com.silkfinik.fairsplit.core.database.entity.GroupEntity
 import com.silkfinik.fairsplit.core.database.entity.MemberEntity
-import com.silkfinik.fairsplit.core.data.sync.listener.GroupRealtimeListener
-import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
-import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Group
 import kotlinx.coroutines.flow.Flow
@@ -39,7 +40,7 @@ class OfflineGroupRepository @Inject constructor(
         return groupDao.getGroup(id).map { it?.asDomainModel() }
     }
 
-    override suspend fun createGroup(name: String, currency: Currency, ownerId: String): String {
+    override suspend fun createGroup(name: String, currency: Currency, ownerId: String): Result<String> = safeCall("Ошибка создания группы") {
         val newId = UUID.randomUUID().toString()
         val timestamp = System.currentTimeMillis()
 
@@ -59,6 +60,7 @@ class OfflineGroupRepository @Inject constructor(
             id = ownerId,
             groupId = newId,
             name = authRepository.getUserName() ?: "Я",
+            photoUrl = authRepository.getPhotoUrl(),
             isGhost = false,
             createdAt = timestamp,
             updatedAt = timestamp,
@@ -67,12 +69,12 @@ class OfflineGroupRepository @Inject constructor(
         memberDao.insertMember(member)
 
         workManagerSyncManager.scheduleSync()
-        return newId
+        newId
     }
 
-    override suspend fun updateGroup(group: Group) {
-        val existingEntity = groupDao.getGroupById(group.id) ?: return
-        
+    override suspend fun updateGroup(group: Group): Result<Unit> = safeCall("Ошибка обновления группы") {
+        val existingEntity = groupDao.getGroupById(group.id) ?: throw Exception("Группа не найдена")
+
         val updatedGroup = existingEntity.copy(
             name = group.name,
             currency = group.currency,
@@ -82,7 +84,7 @@ class OfflineGroupRepository @Inject constructor(
         groupDao.updateGroup(updatedGroup)
         workManagerSyncManager.scheduleSync()
     }
-    
+
     override suspend fun joinGroup(code: String): Result<String> {
         val result = cloudFunctionsDataSource.joinByInviteCode(code)
         if (result is Result.Success) {
@@ -92,7 +94,16 @@ class OfflineGroupRepository @Inject constructor(
     }
 
     override suspend fun generateInviteCode(groupId: String): Result<String> {
-        return cloudFunctionsDataSource.createInviteCode(groupId)
+        val result = cloudFunctionsDataSource.createInviteCode(groupId)
+
+        if (result is Result.Success) {
+            val code = result.data
+            val localGroup = groupDao.getGroupById(groupId)
+            if (localGroup != null) {
+                groupDao.updateGroup(localGroup.copy(inviteCode = code))
+            }
+        }
+        return result
     }
 
     override fun startSync() {
