@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,7 +35,9 @@ class MainViewModel @Inject constructor(
 
     private fun observeAuthState() {
         viewModelScope.launch {
-            authRepository.currentUserId.collectLatest { userId ->
+            authRepository.currentUserId
+                .distinctUntilChanged()
+                .collectLatest { userId ->
                 if (userId != null) {
                     handleAuthenticatedUser()
                 } else {
@@ -62,6 +66,20 @@ class MainViewModel @Inject constructor(
         val userId = authRepository.getUserId()
         if (userId != null) {
             authRepository.reloadUser()
+
+            try {
+                val authEmail = authRepository.getUserEmail()
+                if (!authEmail.isNullOrBlank()) {
+                    val dbUser = userRepository.getUser(userId).first()
+
+                    if (dbUser != null && dbUser.email != authEmail) {
+                        val updatedUser = dbUser.copy(email = authEmail)
+                        userRepository.createOrUpdateUser(updatedUser)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
 
             val isAnonymous = authRepository.isAnonymous()
             val isVerified = authRepository.isEmailVerified()

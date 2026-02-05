@@ -93,6 +93,8 @@ dependencies {
 
     implementation(libs.androidx.exifinterface)
 
+    implementation(libs.androidx.datastore.preferences)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)

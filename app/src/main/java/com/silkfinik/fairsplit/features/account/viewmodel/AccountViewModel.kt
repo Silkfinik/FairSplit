@@ -25,6 +25,7 @@ import kotlinx.coroutines.withContext
 import com.silkfinik.fairsplit.core.database.AppDatabase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.silkfinik.fairsplit.core.common.auth.GoogleSignInHelper
+import com.silkfinik.fairsplit.core.data.preferences.AuthPreferences
 import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkEmailAccountUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkGoogleAccountUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserAvatarUseCase
@@ -40,7 +41,8 @@ class AccountViewModel @Inject constructor(
     private val updateUserAvatarUseCase: UpdateUserAvatarUseCase,
     private val linkGoogleAccountUseCase: LinkGoogleAccountUseCase,
     private val linkEmailAccountUseCase: LinkEmailAccountUseCase,
-    private val googleSignInHelper: GoogleSignInHelper
+    private val googleSignInHelper: GoogleSignInHelper,
+    private val authPreferences: AuthPreferences
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(AccountUiState())
@@ -59,18 +61,19 @@ class AccountViewModel @Inject constructor(
             val userId = authRepository.getUserId()
             val isAnon = authRepository.isAnonymous()
 
+            val isVerified = if (isAnon) true else authRepository.isEmailVerified()
+
             if (userId != null) {
                 userRepository.getUser(userId)
-                    .catch { e ->
-                        emit(null)
-                    }
+                    .catch { emit(null) }
                     .collectLatest { user ->
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
                                 user = user,
                                 isNotificationsEnabled = user?.fcmToken != null,
-                                isAnonymous = isAnon
+                                isAnonymous = isAnon,
+                                isEmailVerified = isVerified
                             )
                         }
                     }
@@ -79,6 +82,53 @@ class AccountViewModel @Inject constructor(
             }
         }
     }
+
+    fun checkVerificationStatus() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            authRepository.reloadUser().onSuccess {
+                val isVerified = authRepository.isEmailVerified()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        isEmailVerified = isVerified
+                    )
+                }
+                if (isVerified) {
+                    sendEvent(UiEvent.ShowSnackbar("Почта подтверждена!"))
+                } else {
+                    sendEvent(UiEvent.ShowSnackbar("Почта все еще не подтверждена"))
+                }
+            }
+        }
+    }
+
+    fun resendVerificationEmail() {
+        viewModelScope.launch {
+            authRepository.sendEmailVerification()
+                .onSuccess { sendEvent(UiEvent.ShowSnackbar("Письмо отправлено")) }
+                .onError { msg, _ -> sendEvent(UiEvent.ShowSnackbar("Ошибка: $msg")) }
+        }
+    }
+
+    fun updateEmail(newEmail: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            authRepository.updateEmail(newEmail)
+                .onSuccess {
+                    authPreferences.saveEmailForNextLogin(newEmail)
+
+                    _uiState.update { it.copy(isLoading = false) }
+                    sendEvent(UiEvent.ShowSnackbar("На $newEmail отправлено письмо. Перейдите по ссылке для завершения смены почты."))
+                }
+                .onError { msg, _ ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    sendEvent(UiEvent.ShowSnackbar("Ошибка: $msg"))
+                }
+        }
+    }
+
 
     fun onAvatarSelected(uri: Uri) {
         viewModelScope.launch {
@@ -225,8 +275,16 @@ class AccountViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             linkEmailAccountUseCase(email, password)
                 .onSuccess {
-                    _uiState.update { it.copy(isLoading = false, isAnonymous = false) }
-                    sendEvent(UiEvent.ShowSnackbar("Почта успешно привязана"))
+                    authRepository.sendEmailVerification()
+
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isAnonymous = false,
+                            isEmailVerified = false
+                        )
+                    }
+                    sendEvent(UiEvent.ShowSnackbar("Привязано. Письмо с подтверждением отправлено."))
                 }
                 .onError { message, _ ->
                     _uiState.update { it.copy(isLoading = false) }

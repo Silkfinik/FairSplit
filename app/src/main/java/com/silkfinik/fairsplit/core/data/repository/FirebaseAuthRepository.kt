@@ -35,21 +35,33 @@ class FirebaseAuthRepository @Inject constructor(
 
     override suspend fun sendEmailVerification(): Result<Unit> {
         return try {
-            val user = auth.currentUser ?: throw Exception("Пользователь не авторизован")
-            user.sendEmailVerification().await()
+            auth.currentUser?.sendEmailVerification()?.await()
             Result.Success(Unit)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка отправки письма подтверждения", e)
+            Result.Error(e.message ?: "Ошибка отправки письма", e)
+        }
+    }
+
+    override suspend fun updateEmail(newEmail: String): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: throw Exception("User not found")
+            user.verifyBeforeUpdateEmail(newEmail).await()
+
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
+                return Result.Error("В целях безопасности нужно выйти и войти заново, чтобы сменить почту.", e)
+            }
+            Result.Error(e.message ?: "Ошибка обновления почты", e)
         }
     }
 
     override suspend fun reloadUser(): Result<Unit> {
         return try {
-            val user = auth.currentUser ?: throw Exception("Пользователь не авторизован")
-            user.reload().await()
+            auth.currentUser?.reload()?.await()
             Result.Success(Unit)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка обновления данных пользователя", e)
+            Result.Error(e.message ?: "Ошибка обновления данных", e)
         }
     }
 

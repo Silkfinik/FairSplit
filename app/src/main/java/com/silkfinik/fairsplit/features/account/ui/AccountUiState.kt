@@ -6,5 +6,6 @@ data class AccountUiState(
     val isLoading: Boolean = false,
     val user: User? = null,
     val isNotificationsEnabled: Boolean = false,
-    val isAnonymous: Boolean = false
+    val isAnonymous: Boolean = false,
+    val isEmailVerified: Boolean = true
 )

@@ -19,6 +19,8 @@ interface AuthRepository {
 
     suspend fun linkEmailAccount(email: String, password: String): Result<Unit>
 
+    suspend fun updateEmail(newEmail: String): Result<Unit>
+
     suspend fun updateDisplayName(name: String): Result<Unit>
 
     suspend fun updateProfile(name: String, photoUrl: String?): Result<Unit>

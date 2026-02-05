@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
+import com.silkfinik.fairsplit.core.data.preferences.AuthPreferences
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.UserRepository
 import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserUseCase
@@ -21,11 +22,25 @@ import javax.inject.Inject
 class EmailAuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val updateUserUseCase: UpdateUserUseCase,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val authPreferences: AuthPreferences
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(EmailAuthUiState())
     val uiState: StateFlow<EmailAuthUiState> = _uiState.asStateFlow()
+
+    init {
+        checkSavedEmail()
+    }
+
+    private fun checkSavedEmail() {
+        viewModelScope.launch {
+            val savedEmail = authPreferences.getAndClearEmail()
+            if (!savedEmail.isNullOrBlank()) {
+                _uiState.update { it.copy(email = savedEmail) }
+            }
+        }
+    }
 
     fun onNameChange(newValue: String) {
         _uiState.update { it.copy(name = newValue, error = null) }

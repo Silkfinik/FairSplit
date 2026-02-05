@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -47,6 +48,7 @@ fun AccountScreen(
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showLinkEmailDialog by remember { mutableStateOf(false) }
+    var showChangeEmailDialog by remember { mutableStateOf(false) }
 
     var nameState by remember(uiState.user) { mutableStateOf(uiState.user?.displayName ?: "") }
 
@@ -103,6 +105,17 @@ fun AccountScreen(
         )
     }
 
+    if (showChangeEmailDialog) {
+        ChangeEmailDialog(
+            currentEmail = uiState.user?.email ?: "",
+            onDismiss = { showChangeEmailDialog = false },
+            onConfirm = { newEmail ->
+                showChangeEmailDialog = false
+                viewModel.updateEmail(newEmail)
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             FairSplitTopAppBar(
@@ -136,6 +149,14 @@ fun AccountScreen(
                     onNameSubmit = { viewModel.onNameChange(nameState) },
                     onAvatarSelected = viewModel::onAvatarSelected
                 )
+
+                if (!uiState.isAnonymous && !uiState.isEmailVerified) {
+                    VerificationWarningCard(
+                        onResendClick = viewModel::resendVerificationEmail,
+                        onCheckStatusClick = viewModel::checkVerificationStatus,
+                        onChangeEmailClick = { showChangeEmailDialog = true }
+                    )
+                }
 
                 if (uiState.isAnonymous) {
                     LinkAccountSection(
@@ -430,6 +451,111 @@ fun LinkEmailDialog(
                 },
                 enabled = email.isNotBlank() && password.length >= 6
             ) { Text("Привязать") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Отмена") }
+        }
+    )
+}
+
+@Composable
+fun VerificationWarningCard(
+    onResendClick: () -> Unit,
+    onCheckStatusClick: () -> Unit,
+    onChangeEmailClick: () -> Unit
+) {
+    FairSplitCard(
+        backgroundColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.MarkEmailUnread,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Почта не подтверждена",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Вы не сможете войти в аккаунт повторно, пока не подтвердите почту по ссылке в письме.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onChangeEmailClick) {
+                    Text("Исправить почту")
+                }
+                TextButton(onClick = onResendClick) {
+                    Text("Выслать письмо")
+                }
+            }
+            Button(
+                onClick = onCheckStatusClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Я подтвердил")
+            }
+        }
+    }
+}
+
+@Composable
+fun ChangeEmailDialog(
+    currentEmail: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var newEmail by remember { mutableStateOf(currentEmail) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Исправить Email") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Введите корректный адрес. Мы отправим на него новое письмо с подтверждением.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                FairSplitTextField(
+                    value = newEmail,
+                    onValueChange = { newEmail = it },
+                    label = "Новый Email",
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (newEmail.isNotBlank() && newEmail != currentEmail) {
+                        onConfirm(newEmail)
+                    }
+                },
+                enabled = newEmail.isNotBlank() && newEmail != currentEmail
+            ) { Text("Сохранить") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Отмена") }
