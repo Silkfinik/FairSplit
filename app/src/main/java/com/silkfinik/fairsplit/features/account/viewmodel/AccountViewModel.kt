@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.account.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
@@ -23,6 +24,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.silkfinik.fairsplit.core.database.AppDatabase
 import com.google.firebase.messaging.FirebaseMessaging
+import com.silkfinik.fairsplit.core.common.auth.GoogleSignInHelper
+import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkEmailAccountUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkGoogleAccountUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserAvatarUseCase
 import com.silkfinik.fairsplit.features.account.ui.AccountUiState
 import kotlinx.coroutines.tasks.await
@@ -33,7 +37,10 @@ class AccountViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val appDatabase: AppDatabase,
-    private val updateUserAvatarUseCase: UpdateUserAvatarUseCase
+    private val updateUserAvatarUseCase: UpdateUserAvatarUseCase,
+    private val linkGoogleAccountUseCase: LinkGoogleAccountUseCase,
+    private val linkEmailAccountUseCase: LinkEmailAccountUseCase,
+    private val googleSignInHelper: GoogleSignInHelper
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(AccountUiState())
@@ -50,18 +57,21 @@ class AccountViewModel @Inject constructor(
         userJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val userId = authRepository.getUserId()
+            val isAnon = authRepository.isAnonymous()
+
             if (userId != null) {
                 userRepository.getUser(userId)
-                    .catch { e -> 
-                        emit(null) // Emit null on error to clear user
+                    .catch { e ->
+                        emit(null)
                     }
                     .collectLatest { user ->
-                        _uiState.update { 
+                        _uiState.update {
                             it.copy(
-                                isLoading = false, 
+                                isLoading = false,
                                 user = user,
-                                isNotificationsEnabled = user?.fcmToken != null
-                            ) 
+                                isNotificationsEnabled = user?.fcmToken != null,
+                                isAnonymous = isAnon
+                            )
                         }
                     }
             } else {
@@ -115,25 +125,22 @@ class AccountViewModel @Inject constructor(
     }
 
     fun onSignOut() {
-        // Stop listening to user updates immediately
         userJob?.cancel()
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val userId = _uiState.value.user?.id
-            
-            // Fire and forget FCM removal
+
             if (userId != null) {
                 launch {
                     try {
                         userRepository.updateFcmToken(userId, null)
                     } catch (e: Exception) {
-                        // Ignore
+
                     }
                 }
             }
-            
-            // Clear local database
+
             withContext(Dispatchers.IO) {
                 appDatabase.clearAllTables()
             }
@@ -144,7 +151,6 @@ class AccountViewModel @Inject constructor(
     }
     
     fun onDeleteAccount() {
-        // Stop listening to user updates immediately
         userJob?.cancel()
         
         viewModelScope.launch {
@@ -155,17 +161,77 @@ class AccountViewModel @Inject constructor(
                  try {
                      userRepository.deleteUser(userId)
                  } catch (e: Exception) {
-                     // Ignore errors, we want to sign out anyway
+
                  }
-                 
-                 // Clear local database
+
                  withContext(Dispatchers.IO) {
                      appDatabase.clearAllTables()
                  }
                  
-                 authRepository.signOut() // Also sign out from auth
+                 authRepository.signOut()
             }
             _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    fun startGoogleAccountLink(activityContext: Context) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            when (val signInResult = googleSignInHelper.signIn(activityContext)) {
+                is Result.Success -> {
+                    val idToken = signInResult.data.idToken
+
+                    linkGoogleAccountUseCase(idToken)
+                        .onSuccess {
+                            _uiState.update { it.copy(isLoading = false, isAnonymous = false) }
+                            sendEvent(UiEvent.ShowSnackbar("Google аккаунт успешно привязан"))
+                        }
+                        .onError { message, _ ->
+                            _uiState.update { it.copy(isLoading = false) }
+                            sendEvent(UiEvent.ShowSnackbar("Ошибка привязки: $message"))
+                        }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoading = false) }
+                    if (!signInResult.message.contains("отменен", ignoreCase = true)) {
+                        sendEvent(UiEvent.ShowSnackbar(signInResult.message))
+                    }
+                }
+                is Result.Loading -> {
+                    _uiState.update { it.copy(isLoading = true) }
+                }
+            }
+        }
+    }
+
+    fun onLinkGoogleAccount(idToken: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            linkGoogleAccountUseCase(idToken)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, isAnonymous = false) }
+                    sendEvent(UiEvent.ShowSnackbar("Google аккаунт успешно привязан"))
+                }
+                .onError { message, _ ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    sendEvent(UiEvent.ShowSnackbar("Ошибка: $message"))
+                }
+        }
+    }
+
+    fun onLinkEmailAccount(email: String, password: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            linkEmailAccountUseCase(email, password)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, isAnonymous = false) }
+                    sendEvent(UiEvent.ShowSnackbar("Почта успешно привязана"))
+                }
+                .onError { message, _ ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    sendEvent(UiEvent.ShowSnackbar("Ошибка: $message"))
+                }
         }
     }
 }

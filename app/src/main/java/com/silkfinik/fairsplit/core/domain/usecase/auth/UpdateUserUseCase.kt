@@ -19,29 +19,28 @@ class UpdateUserUseCase @Inject constructor(
             }
 
             val userId = authRepository.getUserId() ?: return Result.Error("Пользователь не найден")
-            
-            // Check if user exists in DB to preserve createdAt
+
+            val isActuallyAnonymous = authRepository.isAnonymous()
+
             val existingUser = userRepository.getUser(userId).first()
             
             val currentTime = System.currentTimeMillis()
-            val user = if (existingUser != null) {
-                existingUser.copy(
-                    displayName = name,
-                    photoUrl = photoUrl ?: existingUser.photoUrl,
-                    email = email ?: existingUser.email,
-                    updatedAt = currentTime
-                )
-            } else {
-                User(
+            val user = existingUser?.copy(
+                displayName = name,
+                photoUrl = photoUrl ?: existingUser.photoUrl,
+                email = email ?: existingUser.email,
+                isAnonymous = isActuallyAnonymous,
+                updatedAt = currentTime
+            )
+                ?: User(
                     id = userId,
                     displayName = name,
                     photoUrl = photoUrl,
                     email = email,
-                    isAnonymous = authRepository.isAnonymous(),
+                    isAnonymous = isActuallyAnonymous,
                     createdAt = currentTime,
                     updatedAt = currentTime
                 )
-            }
             
             userRepository.createOrUpdateUser(user)
             Result.Success(Unit)

@@ -4,16 +4,15 @@ import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import javax.inject.Inject
 
-class LinkGoogleAccountUseCase @Inject constructor(
+class LinkEmailAccountUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val updateUserUseCase: UpdateUserUseCase
 ) {
-    suspend operator fun invoke(idToken: String): Result<Unit> {
-        val linkResult = authRepository.linkGoogleAccount(idToken)
+    suspend operator fun invoke(email: String, password: String): Result<Unit> {
+        val linkResult = authRepository.linkEmailAccount(email, password)
         if (linkResult is Result.Error) return linkResult
 
         val name = authRepository.getUserName() ?: "User"
-        val email = authRepository.getUserEmail()
 
         return updateUserUseCase(
             name = name,

@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
@@ -20,7 +21,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -39,9 +42,11 @@ fun AccountScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showLinkEmailDialog by remember { mutableStateOf(false) }
 
     var nameState by remember(uiState.user) { mutableStateOf(uiState.user?.displayName ?: "") }
 
@@ -49,6 +54,7 @@ fun AccountScreen(
         flow = viewModel.uiEvent,
         snackbarHostState = snackbarHostState
     )
+
 
     if (showSignOutDialog) {
         AlertDialog(
@@ -87,20 +93,31 @@ fun AccountScreen(
         )
     }
 
+    if (showLinkEmailDialog) {
+        LinkEmailDialog(
+            onDismiss = { showLinkEmailDialog = false },
+            onConfirm = { email, password ->
+                showLinkEmailDialog = false
+                viewModel.onLinkEmailAccount(email, password)
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             FairSplitTopAppBar(
-                title = "Профиль",
+                title = if (uiState.isAnonymous) "Гостевой профиль" else "Профиль",
                 onBackClick = onBack
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         if (uiState.isLoading && uiState.user == null) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
             ) { CircularProgressIndicator() }
         } else {
             Column(
@@ -114,10 +131,18 @@ fun AccountScreen(
                 ProfileHeader(
                     user = uiState.user,
                     name = nameState,
+                    isAnonymous = uiState.isAnonymous,
                     onNameChange = { nameState = it },
                     onNameSubmit = { viewModel.onNameChange(nameState) },
                     onAvatarSelected = viewModel::onAvatarSelected
                 )
+
+                if (uiState.isAnonymous) {
+                    LinkAccountSection(
+                        onLinkGoogle = { viewModel.startGoogleAccountLink(context) },
+                        onLinkEmail = { showLinkEmailDialog = true }
+                    )
+                }
 
                 SettingsSection(
                     isNotificationsEnabled = uiState.isNotificationsEnabled,
@@ -134,6 +159,7 @@ fun AccountScreen(
 fun ProfileHeader(
     user: User?,
     name: String,
+    isAnonymous: Boolean,
     onNameChange: (String) -> Unit,
     onNameSubmit: () -> Unit,
     onAvatarSelected: (Uri) -> Unit
@@ -195,6 +221,14 @@ fun ProfileHeader(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(24.dp))
+            } else if (isAnonymous) {
+                Text(
+                    text = "Гостевой режим",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
             FairSplitTextField(
@@ -215,6 +249,68 @@ fun ProfileHeader(
                     Text("Сохранить")
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun LinkAccountSection(
+    onLinkGoogle: () -> Unit,
+    onLinkEmail: () -> Unit
+) {
+    FairSplitCard {
+        Column(
+            modifier = Modifier
+                .padding(vertical = 8.dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = "Сохранить прогресс",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+
+            Text(
+                text = "Привяжите аккаунт, чтобы не потерять данные при выходе или смене устройства.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onLinkGoogle,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Text("Привязать Google")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onLinkEmail,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Icon(
+                    Icons.Default.Email,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Привязать Email")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -295,4 +391,48 @@ fun SettingsSection(
             )
         }
     }
+}
+
+@Composable
+fun LinkEmailDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Привязка Email") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FairSplitTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = "Email",
+                    modifier = Modifier.fillMaxWidth()
+                )
+                FairSplitTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = "Пароль",
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = PasswordVisualTransformation()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (email.isNotBlank() && password.length >= 6) {
+                        onConfirm(email, password)
+                    }
+                },
+                enabled = email.isNotBlank() && password.length >= 6
+            ) { Text("Привязать") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Отмена") }
+        }
+    )
 }

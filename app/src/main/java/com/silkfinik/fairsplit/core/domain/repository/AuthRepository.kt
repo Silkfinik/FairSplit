@@ -13,6 +13,8 @@ interface AuthRepository {
     suspend fun signInWithEmail(email: String, password: String): Result<Unit>
     suspend fun signUpWithEmail(name: String, email: String, password: String): Result<Unit>
 
+    suspend fun linkEmailAccount(email: String, password: String): Result<Unit>
+
     suspend fun updateDisplayName(name: String): Result<Unit>
 
     suspend fun updateProfile(name: String, photoUrl: String?): Result<Unit>
@@ -28,4 +30,7 @@ interface AuthRepository {
     fun getUserName(): String?
 
     fun isAnonymous(): Boolean
+
+    fun getUserEmail(): String?
+    fun getPhotoUrl(): String?
 }
