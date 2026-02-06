@@ -10,8 +10,4 @@ class GetCurrentUserIdUseCase @Inject constructor(
     operator fun invoke(): Flow<String?> {
         return authRepository.currentUserId
     }
-
-    suspend fun getUserIdSync(): String? {
-        return authRepository.getUserId()
-    }
 }

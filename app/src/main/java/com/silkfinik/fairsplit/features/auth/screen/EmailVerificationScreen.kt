@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -31,6 +32,9 @@ fun EmailVerificationScreen(
     onVerificationConfirmed: () -> Unit,
     viewModel: EmailVerificationViewModel = hiltViewModel()
 ) {
+
+    val context = LocalContext.current
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold { padding ->
@@ -69,7 +73,7 @@ fun EmailVerificationScreen(
             if (uiState.message != null) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = uiState.message!!,
+                    text = uiState.message!!.asString(context),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center
@@ -79,7 +83,7 @@ fun EmailVerificationScreen(
             if (uiState.error != null) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = uiState.error!!,
+                    text = uiState.error!!.asString(context),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center

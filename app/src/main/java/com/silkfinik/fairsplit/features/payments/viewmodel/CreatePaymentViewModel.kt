@@ -2,7 +2,10 @@ package com.silkfinik.fairsplit.features.payments.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.payment.CreatePaymentUseCase
@@ -53,16 +56,20 @@ class CreatePaymentViewModel @Inject constructor(
                         )
                     }
                 }
-                .onError { message, _ ->
-                    _uiState.update { it.copy(isLoading = false, error = message) }
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    val uiText = error.asUiText()
+                    _uiState.update { it.copy(isLoading = false, error = uiText) }
+                    sendEvent(UiEvent.ShowSnackbar(uiText))
                 }
         }
     }
 
     fun onAmountChange(amount: String) {
         val doubleVal = amount.toDoubleOrNull()
-        val error = if (amount.isNotBlank() && (doubleVal == null || doubleVal <= 0)) "Некорректная сумма" else null
+        val error = if (amount.isNotBlank() && (doubleVal == null || doubleVal <= 0)) {
+            UiText.StringResource(R.string.error_invalid_amount)
+        } else null
+
         _uiState.update { it.copy(amount = amount, amountError = error) }
     }
 
@@ -74,8 +81,19 @@ class CreatePaymentViewModel @Inject constructor(
         val state = _uiState.value
         val amountVal = state.amount.toDoubleOrNull()
 
-        val amountError = if (amountVal == null || amountVal <= 0) "Введите сумму" else null
-        val receiverError = if (state.receiverId == null) "Выберите получателя" else if (state.receiverId == state.payerId) "Нельзя перевести самому себе" else null
+        val amountError = if (amountVal == null || amountVal <= 0) {
+            UiText.StringResource(R.string.enter_amount)
+        } else null
+
+        val receiverError = when (state.receiverId) {
+            null -> {
+                UiText.StringResource(R.string.select_receiver)
+            }
+            state.payerId -> {
+                UiText.StringResource(R.string.error_payment_self_transfer)
+            }
+            else -> null
+        }
 
         if (amountError != null || receiverError != null) {
             _uiState.update {
@@ -99,9 +117,10 @@ class CreatePaymentViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, isSaved = true) }
                     sendEvent(UiEvent.NavigateBack)
                 }
-                .onError { message, _ ->
-                    _uiState.update { it.copy(isLoading = false, error = message) }
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    val uiText = error.asUiText()
+                    _uiState.update { it.copy(isLoading = false, error = uiText) }
+                    sendEvent(UiEvent.ShowSnackbar(uiText))
                 }
         }
     }

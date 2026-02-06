@@ -32,12 +32,12 @@ class OfflinePaymentRepository @Inject constructor(
         return paymentDao.getPayment(paymentId).map { it?.asDomainModel() }
     }
 
-    override suspend fun createPayment(payment: Payment): Result<Unit> = safeCall("Ошибка создания платежа") {
+    override suspend fun createPayment(payment: Payment): Result<Unit> = safeCall {
         paymentDao.insertPayment(payment.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
 
-    override suspend fun updatePayment(payment: Payment): Result<Unit> = safeCall("Ошибка обновления платежа") {
+    override suspend fun updatePayment(payment: Payment): Result<Unit> = safeCall {
         val updatedPayment = payment.copy(updatedAt = timeProvider.now())
         paymentDao.updatePayment(updatedPayment.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()

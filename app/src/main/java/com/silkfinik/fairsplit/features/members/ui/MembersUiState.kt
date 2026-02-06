@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.members.ui
 
+import com.silkfinik.fairsplit.core.common.util.UiText
 import com.silkfinik.fairsplit.core.model.Member
 
 sealed interface MembersUiState {
@@ -11,5 +12,5 @@ sealed interface MembersUiState {
         val hasClaimedGhost: Boolean = false,
         val inviteCode: String? = null
     ) : MembersUiState
-    data class Error(val message: String) : MembersUiState
+    data class Error(val message: UiText) : MembersUiState
 }

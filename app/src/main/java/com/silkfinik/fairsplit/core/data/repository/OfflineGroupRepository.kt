@@ -42,7 +42,7 @@ class OfflineGroupRepository @Inject constructor(
         return groupDao.getGroup(id).map { it?.asDomainModel() }
     }
 
-    override suspend fun createGroup(name: String, currency: Currency, ownerId: String): Result<String> = safeCall("Ошибка создания группы") {
+    override suspend fun createGroup(name: String, currency: Currency, ownerId: String): Result<String> = safeCall {
         val newId = UUID.randomUUID().toString()
         val timestamp = timeProvider.now()
 
@@ -74,7 +74,7 @@ class OfflineGroupRepository @Inject constructor(
         newId
     }
 
-    override suspend fun updateGroup(group: Group): Result<Unit> = safeCall("Ошибка обновления группы") {
+    override suspend fun updateGroup(group: Group): Result<Unit> = safeCall {
         val existingEntity = groupDao.getGroupById(group.id) ?: throw Exception("Группа не найдена")
 
         val updatedGroup = existingEntity.copy(

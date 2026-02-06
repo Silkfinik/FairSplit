@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.expenses.ui
 
+import com.silkfinik.fairsplit.core.common.util.UiText
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.HistoryItem
 import com.silkfinik.fairsplit.core.model.Member
@@ -11,5 +12,5 @@ sealed interface ExpenseHistoryUiState {
         val members: Map<String, Member>,
         val currency: Currency
     ) : ExpenseHistoryUiState
-    data class Error(val message: String) : ExpenseHistoryUiState
+    data class Error(val message: UiText) : ExpenseHistoryUiState
 }

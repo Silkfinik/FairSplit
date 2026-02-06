@@ -1,7 +1,10 @@
 package com.silkfinik.fairsplit.features.auth.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.auth.GetSavedEmailUseCase
@@ -61,7 +64,7 @@ class EmailAuthViewModel @Inject constructor(
         val password = uiState.value.password
 
         if (email.isBlank() || password.isBlank()) {
-            _uiState.update { it.copy(error = "Заполните все поля") }
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.error_fill_all_fields)) }
             return
         }
 
@@ -73,8 +76,8 @@ class EmailAuthViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     sendEvent(UiEvent.Success)
                 }
-                .onError { message, _ ->
-                    _uiState.update { it.copy(isLoading = false, error = message) }
+                .onError { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error.asUiText()) }
                 }
         }
     }
@@ -86,17 +89,17 @@ class EmailAuthViewModel @Inject constructor(
         val confirmPassword = uiState.value.confirmPassword
 
         if (name.isBlank() || email.isBlank() || password.isBlank()) {
-            _uiState.update { it.copy(error = "Заполните все обязательные поля") }
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.error_fill_required_fields)) }
             return
         }
 
         if (password != confirmPassword) {
-            _uiState.update { it.copy(error = "Пароли не совпадают") }
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.error_passwords_mismatch)) }
             return
         }
 
         if (password.length < 6) {
-            _uiState.update { it.copy(error = "Пароль должен быть не менее 6 символов") }
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.error_password_too_short)) }
             return
         }
 
@@ -108,8 +111,8 @@ class EmailAuthViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     sendEvent(UiEvent.Success)
                 }
-                .onError { message, _ ->
-                    _uiState.update { it.copy(isLoading = false, error = message) }
+                .onError { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error.asUiText()) }
                 }
         }
     }

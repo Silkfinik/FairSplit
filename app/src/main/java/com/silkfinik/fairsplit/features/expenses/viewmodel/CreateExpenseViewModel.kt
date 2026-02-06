@@ -2,7 +2,10 @@ package com.silkfinik.fairsplit.features.expenses.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.expense.PrepareCreateExpenseUseCase
@@ -35,7 +38,7 @@ class CreateExpenseViewModel @Inject constructor(
 
     init {
         if (groupId.isBlank()) {
-            _uiState.update { it.copy(error = "Некорректный ID группы") }
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.error_invalid_group_id)) }
         } else {
             loadData()
         }
@@ -69,20 +72,23 @@ class CreateExpenseViewModel @Inject constructor(
                         recalculateSplits()
                     }
                 }
-                .onError { message, _ ->
-                    _uiState.update { it.copy(isLoading = false, error = message) }
+                .onError { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error.asUiText()) }
                 }
         }
     }
 
     fun onDescriptionChange(description: String) {
-        val error = if (description.isBlank()) "Введите описание" else null
+        val error = if (description.isBlank()) UiText.StringResource(R.string.error_enter_description) else null
         _uiState.update { it.copy(description = description, descriptionError = error) }
     }
 
     fun onAmountChange(amount: String) {
         val doubleVal = amount.toDoubleOrNull()
-        val error = if (amount.isNotBlank() && (doubleVal == null || doubleVal <= 0)) "Некорректная сумма" else null
+        val error = if (amount.isNotBlank() && (doubleVal == null || doubleVal <= 0)) {
+            UiText.StringResource(R.string.error_invalid_amount)
+        } else null
+
         _uiState.update { it.copy(amount = amount, amountError = error) }
         recalculateSplits()
     }
@@ -150,7 +156,7 @@ class CreateExpenseViewModel @Inject constructor(
         val splitData = state.splitData
 
         var newSplits = emptyMap<String, Double>()
-        var error: String? = null
+        var error: UiText? = null
 
         if (amount <= 0) {
             _uiState.update { it.copy(splits = emptyMap(), splitError = null) }
@@ -164,7 +170,7 @@ class CreateExpenseViewModel @Inject constructor(
                     val splitAmount = amount / count
                     newSplits = selectedIds.associateWith { splitAmount }
                 } else {
-                    error = "Выберите хотя бы одного"
+                    error = UiText.StringResource(R.string.error_select_at_least_one)
                 }
             }
             SplitType.EXACT -> {
@@ -174,7 +180,11 @@ class CreateExpenseViewModel @Inject constructor(
                 if (abs(amount - currentSum) > 0.02) {
                     val diff = amount - currentSum
                     val diffStr = String.format("%.2f", abs(diff))
-                    error = if (diff > 0) "Осталось распределить: $diffStr" else "Перебор: $diffStr"
+                    error = if (diff > 0) {
+                        UiText.StringResource(R.string.error_split_remaining, diffStr)
+                    } else {
+                        UiText.StringResource(R.string.error_split_overflow, diffStr)
+                    }
                 }
             }
             SplitType.PERCENT -> {
@@ -182,7 +192,11 @@ class CreateExpenseViewModel @Inject constructor(
                 if (abs(100.0 - currentPercentSum) > 0.01) {
                     val diff = 100.0 - currentPercentSum
                     val diffStr = String.format("%.2f", abs(diff))
-                    error = if (diff > 0) "Осталось: $diffStr%" else "Перебор: $diffStr%"
+                    error = if (diff > 0) {
+                        UiText.StringResource(R.string.error_split_remaining_percent, diffStr)
+                    } else {
+                        UiText.StringResource(R.string.error_split_overflow_percent, diffStr)
+                    }
                 }
 
                 newSplits = splitData.filterValues { it > 0 }.mapValues { (_, percent) ->
@@ -196,7 +210,7 @@ class CreateExpenseViewModel @Inject constructor(
                         amount * (share / totalShares)
                     }
                 } else {
-                    error = "Введите доли"
+                    error = UiText.StringResource(R.string.error_enter_shares)
                 }
             }
         }
@@ -207,10 +221,10 @@ class CreateExpenseViewModel @Inject constructor(
     fun onSaveClick() {
         val currentState = _uiState.value
 
-        val descriptionError = if (currentState.description.isBlank()) "Введите описание" else null
+        val descriptionError = if (currentState.description.isBlank()) UiText.StringResource(R.string.error_enter_description) else null
         val amountVal = currentState.amount.toDoubleOrNull()
-        val amountError = if (amountVal == null || amountVal <= 0) "Введите сумму" else null
-        val payerError = if (currentState.payerId == null) "Выберите плательщика" else null
+        val amountError = if (amountVal == null || amountVal <= 0) UiText.StringResource(R.string.error_enter_amount) else null
+        val payerError = if (currentState.payerId == null) UiText.StringResource(R.string.error_select_payer) else null
 
         recalculateSplits()
         val updatedState = _uiState.value
@@ -218,7 +232,7 @@ class CreateExpenseViewModel @Inject constructor(
 
         val totalSplit = updatedState.splits.values.sum()
         val difference = if (amountVal != null) abs(amountVal - totalSplit) else 0.0
-        val balanceError = if (difference > 0.02) "Сумма сплита не совпадает с общей суммой" else null
+        val balanceError = if (difference > 0.02) UiText.StringResource(R.string.error_split_mismatch) else null
 
         if (descriptionError != null || amountError != null || payerError != null || splitError != null || balanceError != null) {
             _uiState.update {
@@ -254,9 +268,9 @@ class CreateExpenseViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, isSaved = true) }
                     sendEvent(UiEvent.NavigateBack)
                 }
-                .onError { message, _ ->
+                .onError { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }

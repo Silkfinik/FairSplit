@@ -76,19 +76,19 @@ class OfflineExpenseRepository @Inject constructor(
         return expenseDao.getExpense(expenseId).map { it?.asDomainModel() }
     }
 
-    override suspend fun createExpense(expense: Expense): Result<String> = safeCall("Ошибка создания траты") {
+    override suspend fun createExpense(expense: Expense): Result<String> = safeCall {
         expenseDao.insertExpense(expense.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
         expense.id
     }
 
-    override suspend fun updateExpense(expense: Expense): Result<Unit> = safeCall("Ошибка обновления траты") {
+    override suspend fun updateExpense(expense: Expense): Result<Unit> = safeCall {
         val updatedExpense = expense.copy(updatedAt = timeProvider.now())
         expenseDao.updateExpense(updatedExpense.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
 
-    override suspend fun deleteExpense(expenseId: String): Result<Unit> = safeCall("Ошибка удаления траты") {
+    override suspend fun deleteExpense(expenseId: String): Result<Unit> = safeCall {
         val expenseEntity = expenseDao.getExpenseById(expenseId) ?: throw Exception("Трата не найдена")
         val deletedExpense = expenseEntity.copy(
             isDeleted = true,

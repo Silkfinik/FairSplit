@@ -1,12 +1,15 @@
 package com.silkfinik.fairsplit.features.auth.viewmodel
 
 import android.content.Context
-import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.auth.GoogleSignInHelper
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
+import com.silkfinik.fairsplit.core.domain.model.AppError
 import com.silkfinik.fairsplit.core.domain.usecase.auth.HandleGoogleSignInUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.SignInAnonymouslyUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
@@ -49,15 +52,15 @@ class WelcomeViewModel @Inject constructor(
                             _uiState.update { it.copy(isLoading = false) }
                             sendEvent(UiEvent.Success)
                         }
-                        .onError { message, _ ->
+                        .onError { error ->
                             _uiState.update { it.copy(isLoading = false) }
-                            sendEvent(UiEvent.ShowSnackbar(message))
+                            sendEvent(UiEvent.ShowError(error.asUiText()))
                         }
                 }
-                .onError { message, exception ->
+                .onError { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    if (exception !is GetCredentialCancellationException) {
-                        sendEvent(UiEvent.ShowSnackbar(message))
+                    if (error !is AppError.Common.Cancelled) {
+                        sendEvent(UiEvent.ShowError(error.asUiText()))
                     }
                 }
         }
@@ -66,7 +69,7 @@ class WelcomeViewModel @Inject constructor(
     fun onContinueClick() {
         val name = _uiState.value.name.trim()
         if (name.isBlank()) {
-            _uiState.update { it.copy(nameError = "Пожалуйста, введите имя") }
+            _uiState.update { it.copy(nameError = UiText.StringResource(R.string.error_enter_name)) }
             return
         }
 
@@ -78,9 +81,9 @@ class WelcomeViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     sendEvent(UiEvent.Success)
                 }
-                .onError { message, _ ->
+                .onError { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }

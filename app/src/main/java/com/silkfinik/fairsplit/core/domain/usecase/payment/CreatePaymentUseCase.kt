@@ -2,6 +2,7 @@ package com.silkfinik.fairsplit.core.domain.usecase.payment
 
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.TimeProvider
+import com.silkfinik.fairsplit.core.domain.model.AppError
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.repository.PaymentRepository
@@ -25,14 +26,20 @@ class CreatePaymentUseCase @Inject constructor(
     )
 
     suspend operator fun invoke(params: Params): Result<Unit> {
-        if (params.amount <= 0) return Result.Error("Сумма должна быть больше 0")
-        if (params.payerId == params.receiverId) return Result.Error("Нельзя перевести самому себе")
+        if (params.amount <= 0) {
+            return Result.Error(AppError.Payment.AmountTooLow)
+        }
+        if (params.payerId == params.receiverId) {
+            return Result.Error(AppError.Payment.SelfTransferForbidden)
+        }
 
         return try {
-            val group = groupRepository.getGroup(params.groupId).first()
-                ?: return Result.Error("Группа не найдена")
+            if (!authRepository.hasSession()) {
+                return Result.Error(AppError.Auth.NotAuthorized)
+            }
 
-            if (!authRepository.hasSession()) return Result.Error("Не авторизован")
+            val group = groupRepository.getGroup(params.groupId).first()
+                ?: return Result.Error(AppError.Group.NotFound)
 
             val now = timeProvider.now()
 
@@ -51,7 +58,7 @@ class CreatePaymentUseCase @Inject constructor(
             paymentRepository.createPayment(payment)
 
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка создания платежа", e)
+            Result.Error(AppError.General(e.message ?: "Ошибка создания платежа", e))
         }
     }
 }

@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -65,6 +66,9 @@ fun ExpenseHistoryScreen(
     viewModel: ExpenseHistoryViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
+
+    val context = LocalContext.current
+
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
@@ -79,7 +83,7 @@ fun ExpenseHistoryScreen(
                 }
                 is ExpenseHistoryUiState.Error -> {
                     Text(
-                        text = state.message,
+                        text = state.message.asString(context),
                         modifier = Modifier.align(Alignment.Center),
                         color = MaterialTheme.colorScheme.error
                     )

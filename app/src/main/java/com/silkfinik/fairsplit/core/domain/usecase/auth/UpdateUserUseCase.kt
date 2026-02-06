@@ -2,6 +2,7 @@ package com.silkfinik.fairsplit.core.domain.usecase.auth
 
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.TimeProvider
+import com.silkfinik.fairsplit.core.domain.model.AppError
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.UserRepository
 import com.silkfinik.fairsplit.core.model.User
@@ -19,7 +20,9 @@ class UpdateUserUseCase @Inject constructor(
             return authResult
         }
 
-        val userId = authRepository.getUserId() ?: return Result.Error("Пользователь не найден")
+        val userId = authRepository.getUserId()
+            ?: return Result.Error(AppError.Auth.UserNotFound)
+
         val isActuallyAnonymous = authRepository.isAnonymous()
 
         val existingUser = userRepository.getUser(userId).first()

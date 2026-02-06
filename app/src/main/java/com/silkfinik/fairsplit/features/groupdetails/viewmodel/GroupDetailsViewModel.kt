@@ -2,7 +2,10 @@ package com.silkfinik.fairsplit.features.groupdetails.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.expense.DeleteExpenseUseCase
@@ -45,7 +48,7 @@ class GroupDetailsViewModel @Inject constructor(
     val uiState: StateFlow<GroupDetailsUiState> = getGroupDetailsScreenDataUseCase(groupId)
         .map { data ->
             if (data.group == null) {
-                GroupDetailsUiState.Error("Группа не найдена")
+                GroupDetailsUiState.Error(UiText.StringResource(R.string.error_group_not_found))
             } else {
                 GroupDetailsUiState.Success(
                     group = data.group,
@@ -77,8 +80,8 @@ class GroupDetailsViewModel @Inject constructor(
     fun addGhostMember(name: String) {
         viewModelScope.launch {
             addGhostMemberUseCase(groupId, name)
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }
@@ -86,8 +89,8 @@ class GroupDetailsViewModel @Inject constructor(
     fun deleteExpense(expenseId: String) {
         viewModelScope.launch {
             deleteExpenseUseCase(expenseId)
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }
@@ -95,11 +98,11 @@ class GroupDetailsViewModel @Inject constructor(
     fun updatePaymentStatus(paymentId: String, newStatus: PaymentStatus) {
         viewModelScope.launch {
             updatePaymentStatusUseCase(paymentId, newStatus)
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
                 .onSuccess {
-                    sendEvent(UiEvent.ShowSnackbar("Статус обновлен"))
+                    sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_status_updated)))
                 }
         }
     }
@@ -108,8 +111,8 @@ class GroupDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             _isGeneratingCode.value = true
             generateInviteCodeUseCase(groupId)
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
             _isGeneratingCode.value = false
         }

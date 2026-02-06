@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.core.common.util
 
+import com.silkfinik.fairsplit.core.domain.model.AppError
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -7,7 +8,23 @@ import kotlinx.coroutines.flow.onStart
 
 sealed interface Result<out T> {
     data class Success<T>(val data: T) : Result<T>
-    data class Error(val message: String, val exception: Throwable? = null) : Result<Nothing>
+
+    data class Error(val error: AppError) : Result<Nothing> {
+
+        constructor(message: String, exception: Throwable? = null) : this(
+            AppError.General(message, exception)
+        )
+
+        val message: String
+            get() = when (error) {
+                is AppError.General -> error.message
+                else -> error.javaClass.simpleName
+            }
+
+        val exception: Throwable?
+            get() = (error as? AppError.General)?.exception
+    }
+
     data object Loading : Result<Nothing>
 }
 
@@ -16,15 +33,25 @@ inline fun <T> Result<T>.onSuccess(action: (T) -> Unit): Result<T> {
     return this
 }
 
+inline fun <T> Result<T>.onError(action: (AppError) -> Unit): Result<T> {
+    if (this is Result.Error) action(error)
+    return this
+}
+
 inline fun <T> Result<T>.onError(action: (String, Throwable?) -> Unit): Result<T> {
     if (this is Result.Error) action(message, exception)
+    return this
+}
+
+inline fun <T> Result<T>.onLoading(action: () -> Unit): Result<T> {
+    if (this is Result.Loading) action()
     return this
 }
 
 inline fun <T, R> Result<T>.map(transform: (T) -> R): Result<R> {
     return when (this) {
         is Result.Success -> Result.Success(transform(data))
-        is Result.Error -> Result.Error(message, exception)
+        is Result.Error -> Result.Error(error)
         is Result.Loading -> Result.Loading
     }
 }
@@ -33,5 +60,7 @@ fun <T> Flow<T>.asResult(): Flow<Result<T>> {
     return this
         .map<T, Result<T>> { Result.Success(it) }
         .onStart { emit(Result.Loading) }
-        .catch { emit(Result.Error(it.message ?: "Unknown error", it)) }
+        .catch {
+            emit(Result.Error(it.message ?: "Unknown error", it))
+        }
 }

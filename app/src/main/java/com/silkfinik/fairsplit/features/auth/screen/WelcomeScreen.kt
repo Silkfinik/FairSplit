@@ -129,7 +129,7 @@ fun WelcomeScreen(
                                 label = "Ваше имя",
                                 placeholder = "Например, Иван",
                                 isError = uiState.nameError != null,
-                                supportingText = uiState.nameError,
+                                supportingText = uiState.nameError?.asString(context),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(
                                     capitalization = KeyboardCapitalization.Words,

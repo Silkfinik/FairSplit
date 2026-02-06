@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.common.util.asResult
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupsUseCase
@@ -29,7 +30,7 @@ class GroupsViewModel @Inject constructor(
         .map { result ->
             when (result) {
                 is Result.Success -> GroupsUiState(groups = result.data, isLoading = false)
-                is Result.Error -> GroupsUiState(isLoading = false, errorMessage = result.message)
+                is Result.Error -> GroupsUiState(isLoading = false, errorMessage = result.error.asUiText())
                 is Result.Loading -> GroupsUiState(isLoading = true)
             }
         }
@@ -45,8 +46,8 @@ class GroupsViewModel @Inject constructor(
                 .onSuccess { groupId ->
                     sendEvent(UiEvent.NavigateToGroupDetails(groupId))
                 }
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }

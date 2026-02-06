@@ -29,19 +29,19 @@ class OfflineMemberRepository @Inject constructor(
         }
     }
 
-    override suspend fun addMember(member: Member): Result<Unit> = safeCall("Ошибка добавления участника") {
+    override suspend fun addMember(member: Member): Result<Unit> = safeCall {
         memberDao.insertMember(member.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
 
-    override suspend fun updateMember(member: Member): Result<Unit> = safeCall("Ошибка обновления участника") {
+    override suspend fun updateMember(member: Member): Result<Unit> = safeCall {
         val updatedMember = member.copy(updatedAt = timeProvider.now())
         memberDao.updateMember(updatedMember.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
 
-    override suspend fun deleteMember(groupId: String, memberId: String): Result<Unit> = safeCall("Ошибка удаления") {
-        val memberEntity = memberDao.getMember(groupId, memberId) ?: throw Exception("Участник не найден")
+    override suspend fun deleteMember(groupId: String, memberId: String): Result<Unit> = safeCall {
+        val memberEntity = memberDao.getMember(groupId, memberId) ?: throw Exception("User not found")
         memberDao.deleteMember(memberEntity)
         workManagerSyncManager.scheduleSync()
     }

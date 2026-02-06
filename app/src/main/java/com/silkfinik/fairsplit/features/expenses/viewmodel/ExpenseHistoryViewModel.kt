@@ -2,6 +2,8 @@ package com.silkfinik.fairsplit.features.expenses.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.R
+import com.silkfinik.fairsplit.core.common.util.UiText
 import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpenseHistoryScreenDataUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.expenses.ui.ExpenseHistoryUiState
@@ -30,7 +32,7 @@ class ExpenseHistoryViewModel @Inject constructor(
                     currency = data.currency
                 )
             } else {
-                ExpenseHistoryUiState.Error("Группа не найдена")
+                ExpenseHistoryUiState.Error(UiText.StringResource(R.string.error_group_not_found))
             }
         }
         .stateIn(

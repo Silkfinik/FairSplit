@@ -3,32 +3,36 @@ package com.silkfinik.fairsplit.features.account.viewmodel
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
+import com.silkfinik.fairsplit.R
+import com.silkfinik.fairsplit.core.common.auth.GoogleSignInHelper
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
+import com.silkfinik.fairsplit.core.data.preferences.AuthPreferences
+import com.silkfinik.fairsplit.core.domain.model.AppError
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.UserRepository
-import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-import com.google.firebase.messaging.FirebaseMessaging
-import com.silkfinik.fairsplit.core.common.auth.GoogleSignInHelper
-import com.silkfinik.fairsplit.core.data.preferences.AuthPreferences
 import com.silkfinik.fairsplit.core.domain.usecase.auth.DeleteAccountUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkEmailAccountUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkGoogleAccountUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.SignOutUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserAvatarUseCase
+import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.account.ui.AccountUiState
-import kotlinx.coroutines.tasks.await
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
 @HiltViewModel
 class AccountViewModel @Inject constructor(
@@ -95,14 +99,14 @@ class AccountViewModel @Inject constructor(
                         )
                     }
                     if (isVerified) {
-                        sendEvent(UiEvent.ShowSnackbar("Почта подтверждена!"))
+                        sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_email_verified)))
                     } else {
-                        sendEvent(UiEvent.ShowSnackbar("Почта все еще не подтверждена"))
+                        sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_email_not_verified)))
                     }
                 }
-                .onError { msg, _ ->
+                .onError { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar("Ошибка проверки: $msg"))
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }
@@ -110,8 +114,12 @@ class AccountViewModel @Inject constructor(
     fun resendVerificationEmail() {
         viewModelScope.launch {
             authRepository.sendEmailVerification()
-                .onSuccess { sendEvent(UiEvent.ShowSnackbar("Письмо отправлено")) }
-                .onError { msg, _ -> sendEvent(UiEvent.ShowSnackbar("Ошибка: $msg")) }
+                .onSuccess {
+                    sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_verification_email_sent)))
+                }
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
+                }
         }
     }
 
@@ -123,11 +131,11 @@ class AccountViewModel @Inject constructor(
                 .onSuccess {
                     authPreferences.saveEmailForNextLogin(newEmail)
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar("На $newEmail отправлено письмо. Перейдите по ссылке для завершения."))
+                    sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_email_change_sent, newEmail)))
                 }
-                .onError { msg, _ ->
+                .onError { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar("Ошибка: $msg"))
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }
@@ -138,10 +146,10 @@ class AccountViewModel @Inject constructor(
 
             updateUserAvatarUseCase(uri.toString())
                 .onSuccess {
-                    sendEvent(UiEvent.ShowSnackbar("Аватар успешно обновлен"))
+                    sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_avatar_updated)))
                 }
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar("Ошибка: $message"))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
 
             _uiState.update { it.copy(isLoading = false) }
@@ -156,8 +164,8 @@ class AccountViewModel @Inject constructor(
             val updatedUser = currentUser.copy(displayName = newName)
 
             userRepository.createOrUpdateUser(updatedUser)
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar("Не удалось обновить имя: $message"))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }
@@ -170,20 +178,23 @@ class AccountViewModel @Inject constructor(
                 val token = try {
                     FirebaseMessaging.getInstance().token.await()
                 } catch (e: Exception) {
-                    sendEvent(UiEvent.ShowSnackbar("Ошибка получения токена уведомлений"))
+                    sendEvent(UiEvent.ShowError(UiText.StringResource(R.string.error_fcm_token_get)))
                     _uiState.update { it.copy(isNotificationsEnabled = false) }
                     return@launch
                 }
 
                 userRepository.updateFcmToken(userId, token)
-                    .onError { message, _ ->
-                        sendEvent(UiEvent.ShowSnackbar("Не удалось сохранить токен: $message"))
+                    .onError { error ->
+                        val uiError = if (error is AppError.Common) error.asUiText()
+                        else UiText.StringResource(R.string.error_fcm_token_save)
+
+                        sendEvent(UiEvent.ShowError(uiError))
                         _uiState.update { it.copy(isNotificationsEnabled = false) }
                     }
             } else {
                 userRepository.updateFcmToken(userId, null)
-                    .onError { message, _ ->
-                        sendEvent(UiEvent.ShowSnackbar("Ошибка отключения: $message"))
+                    .onError { error ->
+                        sendEvent(UiEvent.ShowError(error.asUiText()))
                     }
             }
         }
@@ -196,8 +207,8 @@ class AccountViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
 
             signOutUseCase()
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowError(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
 
             _uiState.update { it.copy(isLoading = false) }
@@ -211,8 +222,8 @@ class AccountViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
 
             deleteAccountUseCase()
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowError(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
 
             _uiState.update { it.copy(isLoading = false) }
@@ -227,10 +238,11 @@ class AccountViewModel @Inject constructor(
                 .onSuccess { result ->
                     onLinkGoogleAccount(result.idToken)
                 }
-                .onError { message, _ ->
+                .onError { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    if (!message.contains("отменен", ignoreCase = true)) {
-                        sendEvent(UiEvent.ShowSnackbar(message))
+
+                    if (error !is AppError.Common.Cancelled) {
+                        sendEvent(UiEvent.ShowError(error.asUiText()))
                     }
                 }
         }
@@ -243,11 +255,11 @@ class AccountViewModel @Inject constructor(
             linkGoogleAccountUseCase(idToken)
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false, isAnonymous = false) }
-                    sendEvent(UiEvent.ShowSnackbar("Google аккаунт успешно привязан"))
+                    sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_google_linked)))
                 }
-                .onError { message, _ ->
+                .onError { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar("Ошибка привязки: $message"))
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }
@@ -267,11 +279,11 @@ class AccountViewModel @Inject constructor(
                             isEmailVerified = false
                         )
                     }
-                    sendEvent(UiEvent.ShowSnackbar("Привязано. Письмо с подтверждением отправлено."))
+                    sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_email_linked)))
                 }
-                .onError { message, _ ->
+                .onError { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar("Ошибка: $message"))
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }

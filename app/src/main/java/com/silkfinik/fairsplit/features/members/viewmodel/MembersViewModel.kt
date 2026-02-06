@@ -2,7 +2,10 @@ package com.silkfinik.fairsplit.features.members.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.group.GenerateInviteCodeUseCase
@@ -48,7 +51,7 @@ class MembersViewModel @Inject constructor(
                     inviteCode = data.inviteCode
                 )
             } else {
-                MembersUiState.Error("Участники не найдены")
+                MembersUiState.Error(UiText.StringResource(R.string.error_members_not_found))
             }
         }
         .stateIn(
@@ -60,8 +63,8 @@ class MembersViewModel @Inject constructor(
     fun addGhostMember(name: String) {
         viewModelScope.launch {
             addGhostMemberUseCase(groupId, name)
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }
@@ -73,8 +76,8 @@ class MembersViewModel @Inject constructor(
                 val member = state.members.find { it.id == memberId }
                 if (member != null) {
                     updateMemberUseCase(member.copy(name = newName))
-                        .onError { message, _ ->
-                            sendEvent(UiEvent.ShowSnackbar(message))
+                        .onError { error ->
+                            sendEvent(UiEvent.ShowError(error.asUiText()))
                         }
                 }
             }
@@ -84,11 +87,11 @@ class MembersViewModel @Inject constructor(
     fun claimGhost(memberId: String) {
         viewModelScope.launch {
             claimGhostUseCase(groupId, memberId)
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
                 .onSuccess {
-                    sendEvent(UiEvent.ShowSnackbar("Профиль успешно объединен"))
+                    sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_ghost_claimed)))
                 }
         }
     }
@@ -98,8 +101,8 @@ class MembersViewModel @Inject constructor(
             _isGeneratingCode.value = true
 
             generateInviteCodeUseCase(groupId)
-                .onError { message, _ ->
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                .onError { error ->
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
 
             _isGeneratingCode.value = false

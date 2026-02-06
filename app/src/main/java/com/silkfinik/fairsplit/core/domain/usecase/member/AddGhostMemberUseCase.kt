@@ -2,6 +2,7 @@ package com.silkfinik.fairsplit.core.domain.usecase.member
 
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.TimeProvider
+import com.silkfinik.fairsplit.core.domain.model.AppError
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.repository.MemberRepository
 import com.silkfinik.fairsplit.core.model.Member
@@ -17,7 +18,7 @@ class AddGhostMemberUseCase @Inject constructor(
     suspend operator fun invoke(groupId: String, name: String): Result<Unit> {
         return try {
             val group = groupRepository.getGroup(groupId).first()
-                ?: return Result.Error("Группа не найдена")
+                ?: return Result.Error(AppError.Group.NotFound)
 
             val now = timeProvider.now()
 
@@ -37,7 +38,7 @@ class AddGhostMemberUseCase @Inject constructor(
 
             Result.Success(Unit)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка при добавлении участника", e)
+            Result.Error(AppError.Common.Unknown(e))
         }
     }
 }

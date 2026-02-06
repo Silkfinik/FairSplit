@@ -3,6 +3,7 @@ package com.silkfinik.fairsplit.core.ui.common
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
@@ -15,14 +16,16 @@ fun ObserveAsEvents(
     onNavigateToGroupDetails: (String) -> Unit = {},
     onEvent: (UiEvent) -> Unit = {}
 ) {
+    val context = LocalContext.current
+
     LaunchedEffect(key1 = true) {
         flow.collectLatest { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event.message)
+                    snackbarHostState.showSnackbar(event.message.asString(context))
                 }
                 is UiEvent.ShowError -> {
-                    snackbarHostState.showSnackbar(event.message)
+                    snackbarHostState.showSnackbar(event.message.asString(context))
                 }
                 UiEvent.NavigateBack -> {
                     onNavigateBack()

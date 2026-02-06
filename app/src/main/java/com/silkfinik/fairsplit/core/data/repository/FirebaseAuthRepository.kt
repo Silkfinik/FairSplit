@@ -47,35 +47,35 @@ class FirebaseAuthRepository @Inject constructor(
 
     override fun isAnonymous(): Boolean = auth.currentUser?.isAnonymous == true
 
-    override suspend fun sendEmailVerification(): Result<Unit> = safeCall("Ошибка отправки письма") {
+    override suspend fun sendEmailVerification(): Result<Unit> = safeCall {
         auth.currentUser?.sendEmailVerification()?.await()
     }
 
-    override suspend fun updateEmail(newEmail: String): Result<Unit> = safeCall("Ошибка обновления почты") {
+    override suspend fun updateEmail(newEmail: String): Result<Unit> = safeCall {
         val user = auth.currentUser ?: throw Exception("User not found")
         try {
             user.verifyBeforeUpdateEmail(newEmail).await()
         } catch (e: Exception) {
             if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
-                throw Exception("В целях безопасности нужно выйти и войти заново, чтобы сменить почту.", e)
+                throw Exception("Need re-login for email")
             }
             throw e
         }
     }
 
-    override suspend fun reloadUser(): Result<Unit> = safeCall("Ошибка обновления данных") {
+    override suspend fun reloadUser(): Result<Unit> = safeCall {
         auth.currentUser?.reload()?.await()
     }
 
-    override suspend fun signInAnonymously(): Result<Unit> = safeCall("Ошибка анонимного входа") {
+    override suspend fun signInAnonymously(): Result<Unit> = safeCall {
         auth.signInAnonymously().await()
     }
 
-    override suspend fun signInWithEmail(email: String, password: String): Result<Unit> = safeCall("Ошибка входа по почте") {
+    override suspend fun signInWithEmail(email: String, password: String): Result<Unit> = safeCall {
         auth.signInWithEmailAndPassword(email, password).await()
     }
 
-    override suspend fun signUpWithEmail(name: String, email: String, password: String): Result<Unit> = safeCall("Ошибка регистрации") {
+    override suspend fun signUpWithEmail(name: String, email: String, password: String): Result<Unit> = safeCall {
         auth.createUserWithEmailAndPassword(email, password).await()
 
         val user = auth.currentUser
@@ -87,13 +87,13 @@ class FirebaseAuthRepository @Inject constructor(
         }
     }
 
-    override suspend fun linkEmailAccount(email: String, password: String): Result<Unit> = safeCall("Ошибка привязки почты") {
+    override suspend fun linkEmailAccount(email: String, password: String): Result<Unit> = safeCall {
         val user = auth.currentUser ?: throw Exception("User not logged in")
         val credential = EmailAuthProvider.getCredential(email, password)
         user.linkWithCredential(credential).await()
     }
 
-    override suspend fun updateDisplayName(name: String): Result<Unit> = safeCall("Ошибка обновления имени") {
+    override suspend fun updateDisplayName(name: String): Result<Unit> = safeCall {
         val user = auth.currentUser ?: throw Exception("User not logged in")
         val profileUpdates = UserProfileChangeRequest.Builder()
             .setDisplayName(name)
@@ -101,7 +101,7 @@ class FirebaseAuthRepository @Inject constructor(
         user.updateProfile(profileUpdates).await()
     }
 
-    override suspend fun updateProfile(name: String, photoUrl: String?): Result<Unit> = safeCall("Ошибка обновления профиля") {
+    override suspend fun updateProfile(name: String, photoUrl: String?): Result<Unit> = safeCall {
         val user = auth.currentUser ?: throw Exception("User not logged in")
         val builder = UserProfileChangeRequest.Builder()
             .setDisplayName(name)
@@ -113,12 +113,12 @@ class FirebaseAuthRepository @Inject constructor(
         user.updateProfile(builder.build()).await()
     }
 
-    override suspend fun signInWithGoogle(idToken: String): Result<Unit> = safeCall("Ошибка входа через Google") {
+    override suspend fun signInWithGoogle(idToken: String): Result<Unit> = safeCall {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         auth.signInWithCredential(credential).await()
     }
 
-    override suspend fun linkGoogleAccount(idToken: String): Result<Unit> = safeCall("Ошибка привязки аккаунта") {
+    override suspend fun linkGoogleAccount(idToken: String): Result<Unit> = safeCall {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         val user = auth.currentUser ?: throw Exception("User not logged in")
 
@@ -129,7 +129,7 @@ class FirebaseAuthRepository @Inject constructor(
         }
     }
 
-    override suspend fun signOut(): Result<Unit> = safeCall("Ошибка выхода") {
+    override suspend fun signOut(): Result<Unit> = safeCall {
         withContext(Dispatchers.IO) {
             appDatabase.clearAllTables()
         }

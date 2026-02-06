@@ -1,9 +1,9 @@
 package com.silkfinik.fairsplit.core.common.util
 
+import com.silkfinik.fairsplit.core.data.mapper.toAppError
 import kotlinx.coroutines.CancellationException
 
 suspend fun <T> safeCall(
-    errorMessage: String = "Произошла ошибка",
     action: suspend () -> T
 ): Result<T> {
     return try {
@@ -12,6 +12,6 @@ suspend fun <T> safeCall(
     } catch (e: Exception) {
         if (e is CancellationException) throw e
 
-        Result.Error(e.message ?: errorMessage, e)
+        Result.Error(e.toAppError())
     }
 }

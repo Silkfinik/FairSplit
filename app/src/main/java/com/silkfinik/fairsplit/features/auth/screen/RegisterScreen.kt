@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -44,6 +45,9 @@ fun RegisterScreen(
     onRegistrationSuccess: () -> Unit,
     viewModel: EmailAuthViewModel = hiltViewModel()
 ) {
+
+    val context = LocalContext.current
+
     val state by viewModel.uiState.collectAsState()
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isConfirmPasswordVisible by remember { mutableStateOf(false) }
@@ -143,7 +147,7 @@ fun RegisterScreen(
             if (state.error != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = state.error!!,
+                    text = state.error!!.asString(context),
                     color = Color.Red,
                     modifier = Modifier.align(Alignment.Start)
                 )

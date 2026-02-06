@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.expenses.ui
 
+import com.silkfinik.fairsplit.core.common.util.UiText
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
@@ -18,11 +19,11 @@ data class CreateExpenseUiState(
     val splitType: SplitType = SplitType.EQUAL,
     val splitData: Map<String, Double> = emptyMap(),
     val splits: Map<String, Double> = emptyMap(),
-    val error: String? = null,
-    val descriptionError: String? = null,
-    val amountError: String? = null,
-    val payerError: String? = null,
-    val splitError: String? = null,
+    val error: UiText? = null,
+    val descriptionError: UiText? = null,
+    val amountError: UiText? = null,
+    val payerError: UiText? = null,
+    val splitError: UiText? = null,
     val isEditing: Boolean = false,
     val isReadOnly: Boolean = false,
     val isSaved: Boolean = false

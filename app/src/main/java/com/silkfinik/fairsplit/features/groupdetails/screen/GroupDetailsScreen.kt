@@ -59,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -107,6 +108,9 @@ fun GroupDetailsScreen(
     onMembersClick: (String) -> Unit,
     onSettleUpClick: (String, String?, String?) -> Unit
 ) {
+
+    val context = LocalContext.current
+
     val uiState by viewModel.uiState.collectAsState()
     val isGeneratingCode by viewModel.isGeneratingCode.collectAsState()
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
@@ -201,7 +205,7 @@ fun GroupDetailsScreen(
                 }
                 is GroupDetailsUiState.Error -> {
                     Text(
-                        text = state.message,
+                        text = state.message.asString(context),
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(16.dp),

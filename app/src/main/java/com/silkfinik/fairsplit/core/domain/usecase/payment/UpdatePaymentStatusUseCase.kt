@@ -2,6 +2,7 @@ package com.silkfinik.fairsplit.core.domain.usecase.payment
 
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.TimeProvider
+import com.silkfinik.fairsplit.core.domain.model.AppError
 import com.silkfinik.fairsplit.core.domain.repository.PaymentRepository
 import com.silkfinik.fairsplit.core.model.enums.PaymentStatus
 import kotlinx.coroutines.flow.first
@@ -14,10 +15,10 @@ class UpdatePaymentStatusUseCase @Inject constructor(
     suspend operator fun invoke(paymentId: String, newStatus: PaymentStatus): Result<Unit> {
         return try {
             val payment = paymentRepository.getPayment(paymentId).first()
-                ?: return Result.Error("Платеж не найден")
+                ?: return Result.Error(AppError.Payment.NotFound)
 
             if (payment.status != PaymentStatus.PENDING) {
-                return Result.Error("Статус платежа уже изменен")
+                return Result.Error(AppError.Payment.StatusAlreadyChanged)
             }
 
             val updatedPayment = payment.copy(
@@ -28,7 +29,7 @@ class UpdatePaymentStatusUseCase @Inject constructor(
             paymentRepository.updatePayment(updatedPayment)
 
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Ошибка обновления статуса", e)
+            Result.Error(AppError.General(e.message ?: "Ошибка обновления статуса", e))
         }
     }
 }

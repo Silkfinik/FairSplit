@@ -2,6 +2,8 @@ package com.silkfinik.fairsplit.core.domain.usecase.expense
 
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.TimeProvider
+import com.silkfinik.fairsplit.core.common.util.map
+import com.silkfinik.fairsplit.core.domain.model.AppError
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.ExpenseRepository
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
@@ -32,11 +34,11 @@ class SaveExpenseUseCase @Inject constructor(
     suspend operator fun invoke(params: Params): Result<Unit> {
         return try {
             val userId = authRepository.getUserId()
-                ?: return Result.Error("Не авторизован")
+                ?: return Result.Error(AppError.Auth.NotAuthorized)
 
             val currency = if (params.expenseId == null) {
                 val group = groupRepository.getGroup(params.groupId).first()
-                    ?: return Result.Error("Группа не найдена")
+                    ?: return Result.Error(AppError.Group.NotFound)
                 group.currency
             } else {
                 null
@@ -46,7 +48,7 @@ class SaveExpenseUseCase @Inject constructor(
 
             if (params.expenseId != null) {
                 val existingExpense = expenseRepository.getExpense(params.expenseId).first()
-                    ?: return Result.Error("Трата не найдена")
+                    ?: return Result.Error(AppError.Expense.NotFound)
 
                 val updatedExpense = existingExpense.copy(
                     description = params.description,
@@ -77,14 +79,10 @@ class SaveExpenseUseCase @Inject constructor(
                     updatedAt = now
                 )
 
-                when (val result = expenseRepository.createExpense(expense)) {
-                    is Result.Success -> Result.Success(Unit)
-                    is Result.Error -> Result.Error(result.message, result.exception)
-                    is Result.Loading -> Result.Loading
-                }
+                expenseRepository.createExpense(expense).map { Unit }
             }
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Произошла ошибка при сохранении", e)
+            Result.Error(AppError.Common.Unknown(e))
         }
     }
 }

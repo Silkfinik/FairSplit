@@ -1,6 +1,9 @@
 package com.silkfinik.fairsplit.features.auth.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.silkfinik.fairsplit.R
+import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.auth.CheckEmailVerificationUseCase
@@ -35,12 +38,12 @@ class EmailVerificationViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            message = "Письмо отправлено! Проверьте папку Спам."
+                            message = UiText.StringResource(R.string.message_verification_sent)
                         )
                     }
                 }
-                .onError { message, _ ->
-                    _uiState.update { it.copy(isLoading = false, error = message) }
+                .onError { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error.asUiText()) }
                 }
         }
     }
@@ -58,13 +61,13 @@ class EmailVerificationViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = "Почта еще не подтверждена. Попробуйте обновить страницу после перехода по ссылке."
+                                error = UiText.StringResource(R.string.error_email_not_verified_yet)
                             )
                         }
                     }
                 }
-                .onError { message, _ ->
-                    _uiState.update { it.copy(isLoading = false, error = message) }
+                .onError { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error.asUiText()) }
                 }
         }
     }

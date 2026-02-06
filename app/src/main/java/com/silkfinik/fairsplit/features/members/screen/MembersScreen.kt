@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -69,6 +70,9 @@ fun MembersScreen(
     viewModel: MembersViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
+
+    val context = LocalContext.current
+
     val uiState by viewModel.uiState.collectAsState()
     val isGeneratingCode by viewModel.isGeneratingCode.collectAsState()
     
@@ -162,7 +166,7 @@ fun MembersScreen(
                 }
                 is MembersUiState.Error -> {
                     Text(
-                        text = state.message,
+                        text = state.message.asString(context),
                         modifier = Modifier.align(Alignment.Center).padding(16.dp),
                         color = MaterialTheme.colorScheme.error
                     )

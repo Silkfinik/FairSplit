@@ -19,7 +19,7 @@ class SignUpWithEmailUseCase @Inject constructor(
         )
 
         if (updateResult is Result.Error) {
-            return Result.Error("Ошибка создания профиля: ${updateResult.message}", updateResult.exception)
+            return updateResult
         }
 
         return authRepository.sendEmailVerification()

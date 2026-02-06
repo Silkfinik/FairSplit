@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,9 @@ fun CreateExpenseScreen(
     onBack: () -> Unit,
     onHistoryClick: () -> Unit = {}
 ) {
+
+    val context = LocalContext.current
+
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -141,7 +145,7 @@ fun CreateExpenseScreen(
                                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                                     readOnly = uiState.isReadOnly,
                                     isError = uiState.descriptionError != null,
-                                    supportingText = uiState.descriptionError
+                                    supportingText = uiState.descriptionError?.asString(context)
                                 )
 
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -200,7 +204,7 @@ fun CreateExpenseScreen(
 
                                 if (uiState.splitError != null) {
                                     Text(
-                                        text = uiState.splitError!!,
+                                        text = uiState.splitError!!.asString(context),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.error,
                                         fontWeight = FontWeight.Bold

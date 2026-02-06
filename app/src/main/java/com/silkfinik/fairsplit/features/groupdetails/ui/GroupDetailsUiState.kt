@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.groupdetails.ui
 
+import com.silkfinik.fairsplit.core.common.util.UiText
 import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.model.Payment
@@ -14,5 +15,5 @@ sealed interface GroupDetailsUiState {
         val balances: Map<String, Double> = emptyMap(),
         val currentUserId: String? = null
     ) : GroupDetailsUiState
-    data class Error(val message: String) : GroupDetailsUiState
+    data class Error(val message: UiText) : GroupDetailsUiState
 }

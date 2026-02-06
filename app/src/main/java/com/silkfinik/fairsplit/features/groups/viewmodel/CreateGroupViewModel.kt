@@ -1,10 +1,10 @@
 package com.silkfinik.fairsplit.features.groups.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
-import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.domain.usecase.group.CreateGroupUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.groups.ui.CreateGroupUiState
@@ -43,9 +43,9 @@ class CreateGroupViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     onSuccess()
                 }
-                .onError { message, _ ->
+                .onError { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    sendEvent(UiEvent.ShowSnackbar(message))
+                    sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
     }
