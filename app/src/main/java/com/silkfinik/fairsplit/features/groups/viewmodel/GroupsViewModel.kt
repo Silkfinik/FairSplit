@@ -6,8 +6,8 @@ import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.common.util.asResult
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
-import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupsUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.group.JoinGroupUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.groups.ui.GroupsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class GroupsViewModel @Inject constructor(
     getGroupsUseCase: GetGroupsUseCase,
-    private val groupRepository: GroupRepository
+    private val joinGroupUseCase: JoinGroupUseCase
 ) : BaseViewModel() {
 
     val uiState: StateFlow<GroupsUiState> = getGroupsUseCase()
@@ -41,7 +41,7 @@ class GroupsViewModel @Inject constructor(
 
     fun joinGroup(code: String) {
         viewModelScope.launch {
-            groupRepository.joinGroup(code)
+            joinGroupUseCase(code)
                 .onSuccess { groupId ->
                     sendEvent(UiEvent.NavigateToGroupDetails(groupId))
                 }

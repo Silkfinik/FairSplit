@@ -3,7 +3,9 @@ package com.silkfinik.fairsplit.features.auth.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
-import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
+import com.silkfinik.fairsplit.core.domain.usecase.auth.CheckEmailVerificationUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.SendVerificationEmailUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.SignOutUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.auth.ui.EmailVerificationUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +18,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EmailVerificationViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val sendVerificationEmailUseCase: SendVerificationEmailUseCase,
+    private val checkEmailVerificationUseCase: CheckEmailVerificationUseCase,
+    private val signOutUseCase: SignOutUseCase
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(EmailVerificationUiState())
@@ -26,7 +30,7 @@ class EmailVerificationViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, message = null) }
 
-            authRepository.sendEmailVerification()
+            sendVerificationEmailUseCase()
                 .onSuccess {
                     _uiState.update {
                         it.copy(
@@ -45,9 +49,9 @@ class EmailVerificationViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            authRepository.reloadUser()
-                .onSuccess {
-                    if (authRepository.isEmailVerified()) {
+            checkEmailVerificationUseCase()
+                .onSuccess { isVerified ->
+                    if (isVerified) {
                         _uiState.update { it.copy(isLoading = false) }
                         onVerified()
                     } else {
@@ -67,7 +71,7 @@ class EmailVerificationViewModel @Inject constructor(
 
     fun signOut() {
         viewModelScope.launch {
-            authRepository.signOut()
+            signOutUseCase()
         }
     }
 }

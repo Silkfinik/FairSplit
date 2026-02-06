@@ -52,7 +52,7 @@ import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
-import com.silkfinik.fairsplit.features.expenses.viewmodel.ExpenseHistoryUiState
+import com.silkfinik.fairsplit.features.expenses.ui.ExpenseHistoryUiState
 import com.silkfinik.fairsplit.features.expenses.viewmodel.ExpenseHistoryViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
