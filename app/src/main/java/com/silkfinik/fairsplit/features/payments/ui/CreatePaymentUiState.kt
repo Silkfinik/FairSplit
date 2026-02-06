@@ -8,12 +8,12 @@ data class CreatePaymentUiState(
     val amount: String = "",
     val currency: Currency = Currency.USD,
     val members: List<Member> = emptyList(),
-    val payerId: String? = null, // Who is paying (Debtor)
-    val receiverId: String? = null, // Who receives (Creditor)
+    val payerId: String? = null,
+    val receiverId: String? = null,
     val currentUserId: String? = null,
     val amountError: String? = null,
     val receiverError: String? = null,
-    val payerError: String? = null, // Usually fixed to current user, but good to have
+    val payerError: String? = null,
     val isSaved: Boolean = false,
     val error: String? = null
 )

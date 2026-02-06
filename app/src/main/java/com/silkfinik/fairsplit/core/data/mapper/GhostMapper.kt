@@ -11,15 +11,15 @@ fun MemberEntity.asGhostDto(): GhostDto {
     )
 }
 
-fun GhostDto.asMemberEntity(id: String, groupId: String): MemberEntity {
+fun GhostDto.asMemberEntity(id: String, groupId: String, timestamp: Long): MemberEntity {
     return MemberEntity(
         id = id,
         groupId = groupId,
         name = this.name,
         isGhost = true,
         mergedWithUid = this.mergedWithUid,
-        createdAt = System.currentTimeMillis(),
-        updatedAt = System.currentTimeMillis(),
+        createdAt = timestamp,
+        updatedAt = timestamp,
         isDirty = false
     )
 }

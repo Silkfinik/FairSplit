@@ -1,13 +1,15 @@
 package com.silkfinik.fairsplit.core.domain.usecase.payment
 
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.domain.repository.PaymentRepository
 import com.silkfinik.fairsplit.core.model.enums.PaymentStatus
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class UpdatePaymentStatusUseCase @Inject constructor(
-    private val paymentRepository: PaymentRepository
+    private val paymentRepository: PaymentRepository,
+    private val timeProvider: TimeProvider
 ) {
     suspend operator fun invoke(paymentId: String, newStatus: PaymentStatus): Result<Unit> {
         return try {
@@ -20,7 +22,7 @@ class UpdatePaymentStatusUseCase @Inject constructor(
 
             val updatedPayment = payment.copy(
                 status = newStatus,
-                updatedAt = System.currentTimeMillis()
+                updatedAt = timeProvider.now()
             )
 
             paymentRepository.updatePayment(updatedPayment)

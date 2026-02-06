@@ -1,6 +1,7 @@
 package com.silkfinik.fairsplit.core.domain.usecase.auth
 
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.UserRepository
 import com.silkfinik.fairsplit.core.model.User
@@ -9,7 +10,8 @@ import javax.inject.Inject
 
 class UpdateUserUseCase @Inject constructor(
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val timeProvider: TimeProvider
 ) {
     suspend operator fun invoke(name: String, photoUrl: String? = null, email: String? = null): Result<Unit> {
         val authResult = authRepository.updateProfile(name, photoUrl)
@@ -21,7 +23,7 @@ class UpdateUserUseCase @Inject constructor(
         val isActuallyAnonymous = authRepository.isAnonymous()
 
         val existingUser = userRepository.getUser(userId).first()
-        val currentTime = System.currentTimeMillis()
+        val currentTime = timeProvider.now()
 
         val user = existingUser?.copy(
             displayName = name,

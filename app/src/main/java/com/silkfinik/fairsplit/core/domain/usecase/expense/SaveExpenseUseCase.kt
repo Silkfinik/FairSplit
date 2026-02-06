@@ -1,6 +1,7 @@
 package com.silkfinik.fairsplit.core.domain.usecase.expense
 
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.ExpenseRepository
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
@@ -13,7 +14,8 @@ import javax.inject.Inject
 class SaveExpenseUseCase @Inject constructor(
     private val expenseRepository: ExpenseRepository,
     private val groupRepository: GroupRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val timeProvider: TimeProvider
 ) {
     data class Params(
         val groupId: String,
@@ -40,6 +42,8 @@ class SaveExpenseUseCase @Inject constructor(
                 null
             }
 
+            val now = timeProvider.now()
+
             if (params.expenseId != null) {
                 val existingExpense = expenseRepository.getExpense(params.expenseId).first()
                     ?: return Result.Error("Трата не найдена")
@@ -52,7 +56,7 @@ class SaveExpenseUseCase @Inject constructor(
                     splits = params.splits,
                     splitType = params.splitType,
                     splitData = params.splitData,
-                    updatedAt = System.currentTimeMillis()
+                    updatedAt = now
                 )
                 expenseRepository.updateExpense(updatedExpense)
             } else {
@@ -63,14 +67,14 @@ class SaveExpenseUseCase @Inject constructor(
                     amount = params.amount,
                     currency = currency!!,
                     category = params.category,
-                    date = System.currentTimeMillis(),
+                    date = now,
                     creatorId = userId,
                     payers = mapOf(params.payerId to params.amount),
                     splits = params.splits,
                     splitType = params.splitType,
                     splitData = params.splitData,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
+                    createdAt = now,
+                    updatedAt = now
                 )
 
                 when (val result = expenseRepository.createExpense(expense)) {

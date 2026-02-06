@@ -1,6 +1,7 @@
 package com.silkfinik.fairsplit.core.domain.usecase.payment
 
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.repository.PaymentRepository
@@ -13,7 +14,8 @@ import javax.inject.Inject
 class CreatePaymentUseCase @Inject constructor(
     private val paymentRepository: PaymentRepository,
     private val groupRepository: GroupRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val timeProvider: TimeProvider
 ) {
     data class Params(
         val groupId: String,
@@ -32,6 +34,8 @@ class CreatePaymentUseCase @Inject constructor(
 
             if (!authRepository.hasSession()) return Result.Error("Не авторизован")
 
+            val now = timeProvider.now()
+
             val payment = Payment(
                 id = UUID.randomUUID().toString(),
                 groupId = params.groupId,
@@ -40,8 +44,8 @@ class CreatePaymentUseCase @Inject constructor(
                 amount = params.amount,
                 currency = group.currency,
                 status = PaymentStatus.PENDING,
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
+                createdAt = now,
+                updatedAt = now
             )
 
             paymentRepository.createPayment(payment)

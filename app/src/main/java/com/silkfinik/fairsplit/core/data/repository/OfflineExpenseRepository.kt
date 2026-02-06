@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.common.util.safeCall
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
 import com.silkfinik.fairsplit.core.data.mapper.asEntity
@@ -24,7 +25,8 @@ class OfflineExpenseRepository @Inject constructor(
     private val expenseDao: ExpenseDao,
     private val expenseRealtimeListener: ExpenseRealtimeListener,
     private val workManagerSyncManager: WorkManagerSyncManager,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val timeProvider: TimeProvider
 ) : ExpenseRepository {
 
     override fun getExpenseHistory(groupId: String, expenseId: String): Flow<List<HistoryItem>> = callbackFlow {
@@ -81,7 +83,7 @@ class OfflineExpenseRepository @Inject constructor(
     }
 
     override suspend fun updateExpense(expense: Expense): Result<Unit> = safeCall("Ошибка обновления траты") {
-        val updatedExpense = expense.copy(updatedAt = System.currentTimeMillis())
+        val updatedExpense = expense.copy(updatedAt = timeProvider.now())
         expenseDao.updateExpense(updatedExpense.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
@@ -90,7 +92,7 @@ class OfflineExpenseRepository @Inject constructor(
         val expenseEntity = expenseDao.getExpenseById(expenseId) ?: throw Exception("Трата не найдена")
         val deletedExpense = expenseEntity.copy(
             isDeleted = true,
-            updatedAt = System.currentTimeMillis(),
+            updatedAt = timeProvider.now(),
             isDirty = true
         )
         expenseDao.updateExpense(deletedExpense)

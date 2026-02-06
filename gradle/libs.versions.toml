@@ -49,6 +49,10 @@ exifinterfaceVersion = "1.4.2"
 #DataStore
 datastore = "1.0.0"
 
+#Time
+playServicesTime = "16.0.1"
+coroutinesPlayServices = "1.10.1"
+
 [libraries]
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
@@ -112,6 +116,9 @@ exifinterface = { group = "androidx.exifinterface", name = "exifinterface", vers
 #DataStore
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 
+#Time
+play-services-time = { module = "com.google.android.gms:play-services-time", version.ref = "playServicesTime" }
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

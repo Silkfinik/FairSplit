@@ -1,10 +1,12 @@
 package com.silkfinik.fairsplit.core.data.repository
 
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.common.util.safeCall
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
 import com.silkfinik.fairsplit.core.data.mapper.asEntity
 import com.silkfinik.fairsplit.core.data.sync.listener.PaymentRealtimeListener
+import com.silkfinik.fairsplit.core.data.util.GoogleTimeProvider
 import com.silkfinik.fairsplit.core.data.worker.WorkManagerSyncManager
 import com.silkfinik.fairsplit.core.database.dao.PaymentDao
 import com.silkfinik.fairsplit.core.domain.repository.PaymentRepository
@@ -16,7 +18,8 @@ import javax.inject.Inject
 class OfflinePaymentRepository @Inject constructor(
     private val paymentDao: PaymentDao,
     private val workManagerSyncManager: WorkManagerSyncManager,
-    private val paymentRealtimeListener: PaymentRealtimeListener
+    private val paymentRealtimeListener: PaymentRealtimeListener,
+    private val timeProvider: TimeProvider
 ) : PaymentRepository {
 
     override fun getPayments(groupId: String): Flow<List<Payment>> {
@@ -35,7 +38,8 @@ class OfflinePaymentRepository @Inject constructor(
     }
 
     override suspend fun updatePayment(payment: Payment): Result<Unit> = safeCall("Ошибка обновления платежа") {
-        paymentDao.updatePayment(payment.asEntity(isDirty = true))
+        val updatedPayment = payment.copy(updatedAt = timeProvider.now())
+        paymentDao.updatePayment(updatedPayment.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
 

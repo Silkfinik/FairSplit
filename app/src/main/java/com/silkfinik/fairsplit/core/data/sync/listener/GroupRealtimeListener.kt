@@ -148,13 +148,14 @@ class GroupRealtimeListener @Inject constructor(
         dto.ghosts.forEach { (ghostId, ghostDto) ->
             val localMember = localMembers.find { it.id == ghostId }
             if (localMember == null) {
-                val newMember = ghostDto.asMemberEntity(ghostId, dto.id)
+                val newMember = ghostDto.asMemberEntity(ghostId, dto.id, dto.updatedAt)
                 memberDao.insertMember(newMember)
             } else {
                 if (!localMember.isDirty) {
                     val updatedMember = localMember.copy(
                         name = ghostDto.name,
-                        mergedWithUid = ghostDto.mergedWithUid
+                        mergedWithUid = ghostDto.mergedWithUid,
+                        updatedAt = dto.updatedAt
                     )
                     if (updatedMember != localMember) {
                         memberDao.updateMember(updatedMember)
@@ -183,14 +184,18 @@ class GroupRealtimeListener @Inject constructor(
                     name = finalName,
                     photoUrl = photoUrl,
                     isGhost = false,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis(),
+                    createdAt = dto.updatedAt,
+                    updatedAt = dto.updatedAt,
                     isDirty = false
                 )
                 memberDao.insertMember(newMember)
             } else {
                 if (!localMember.isDirty && (localMember.name != finalName || localMember.photoUrl != photoUrl)) {
-                    memberDao.updateMember(localMember.copy(name = finalName, photoUrl = photoUrl))
+                    memberDao.updateMember(localMember.copy(
+                        name = finalName,
+                        photoUrl = photoUrl,
+                        updatedAt = dto.updatedAt
+                    ))
                 }
             }
         }

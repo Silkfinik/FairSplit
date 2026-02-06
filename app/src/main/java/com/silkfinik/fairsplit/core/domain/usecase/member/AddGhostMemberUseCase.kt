@@ -1,6 +1,7 @@
 package com.silkfinik.fairsplit.core.domain.usecase.member
 
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
 import com.silkfinik.fairsplit.core.domain.repository.MemberRepository
 import com.silkfinik.fairsplit.core.model.Member
@@ -10,20 +11,23 @@ import javax.inject.Inject
 
 class AddGhostMemberUseCase @Inject constructor(
     private val groupRepository: GroupRepository,
-    private val memberRepository: MemberRepository
+    private val memberRepository: MemberRepository,
+    private val timeProvider: TimeProvider
 ) {
     suspend operator fun invoke(groupId: String, name: String): Result<Unit> {
         return try {
             val group = groupRepository.getGroup(groupId).first()
                 ?: return Result.Error("Группа не найдена")
 
+            val now = timeProvider.now()
+
             val newMember = Member(
                 id = UUID.randomUUID().toString(),
                 groupId = groupId,
                 name = name,
                 isGhost = true,
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
+                createdAt = now,
+                updatedAt = now
             )
 
             val addResult = memberRepository.addMember(newMember)

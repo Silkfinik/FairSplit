@@ -95,6 +95,9 @@ dependencies {
 
     implementation(libs.androidx.datastore.preferences)
 
+    implementation(libs.play.services.time)
+    implementation(libs.kotlinx.coroutines.play.services)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)

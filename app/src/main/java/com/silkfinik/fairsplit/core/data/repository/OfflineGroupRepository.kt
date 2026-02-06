@@ -1,6 +1,7 @@
 package com.silkfinik.fairsplit.core.data.repository
 
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.common.util.safeCall
 import com.silkfinik.fairsplit.core.data.datasource.CloudFunctionsDataSource
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
@@ -27,7 +28,8 @@ class OfflineGroupRepository @Inject constructor(
     private val groupRealtimeListener: GroupRealtimeListener,
     private val workManagerSyncManager: WorkManagerSyncManager,
     private val authRepository: AuthRepository,
-    private val cloudFunctionsDataSource: CloudFunctionsDataSource
+    private val cloudFunctionsDataSource: CloudFunctionsDataSource,
+    private val timeProvider: TimeProvider
 ) : GroupRepository {
 
     override fun getGroups(): Flow<List<Group>> {
@@ -42,7 +44,7 @@ class OfflineGroupRepository @Inject constructor(
 
     override suspend fun createGroup(name: String, currency: Currency, ownerId: String): Result<String> = safeCall("Ошибка создания группы") {
         val newId = UUID.randomUUID().toString()
-        val timestamp = System.currentTimeMillis()
+        val timestamp = timeProvider.now()
 
         val group = GroupEntity(
             id = newId,
@@ -78,7 +80,7 @@ class OfflineGroupRepository @Inject constructor(
         val updatedGroup = existingEntity.copy(
             name = group.name,
             currency = group.currency,
-            updatedAt = System.currentTimeMillis(),
+            updatedAt = timeProvider.now(),
             isDirty = true
         )
         groupDao.updateGroup(updatedGroup)

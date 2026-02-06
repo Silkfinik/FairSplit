@@ -6,6 +6,7 @@ import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import com.silkfinik.fairsplit.core.common.util.ImageCompressor
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.common.util.asFlow
 import com.silkfinik.fairsplit.core.common.util.safeCall
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
@@ -24,7 +25,8 @@ import javax.inject.Singleton
 class FirebaseUserRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val storage: FirebaseStorage,
-    private val imageCompressor: ImageCompressor
+    private val imageCompressor: ImageCompressor,
+    private val timeProvider: TimeProvider
 ) : UserRepository {
 
     override fun getUser(uid: String): Flow<User?> {
@@ -60,7 +62,7 @@ class FirebaseUserRepository @Inject constructor(
     override suspend fun updateFcmToken(uid: String, token: String?): Result<Unit> = safeCall {
         val updates = mapOf(
             "fcm_token" to token,
-            "updated_at" to System.currentTimeMillis()
+            "updated_at" to timeProvider.now()
         )
         firestore.collection(FirestoreRoutes.USERS).document(uid)
             .set(updates, SetOptions.merge())
@@ -76,7 +78,7 @@ class FirebaseUserRepository @Inject constructor(
         val compressedBytes = imageCompressor.compress(uri)
             ?: throw Exception("Не удалось обработать изображение")
 
-        val filename = "avatars/${uid}_${System.currentTimeMillis()}.webp"
+        val filename = "avatars/${uid}_${timeProvider.now()}.webp"
         val ref = storage.reference.child(filename)
 
         ref.putBytes(compressedBytes).await()

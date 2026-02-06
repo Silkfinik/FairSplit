@@ -1,6 +1,7 @@
 package com.silkfinik.fairsplit.core.data.repository
 
 import com.silkfinik.fairsplit.core.common.util.Result
+import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.common.util.safeCall
 import com.silkfinik.fairsplit.core.data.datasource.CloudFunctionsDataSource
 import com.silkfinik.fairsplit.core.data.mapper.asDomainModel
@@ -18,7 +19,8 @@ class OfflineMemberRepository @Inject constructor(
     private val memberDao: MemberDao,
     private val cloudFunctionsDataSource: CloudFunctionsDataSource,
     private val authRepository: AuthRepository,
-    private val workManagerSyncManager: WorkManagerSyncManager
+    private val workManagerSyncManager: WorkManagerSyncManager,
+    private val timeProvider: TimeProvider
 ) : MemberRepository {
 
     override fun getMembers(groupId: String): Flow<List<Member>> {
@@ -33,7 +35,8 @@ class OfflineMemberRepository @Inject constructor(
     }
 
     override suspend fun updateMember(member: Member): Result<Unit> = safeCall("Ошибка обновления участника") {
-        memberDao.updateMember(member.asEntity(isDirty = true))
+        val updatedMember = member.copy(updatedAt = timeProvider.now())
+        memberDao.updateMember(updatedMember.asEntity(isDirty = true))
         workManagerSyncManager.scheduleSync()
     }
 
@@ -49,7 +52,11 @@ class OfflineMemberRepository @Inject constructor(
             val userId = authRepository.getUserId()
             val localMember = memberDao.getMember(groupId, ghostId)
             if (userId != null && localMember != null) {
-                memberDao.updateMember(localMember.copy(mergedWithUid = userId, isDirty = false))
+                memberDao.updateMember(localMember.copy(
+                    mergedWithUid = userId,
+                    isDirty = false,
+                    updatedAt = timeProvider.now()
+                ))
             }
             workManagerSyncManager.scheduleSync()
         }
