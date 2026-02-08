@@ -26,6 +26,12 @@
           </targets>
         </DialogSelection>
       </SelectionState>
+      <SelectionState runConfigName="FairSplitLoaderPreview">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
+      <SelectionState runConfigName="Loader - Expressive Sequence - PreviewFairSplitLoader">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
     </selectionStates>
   </component>
 </project>
