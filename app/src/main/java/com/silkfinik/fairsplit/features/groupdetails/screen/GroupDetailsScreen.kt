@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.AttachMoney
@@ -37,8 +36,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -49,7 +46,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material.icons.filled.Info
 import kotlinx.coroutines.launch
 import com.silkfinik.fairsplit.core.ui.component.CategoryIcon
-import com.silkfinik.fairsplit.core.ui.component.UserAvatar
+import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTabs
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -513,7 +510,7 @@ fun ExpenseItem(
                     )
                     if (payer != null) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        UserAvatar(
+                        FairSplitUserAvatar(
                             photoUrl = payer.photoUrl, 
                             name = payer.name, 
                             size = 20.dp
@@ -582,7 +579,7 @@ fun PaymentItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (payer != null) {
-                    UserAvatar(
+                    FairSplitUserAvatar(
                         photoUrl = payer.photoUrl,
                         name = payer.name,
                         size = 48.dp
@@ -620,7 +617,7 @@ fun PaymentItem(
                         )
                         if (receiver != null) {
                              Spacer(modifier = Modifier.width(4.dp))
-                             UserAvatar(
+                             FairSplitUserAvatar(
                                 photoUrl = receiver.photoUrl,
                                 name = receiver.name,
                                 size = 16.dp

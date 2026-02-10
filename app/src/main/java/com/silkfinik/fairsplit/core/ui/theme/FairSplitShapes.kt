@@ -2,6 +2,7 @@ package com.silkfinik.fairsplit.core.ui.theme
 
 import android.graphics.Matrix
 import android.graphics.Path
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
@@ -20,6 +21,7 @@ object FairSplitShapes {
     val small: Shape = RoundedCornerShape(4.dp)
     val medium: Shape = RoundedCornerShape(12.dp)
     val large: Shape = RoundedCornerShape(24.dp)
+    val extraLarge: Shape = RoundedCornerShape(32.dp)
 
     val fabShape: Shape = MaterialShapes.Cookie4Sided.customToComposeShape()
 
@@ -29,7 +31,7 @@ object FairSplitShapes {
 
     val searchField: Shape = MaterialShapes.Pill.customToComposeShape()
 
-    val iconButtonContainer: Shape = MaterialShapes.PixelCircle.customToComposeShape()
+    val circleShape: Shape = CircleShape
 }
 
 fun RoundedPolygon.customToComposeShape(): Shape {

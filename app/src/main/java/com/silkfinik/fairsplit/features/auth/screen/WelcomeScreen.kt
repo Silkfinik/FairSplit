@@ -74,7 +74,9 @@ fun WelcomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Box(modifier = Modifier
+            .padding(padding)
+            .fillMaxSize()) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
@@ -127,7 +129,7 @@ fun WelcomeScreen(
                                 value = uiState.name,
                                 onValueChange = viewModel::onNameChange,
                                 label = "Ваше имя",
-                                placeholder = "Например, Иван",
+                                placeholder = { Text("Например, Иван") },
                                 isError = uiState.nameError != null,
                                 supportingText = uiState.nameError?.asString(context),
                                 singleLine = true,
@@ -145,7 +147,9 @@ fun WelcomeScreen(
                             
                             Button(
                                 onClick = viewModel::onContinueClick,
-                                modifier = Modifier.fillMaxWidth().height(50.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
                                 enabled = uiState.name.isNotBlank()
                             ) {
                                 Text("Продолжить", fontSize = 16.sp)
@@ -173,7 +177,9 @@ fun WelcomeScreen(
                     
                     OutlinedButton(
                         onClick = { viewModel.onGoogleSignInClick(context) },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.onSurface
                         )

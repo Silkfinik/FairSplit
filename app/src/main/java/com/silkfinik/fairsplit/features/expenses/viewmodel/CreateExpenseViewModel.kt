@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.expenses.viewmodel
 
+import android.annotation.SuppressLint
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.silkfinik.fairsplit.R
@@ -149,6 +150,7 @@ class CreateExpenseViewModel @Inject constructor(
         recalculateSplits()
     }
 
+    @SuppressLint("DefaultLocale")
     private fun recalculateSplits() {
         val state = _uiState.value
         val amount = state.amount.toDoubleOrNull() ?: 0.0
@@ -280,6 +282,7 @@ class CreateExpenseViewModel @Inject constructor(
     }
 
     fun getSplitValue(memberId: String): String {
-        return _uiState.value.splitData[memberId]?.toString()?.removeSuffix(".0") ?: ""
+        val value = _uiState.value.splitData[memberId] ?: return ""
+        return java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
     }
 }

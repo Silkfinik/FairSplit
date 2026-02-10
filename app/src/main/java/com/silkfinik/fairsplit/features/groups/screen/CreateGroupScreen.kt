@@ -101,7 +101,7 @@ fun CreateGroupScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                                placeholder = "Например: Поездка на Алтай"
+                                placeholder = { Text("Например: Поездка на Алтай") }
                             )
 
                             Spacer(modifier = Modifier.height(32.dp))

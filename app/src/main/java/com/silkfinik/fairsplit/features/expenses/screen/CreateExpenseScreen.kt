@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.core.model.enums.SplitType
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
+import com.silkfinik.fairsplit.core.ui.component.FairSplitAmountInput
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCategorySelector
 import com.silkfinik.fairsplit.core.ui.component.FairSplitMemberRow
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTabs
@@ -101,7 +102,7 @@ fun CreateExpenseScreen(
                     ) {
                         item {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                BigAmountInput(
+                                FairSplitAmountInput(
                                     amount = uiState.amount,
                                     onAmountChange = viewModel::onAmountChange,
                                     currency = uiState.currency,

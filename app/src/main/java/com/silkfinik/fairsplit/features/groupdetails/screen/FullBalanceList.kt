@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -21,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.silkfinik.fairsplit.core.common.util.CurrencyFormatter
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.model.Member
-import com.silkfinik.fairsplit.core.ui.component.UserAvatar
+import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import kotlin.math.abs
 
 @Composable
@@ -64,7 +63,7 @@ fun FullBalanceList(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        UserAvatar(
+                        FairSplitUserAvatar(
                             photoUrl = member?.photoUrl,
                             name = memberName,
                             size = 40.dp

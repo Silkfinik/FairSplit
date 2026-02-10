@@ -60,6 +60,7 @@ import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
 import com.silkfinik.fairsplit.core.ui.component.FairSplitButtonStyle
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
 import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
+import com.silkfinik.fairsplit.core.ui.component.FairSplitLoader
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTextField
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.features.groups.viewmodel.GroupsViewModel
@@ -152,7 +153,7 @@ fun GroupsListScreen(
             }
 
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                FairSplitLoader(modifier = Modifier.align(Alignment.Center))
             } else if (uiState.groups.isEmpty()) {
                 FairSplitEmptyState(
                     modifier = Modifier.align(Alignment.Center),
@@ -372,7 +373,7 @@ fun JoinGroupDialog(
                     label = "Код приглашения",
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = "Например: X7Z29A"
+                    placeholder = { Text("Например: X7Z29A") }
                 )
             }
         },

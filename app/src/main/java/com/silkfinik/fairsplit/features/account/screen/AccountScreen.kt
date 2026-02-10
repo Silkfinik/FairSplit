@@ -33,7 +33,7 @@ import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTextField
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
-import com.silkfinik.fairsplit.core.ui.component.UserAvatar
+import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import com.silkfinik.fairsplit.features.account.viewmodel.AccountViewModel
 
 @Composable
@@ -209,7 +209,7 @@ fun ProfileHeader(
                     )
                 }
             ) {
-                UserAvatar(
+                FairSplitUserAvatar(
                     photoUrl = user?.photoUrl,
                     name = user?.displayName ?: "?",
                     size = 100.dp,
@@ -258,7 +258,7 @@ fun ProfileHeader(
                 label = "Имя",
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = "Введите ваше имя"
+                placeholder = { Text("Введите ваше имя") }
             )
 
             if (name != user?.displayName && name.isNotBlank()) {

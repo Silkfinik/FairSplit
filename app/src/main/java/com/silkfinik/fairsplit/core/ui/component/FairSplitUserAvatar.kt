@@ -3,7 +3,6 @@ package com.silkfinik.fairsplit.core.ui.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -16,20 +15,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-
-import androidx.compose.ui.unit.TextUnit
+import com.silkfinik.fairsplit.core.ui.theme.FairSplitShapes
 
 @Composable
-fun UserAvatar(
+fun FairSplitUserAvatar(
     photoUrl: String?,
     name: String,
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
     fontSize: TextUnit = TextUnit.Unspecified
 ) {
+    val avatarShape = FairSplitShapes.avatarContainer
+
     if (photoUrl != null) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
@@ -40,13 +41,13 @@ fun UserAvatar(
             contentScale = ContentScale.Crop,
             modifier = modifier
                 .size(size)
-                .clip(CircleShape)
+                .clip(avatarShape)
         )
     } else {
         Box(
             modifier = modifier
                 .size(size)
-                .clip(CircleShape)
+                .clip(avatarShape)
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
@@ -59,7 +60,7 @@ fun UserAvatar(
                     fontSize = fontSize
                 )
             } else {
-                 Icon(
+                Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimaryContainer

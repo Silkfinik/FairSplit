@@ -33,7 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.core.ui.component.FairSplitUserPill
-import com.silkfinik.fairsplit.features.expenses.screen.BigAmountInput
+import com.silkfinik.fairsplit.core.ui.component.FairSplitAmountInput
 import com.silkfinik.fairsplit.features.payments.viewmodel.CreatePaymentViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,7 +74,7 @@ fun CreatePaymentScreen(
                     ) {
                         item {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                BigAmountInput(
+                                FairSplitAmountInput(
                                     amount = uiState.amount,
                                     onAmountChange = viewModel::onAmountChange,
                                     currency = uiState.currency,
