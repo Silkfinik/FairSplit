@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.expenses.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,16 +17,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -42,8 +40,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.core.model.enums.SplitType
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitAmountInput
+import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCategorySelector
 import com.silkfinik.fairsplit.core.ui.component.FairSplitMemberRow
+import com.silkfinik.fairsplit.core.ui.component.FairSplitScaffold
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTabs
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTextField
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
@@ -57,9 +57,7 @@ fun CreateExpenseScreen(
     onBack: () -> Unit,
     onHistoryClick: () -> Unit = {}
 ) {
-
     val context = LocalContext.current
-
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -69,13 +67,13 @@ fun CreateExpenseScreen(
         onNavigateBack = onBack
     )
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+    FairSplitScaffold(
+        snackbarHostState = snackbarHostState,
         topBar = {
             FairSplitTopAppBar(
                 title = when {
                     uiState.isReadOnly -> "Детали траты"
-                    uiState.isEditing -> "Редактирование траты"
+                    uiState.isEditing -> "Редактирование"
                     else -> "Новая трата"
                 },
                 onBackClick = onBack,
@@ -87,169 +85,177 @@ fun CreateExpenseScreen(
                     }
                 }
             )
-        }
-    ) { padding ->
-        Box(modifier = Modifier
-            .padding(padding)
-            .fillMaxSize()) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 100.dp)
-                    ) {
-                        item {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                FairSplitAmountInput(
-                                    amount = uiState.amount,
-                                    onAmountChange = viewModel::onAmountChange,
-                                    currency = uiState.currency,
-                                    readOnly = uiState.isReadOnly
-                                )
+        },
+        isLoading = uiState.isLoading
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 100.dp)
+            ) {
+                item {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        FairSplitAmountInput(
+                            amount = uiState.amount,
+                            onAmountChange = viewModel::onAmountChange,
+                            currency = uiState.currency,
+                            readOnly = uiState.isReadOnly,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
 
-                                Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                                Text(
-                                    text = "Кто платил",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (uiState.payerError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Кто платил",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (uiState.payerError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
-                                ) {
-                                    items(uiState.members) { member ->
-                                        val isSelected = member.id == uiState.payerId
-                                        val displayName = if (member.id == uiState.currentUserId) "${member.name} (Вы)" else member.name
-                                        val displayMember = member.copy(name = displayName)
-
-                                        FairSplitUserPill(
-                                            member = displayMember,
-                                            isSelected = isSelected,
-                                            onClick = { if (!uiState.isReadOnly) viewModel.onPayerChange(member.id) }
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                FairSplitTextField(
-                                    value = uiState.description,
-                                    onValueChange = viewModel::onDescriptionChange,
-                                    label = "Описание",
-                                    modifier = Modifier.fillMaxWidth(),
-                                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                                    readOnly = uiState.isReadOnly,
-                                    isError = uiState.descriptionError != null,
-                                    supportingText = uiState.descriptionError?.asString(context)
-                                )
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Text(
-                                    text = "Категория",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-
-                                FairSplitCategorySelector(
-                                    selectedCategory = uiState.category,
-                                    onCategorySelected = viewModel::onCategoryChange,
-                                    enabled = !uiState.isReadOnly
-                                )
-
-                                Spacer(modifier = Modifier.height(24.dp))
-
-                                Text(
-                                    text = "На кого делить",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (uiState.splitError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                                )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-                                if (!uiState.isReadOnly) {
-                                    SplitTypeSelector(
-                                        selectedType = uiState.splitType,
-                                        onTypeSelected = viewModel::onSplitTypeChange
-                                    )
-                                } else {
-                                    Text(
-                                        text = when (uiState.splitType) {
-                                            SplitType.EQUAL -> "Поровну"
-                                            SplitType.EXACT -> "Точные суммы"
-                                            SplitType.PERCENT -> "Проценты"
-                                            SplitType.SHARES -> "Доли"
-                                        },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-
-                                if (!uiState.isReadOnly && uiState.splitType == SplitType.EQUAL) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.End
-                                    ) {
-                                        val allSelected = uiState.splits.size == uiState.members.size
-                                        TextButton(onClick = { viewModel.toggleAllMembers(!allSelected) }) {
-                                            Text(if (allSelected) "Снять все" else "Выбрать все")
-                                        }
-                                    }
-                                }
-
-                                if (uiState.splitError != null) {
-                                    Text(
-                                        text = uiState.splitError!!.asString(context),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.error,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-
-                        items(uiState.members) { member ->
-                            val isSelected = viewModel.isMemberSelected(member.id)
-
-                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                FairSplitMemberRow(
-                                    member = member,
-                                    isSelected = isSelected,
-                                    splitType = uiState.splitType,
-                                    amount = uiState.splits[member.id] ?: 0.0,
-                                    inputValue = viewModel.getSplitValue(member.id),
-                                    currency = uiState.currency,
-                                    onToggle = { viewModel.onSplitMemberToggle(member.id) },
-                                    onValueChange = { viewModel.onSplitDataChange(member.id, it) },
-                                    enabled = !uiState.isReadOnly,
-                                    isCurrentUser = member.id == uiState.currentUserId
-                                )
-                            }
-                        }
-                    }
-
-                    if (!uiState.isReadOnly) {
-                        Surface(
-                            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
-                            shadowElevation = 8.dp,
-                            color = MaterialTheme.colorScheme.surface
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
-                            Box(modifier = Modifier.padding(16.dp)) {
-                                Button(
-                                    onClick = viewModel::onSaveClick,
-                                    modifier = Modifier.fillMaxWidth().height(50.dp)
-                                ) {
-                                    Text("Сохранить")
+                            items(uiState.members) { member ->
+                                val isSelected = member.id == uiState.payerId
+                                val displayName = if (member.id == uiState.currentUserId) "${member.name} (Вы)" else member.name
+                                val displayMember = member.copy(name = displayName)
+
+                                FairSplitUserPill(
+                                    member = displayMember,
+                                    isSelected = isSelected,
+                                    onClick = { if (!uiState.isReadOnly) viewModel.onPayerChange(member.id) }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        FairSplitTextField(
+                            value = uiState.description,
+                            onValueChange = viewModel::onDescriptionChange,
+                            label = "На что потрачено?",
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                            readOnly = uiState.isReadOnly,
+                            isError = uiState.descriptionError != null,
+                            supportingText = uiState.descriptionError?.asString(context)
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Text(
+                            text = "Категория",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        FairSplitCategorySelector(
+                            selectedCategory = uiState.category,
+                            onCategorySelected = viewModel::onCategoryChange,
+                            enabled = !uiState.isReadOnly,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Как делить",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (uiState.splitError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                            )
+
+                            if (!uiState.isReadOnly && uiState.splitType == SplitType.EQUAL) {
+                                val allSelected = uiState.splits.size == uiState.members.size
+                                TextButton(onClick = { viewModel.toggleAllMembers(!allSelected) }) {
+                                    Text(if (allSelected) "Снять все" else "Выбрать все")
                                 }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (!uiState.isReadOnly) {
+                            SplitTypeSelector(
+                                selectedType = uiState.splitType,
+                                onTypeSelected = viewModel::onSplitTypeChange
+                            )
+                        } else {
+                            Text(
+                                text = when (uiState.splitType) {
+                                    SplitType.EQUAL -> "Поровну"
+                                    SplitType.EXACT -> "Точные суммы"
+                                    SplitType.PERCENT -> "Проценты"
+                                    SplitType.SHARES -> "Доли"
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        if (uiState.splitError != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = uiState.splitError!!.asString(context),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
+                }
+
+                items(uiState.members) { member ->
+                    val isSelected = viewModel.isMemberSelected(member.id)
+
+                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        FairSplitMemberRow(
+                            member = member,
+                            isSelected = isSelected,
+                            splitType = uiState.splitType,
+                            amount = uiState.splits[member.id] ?: 0.0,
+                            inputValue = viewModel.getSplitValue(member.id),
+                            currency = uiState.currency,
+                            onToggle = { viewModel.onSplitMemberToggle(member.id) },
+                            onValueChange = { viewModel.onSplitDataChange(member.id, it) },
+                            enabled = !uiState.isReadOnly,
+                            isCurrentUser = member.id == uiState.currentUserId
+                        )
+                    }
+                }
+            }
+
+            if (!uiState.isReadOnly) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                    MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        )
+                        .padding(16.dp)
+                ) {
+                    FairSplitButton(
+                        text = "Сохранить",
+                        onClick = viewModel::onSaveClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        isLoading = uiState.isLoading
+                    )
                 }
             }
         }
@@ -271,7 +277,6 @@ fun SplitTypeSelector(
     FairSplitTabs(
         titles = types.map { it.second },
         selectedIndex = types.indexOfFirst { it.first == selectedType },
-        onTabSelected = { index -> onTypeSelected(types[index].first) },
-        modifier = Modifier.padding(horizontal = 0.dp)
+        onTabSelected = { index -> onTypeSelected(types[index].first) }
     )
 }

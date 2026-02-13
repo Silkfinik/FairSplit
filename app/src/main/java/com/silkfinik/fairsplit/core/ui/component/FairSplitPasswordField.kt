@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicSecureTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
@@ -82,6 +84,7 @@ fun FairSplitPasswordField(
 
     val focusRequester = remember { FocusRequester() }
     val density = LocalDensity.current
+    val scrollState = rememberScrollState()
 
     val shapeSize = 14.dp
     val shapeSpacing = 4.dp
@@ -99,6 +102,7 @@ fun FairSplitPasswordField(
     }
 
     val shakeOffset = remember { Animatable(0f) }
+
     LaunchedEffect(isError) {
         if (isError) {
             for (i in 0..10) {
@@ -113,6 +117,12 @@ fun FairSplitPasswordField(
         }
     }
 
+    LaunchedEffect(state.text.length) {
+        if (!isPasswordVisible && state.text.isNotEmpty()) {
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
+
     val transparentSelectionColors = TextSelectionColors(
         handleColor = Color.Transparent,
         backgroundColor = Color.Transparent
@@ -120,8 +130,11 @@ fun FairSplitPasswordField(
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = MaterialTheme.colorScheme.primary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
         errorBorderColor = MaterialTheme.colorScheme.error,
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
     )
 
     CompositionLocalProvider(
@@ -137,51 +150,72 @@ fun FairSplitPasswordField(
             textObfuscationMode = if (isPasswordVisible) TextObfuscationMode.Visible else TextObfuscationMode.Hidden,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             interactionSource = interactionSource,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface
+            ),
             cursorBrush = if (!isPasswordVisible) SolidColor(Color.Transparent) else SolidColor(MaterialTheme.colorScheme.primary),
             decorator = { innerTextField ->
                 OutlinedTextFieldDefaults.DecorationBox(
                     value = state.text.toString(),
                     innerTextField = {
-                        Box(contentAlignment = Alignment.CenterStart) {
+                        Box(
+                            contentAlignment = Alignment.CenterStart,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Box(
-                                modifier = Modifier.alpha(if (isPasswordVisible) 1f else 0f)
+                                modifier = Modifier
+                                    .alpha(if (isPasswordVisible) 1f else 0f)
+                                    .fillMaxWidth()
                             ) {
                                 innerTextField()
                             }
 
                             if (!isPasswordVisible) {
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
-                                        .pointerInput(Unit) {
+                                        .fillMaxWidth()
+                                        .horizontalScroll(scrollState),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.CenterStart,
+                                        modifier = Modifier.pointerInput(Unit) {
                                             detectTapGestures { tapOffset ->
                                                 focusRequester.requestFocus()
                                                 val textLength = state.text.length
                                                 if (textLength > 0) {
-                                                    val rawIndex = (tapOffset.x / itemWidthPx).roundToInt()
+                                                    val absoluteX = tapOffset.x + scrollState.value
+                                                    val rawIndex = (absoluteX / itemWidthPx).roundToInt()
                                                     val safeIndex = rawIndex.coerceIn(0, textLength)
                                                     state.edit { selection = TextRange(safeIndex) }
                                                 }
                                             }
                                         }
-                                ) {
-                                    state.text.forEachIndexed { index, _ ->
-                                        val shape = passwordShapes[index % passwordShapes.size]
-                                        Box(
-                                            modifier = Modifier
-                                                .padding(end = shapeSpacing)
-                                                .size(shapeSize)
-                                                .clip(shape)
-                                                .background(MaterialTheme.colorScheme.onSurface)
-                                        )
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            state.text.forEachIndexed { index, _ ->
+                                                val shape = passwordShapes[index % passwordShapes.size]
+                                                Box(
+                                                    modifier = Modifier
+                                                        .padding(end = shapeSpacing)
+                                                        .size(shapeSize)
+                                                        .clip(shape)
+                                                        .background(MaterialTheme.colorScheme.onSurface)
+                                                )
+                                            }
+                                        }
+
+                                        if (isFocused) {
+                                            val cursorIndex = state.selection.start
+                                            val cursorOffset = (shapeSize + shapeSpacing) * cursorIndex
+
+                                            BlinkingCursor(
+                                                offset = cursorOffset,
+                                                height = 18.dp,
+                                                color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                            )
+                                        }
                                     }
-                                }
-
-                                if (isFocused) {
-                                    val cursorIndex = state.selection.start
-                                    val cursorOffset = (shapeSize + shapeSpacing) * cursorIndex
-
-                                    BlinkingCursor(offset = cursorOffset, height = 18.dp)
                                 }
                             }
                         }
@@ -208,7 +242,6 @@ fun FairSplitPasswordField(
                     trailingIcon = {
                         FilledIconButton(
                             onClick = { isPasswordVisible = !isPasswordVisible },
-                            shape = FairSplitShapes.circleShape,
                             colors = IconButtonDefaults.filledIconButtonColors(
                                 containerColor = Color.Transparent,
                                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -220,14 +253,14 @@ fun FairSplitPasswordField(
                                 enter = fadeIn(),
                                 exit = fadeOut()
                             ) {
-                                Icon(Icons.Default.Visibility, "Скрыть")
+                                Icon(Icons.Default.Visibility, contentDescription = null)
                             }
                             AnimatedVisibility(
                                 visible = !isPasswordVisible,
                                 enter = fadeIn(),
                                 exit = fadeOut()
                             ) {
-                                Icon(Icons.Default.VisibilityOff, "Показать")
+                                Icon(Icons.Default.VisibilityOff, contentDescription = null)
                             }
                         }
                     }
@@ -240,7 +273,8 @@ fun FairSplitPasswordField(
 @Composable
 private fun BlinkingCursor(
     offset: Dp,
-    height: Dp
+    height: Dp,
+    color: Color
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "cursor")
     val alpha by infiniteTransition.animateFloat(
@@ -258,6 +292,6 @@ private fun BlinkingCursor(
             .offset(x = offset)
             .width(2.dp)
             .height(height)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = alpha))
+            .background(color.copy(alpha = alpha))
     )
 }

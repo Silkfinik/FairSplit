@@ -11,15 +11,19 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -31,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.silkfinik.fairsplit.core.ui.theme.FairSplitShapes
@@ -46,16 +51,18 @@ fun FairSplitButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
     style: FairSplitButtonStyle = FairSplitButtonStyle.Primary,
     enabled: Boolean = true,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    enableMorphingAnimation: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 400f),
         label = "ButtonScale"
     )
 
@@ -65,7 +72,9 @@ fun FairSplitButton(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        val targetWidth = if (isLoading) buttonHeight else maxWidth
+        val shouldMorph = isLoading && enableMorphingAnimation
+
+        val targetWidth = if (shouldMorph) buttonHeight else maxWidth
 
         val animatedWidth by animateDpAsState(
             targetValue = targetWidth,
@@ -74,7 +83,7 @@ fun FairSplitButton(
         )
 
         val animatedCornerRadius by animateDpAsState(
-            targetValue = if (isLoading) 25.dp else 12.dp,
+            targetValue = if (shouldMorph) 25.dp else 12.dp,
             animationSpec = spring(dampingRatio = 0.8f, stiffness = 300f),
             label = "ButtonShape"
         )
@@ -98,12 +107,27 @@ fun FairSplitButton(
                         )
                     }
                 } else {
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.labelLarge,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        if (icon != null) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = contentColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.labelLarge,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            color = contentColor
+                        )
+                    }
                 }
             }
         }
@@ -123,9 +147,10 @@ fun FairSplitButton(
                     shape = animatedShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
-                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    contentPadding = PaddingValues(0.dp),
+                    contentPadding = PaddingValues(horizontal = 0.dp),
                     interactionSource = interactionSource
                 ) {
                     content(MaterialTheme.colorScheme.onPrimary)
@@ -143,7 +168,7 @@ fun FairSplitButton(
                         },
                     enabled = enabled,
                     shape = animatedShape,
-                    contentPadding = PaddingValues(0.dp),
+                    contentPadding = PaddingValues(horizontal = 0.dp),
                     interactionSource = interactionSource
                 ) {
                     content(MaterialTheme.colorScheme.primary)
@@ -167,10 +192,24 @@ fun FairSplitButton(
                             color = MaterialTheme.colorScheme.primary
                         )
                     } else {
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.labelLarge
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            if (icon != null) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
                 }
             }

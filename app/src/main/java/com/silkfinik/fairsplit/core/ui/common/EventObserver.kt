@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.silkfinik.fairsplit.core.common.util.UiEvent
+import com.silkfinik.fairsplit.core.ui.model.FairSplitSnackbarVisuals // Импортируй созданный класс
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 
@@ -22,10 +23,20 @@ fun ObserveAsEvents(
         flow.collectLatest { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event.message.asString(context))
+                    snackbarHostState.showSnackbar(
+                        FairSplitSnackbarVisuals(
+                            message = event.message.asString(context),
+                            isError = false
+                        )
+                    )
                 }
                 is UiEvent.ShowError -> {
-                    snackbarHostState.showSnackbar(event.message.asString(context))
+                    snackbarHostState.showSnackbar(
+                        FairSplitSnackbarVisuals(
+                            message = event.message.asString(context),
+                            isError = true
+                        )
+                    )
                 }
                 UiEvent.NavigateBack -> {
                     onNavigateBack()

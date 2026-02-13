@@ -1,11 +1,13 @@
 package com.silkfinik.fairsplit.features.members.screen
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,29 +16,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,21 +39,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
+import com.silkfinik.fairsplit.core.ui.component.BadgeType
+import com.silkfinik.fairsplit.core.ui.component.FairSplitBadge
+import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
+import com.silkfinik.fairsplit.core.ui.component.FairSplitButtonStyle
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
-import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
+import com.silkfinik.fairsplit.core.ui.component.FairSplitDialog
+import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
+import com.silkfinik.fairsplit.core.ui.component.FairSplitIconButton
+import com.silkfinik.fairsplit.core.ui.component.FairSplitListItem
+import com.silkfinik.fairsplit.core.ui.component.FairSplitScaffold
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTextField
+import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
+import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import com.silkfinik.fairsplit.features.members.ui.MembersUiState
 import com.silkfinik.fairsplit.features.members.viewmodel.MembersViewModel
 
@@ -68,16 +75,15 @@ fun MembersScreen(
     viewModel: MembersViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
-
     val context = LocalContext.current
-
     val uiState by viewModel.uiState.collectAsState()
     val isGeneratingCode by viewModel.isGeneratingCode.collectAsState()
-    
+
     var showAddMemberDialog by remember { mutableStateOf(false) }
     var memberToEdit by remember { mutableStateOf<Member?>(null) }
     var memberToClaim by remember { mutableStateOf<Member?>(null) }
     var showClaimInfo by remember { mutableStateOf(false) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val clipboardManager = LocalClipboardManager.current
 
@@ -87,90 +93,30 @@ fun MembersScreen(
         onNavigateBack = onBack
     )
 
-    if (showAddMemberDialog) {
-        AddMemberDialog(
-            onDismiss = { showAddMemberDialog = false },
-            onConfirm = { name ->
-                viewModel.addGhostMember(name)
-                showAddMemberDialog = false
-            }
-        )
-    }
-
-    if (memberToEdit != null) {
-        EditMemberNameDialog(
-            member = memberToEdit!!,
-            onDismiss = { memberToEdit = null },
-            onConfirm = { id, name ->
-                viewModel.updateMemberName(id, name)
-                memberToEdit = null
-            }
-        )
-    }
-
-    if (showClaimInfo) {
-        AlertDialog(
-            onDismissRequest = { showClaimInfo = false },
-            title = { Text("Что такое \"Это я\"?") },
-            text = { 
-                Text("Если ваш друг добавил вас в группу вручную до того, как вы зарегистрировались, вы можете объединить этот виртуальный профиль со своим аккаунтом. Вся история трат этого профиля перейдет к вам.") 
-            },
-            confirmButton = {
-                TextButton(onClick = { showClaimInfo = false }) {
-                    Text("Понятно")
-                }
-            }
-        )
-    }
-
-    if (memberToClaim != null) {
-        AlertDialog(
-            onDismissRequest = { memberToClaim = null },
-            title = { Text("Объединение профиля") },
-            text = { Text("Вы действительно хотите объединить свой аккаунт с участником \"${memberToClaim?.name}\"? История трат будет сохранена за вами.") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        memberToClaim?.let { viewModel.claimGhost(it.id) }
-                        memberToClaim = null
-                    }
-                ) {
-                    Text("Объединить")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { memberToClaim = null }) {
-                    Text("Отмена")
-                }
-            }
-        )
-    }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+    FairSplitScaffold(
         topBar = {
             FairSplitTopAppBar(title = "Участники", onBackClick = onBack)
         },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAddMemberDialog = true }) {
-                Icon(Icons.Default.Add, "Добавить")
-            }
-        }
+        snackbarHostState = snackbarHostState,
+        isLoading = uiState is MembersUiState.Loading
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
             when (val state = uiState) {
-                MembersUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
                 is MembersUiState.Error -> {
-                    Text(
-                        text = state.message.asString(context),
-                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
-                        color = MaterialTheme.colorScheme.error
+                    FairSplitEmptyState(
+                        icon = Icons.Default.PersonAdd,
+                        title = "Ошибка загрузки",
+                        description = state.message.asString(context),
+                        actionLabel = "Попробовать снова",
+                        modifier = Modifier.padding(padding)
                     )
                 }
                 is MembersUiState.Success -> {
-                    MembersList(
+                    MembersListContent(
                         state = state,
                         isGeneratingCode = isGeneratingCode,
                         onGenerateCode = viewModel::generateInviteCode,
@@ -178,41 +124,126 @@ fun MembersScreen(
                             clipboardManager.setText(AnnotatedString(code))
                         },
                         onClaimClick = { memberToClaim = it },
-                        onClaimInfoClick = { showClaimInfo = true },
                         onEditClick = { memberToEdit = it }
                     )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                        MaterialTheme.colorScheme.surface
+                                    )
+                                )
+                            )
+                            .padding(16.dp)
+                    ) {
+                        FairSplitButton(
+                            text = "Добавить участника",
+                            onClick = { showAddMemberDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                MembersUiState.Loading -> {
+
                 }
             }
+
+            if (showAddMemberDialog) {
+                AddMemberDialog(
+                    onDismiss = { showAddMemberDialog = false },
+                    onConfirm = { name ->
+                        viewModel.addGhostMember(name)
+                        showAddMemberDialog = false
+                    }
+                )
+            }
+
+            if (memberToEdit != null) {
+                EditMemberNameDialog(
+                    member = memberToEdit!!,
+                    onDismiss = { memberToEdit = null },
+                    onConfirm = { id, name ->
+                        viewModel.updateMemberName(id, name)
+                        memberToEdit = null
+                    }
+                )
+            }
+
+            if (showClaimInfo) {
+                FairSplitDialog(
+                    onDismissRequest = { showClaimInfo = false },
+                    title = "Что такое \"Это я\"?",
+                    text = "Если ваш друг добавил вас в группу вручную до того, как вы зарегистрировались, вы можете объединить этот виртуальный профиль со своим аккаунтом. Вся история трат этого профиля перейдет к вам.",
+                    confirmLabel = "Понятно",
+                    onConfirmAction = { showClaimInfo = false },
+                    dismissLabel = null,
+                    icon = Icons.Outlined.Info
+                )
+            }
+
+            if (memberToClaim != null) {
+                FairSplitDialog(
+                    onDismissRequest = { memberToClaim = null },
+                    title = "Объединение профиля",
+                    text = "Вы действительно хотите объединить свой аккаунт с участником \"${memberToClaim?.name}\"? История трат будет сохранена за вами.",
+                    confirmLabel = "Объединить",
+                    onConfirmAction = {
+                        memberToClaim?.let { viewModel.claimGhost(it.id) }
+                        memberToClaim = null
+                    },
+                    dismissLabel = "Отмена",
+                    onDismissAction = { memberToClaim = null },
+                    icon = Icons.Default.Link
+                )
+            }
+
         }
     }
 }
 
 @Composable
-fun MembersList(
+private fun MembersListContent(
     state: MembersUiState.Success,
     isGeneratingCode: Boolean,
     onGenerateCode: () -> Unit,
     onCopyCode: (String) -> Unit,
     onClaimClick: (Member) -> Unit,
-    onClaimInfoClick: () -> Unit,
     onEditClick: (Member) -> Unit
 ) {
     val members = state.members
-    val activeMembers = members.filter { it.mergedWithUid == null && !it.isGhost || it.id == state.currentUserId }
-    val ghostMembers = members.filter { it.isGhost && it.mergedWithUid == null && it.id != state.currentUserId }
 
-    val mergedGhostsMap = members
-        .filter { it.mergedWithUid != null }
-        .groupBy { it.mergedWithUid!! }
-        .mapValues { entry -> entry.value.map { it.name } }
+    val activeMembers = remember(members, state.currentUserId) {
+        members.filter { it.mergedWithUid == null && !it.isGhost || it.id == state.currentUserId }
+    }
+    val ghostMembers = remember(members, state.currentUserId) {
+        members.filter { it.isGhost && it.mergedWithUid == null && it.id != state.currentUserId }
+    }
+
+    val mergedGhostsMap = remember(members) {
+        members
+            .filter { it.mergedWithUid != null }
+            .groupBy { it.mergedWithUid!! }
+            .mapValues { entry -> entry.value.map { it.name } }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 80.dp),
-        verticalArrangement = Arrangement.spacedBy(1.dp)
+        contentPadding = PaddingValues(
+            top = 16.dp,
+            bottom = 100.dp,
+            start = 16.dp,
+            end = 16.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            InviteSection(
+        item(key = "invite_card") {
+            InviteSectionCard(
                 inviteCode = state.inviteCode,
                 isGenerating = isGeneratingCode,
                 onGenerateCode = onGenerateCode,
@@ -220,16 +251,15 @@ fun MembersList(
             )
         }
 
-        if (members.size == 1 && members.first().id == state.currentUserId) {
-            item {
-                FirstTimeTip()
-            }
-        }
-
         if (activeMembers.isNotEmpty()) {
-            item {
-                SectionHeader(title = "В приложении", count = activeMembers.size)
+            item(key = "header_active") {
+                SectionHeader(
+                    title = "В группе",
+                    count = activeMembers.size,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
+
             items(activeMembers, key = { it.id }) { member ->
                 MemberItem(
                     member = member,
@@ -238,16 +268,20 @@ fun MembersList(
                     mergedGhosts = mergedGhostsMap[member.id] ?: emptyList(),
                     canClaim = false,
                     onClaimClick = {},
-                    onClaimInfoClick = {},
                     onEditClick = {}
                 )
             }
         }
 
         if (ghostMembers.isNotEmpty()) {
-            item {
-                SectionHeader(title = "Виртуальные участники", count = ghostMembers.size)
+            item(key = "header_ghosts") {
+                SectionHeader(
+                    title = "Виртуальные участники",
+                    count = ghostMembers.size,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
+
             items(ghostMembers, key = { it.id }) { member ->
                 MemberItem(
                     member = member,
@@ -256,271 +290,221 @@ fun MembersList(
                     mergedGhosts = emptyList(),
                     canClaim = !state.hasClaimedGhost,
                     onClaimClick = { onClaimClick(member) },
-                    onClaimInfoClick = onClaimInfoClick,
                     onEditClick = { onEditClick(member) }
                 )
             }
         }
     }
 }
-
 @Composable
-fun FirstTimeTip() {
-    FairSplitCard(
-        modifier = Modifier.padding(16.dp),
-        backgroundColor = MaterialTheme.colorScheme.tertiaryContainer
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onTertiaryContainer
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Пока вы в группе один. Добавьте друзей вручную или поделитесь кодом приглашения!",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer
-            )
-        }
-    }
-}
-
-@Composable
-fun InviteSection(
+private fun InviteSectionCard(
     inviteCode: String?,
     isGenerating: Boolean,
     onGenerateCode: () -> Unit,
-    onCopyCode: (String) -> Unit
+    onCopyCode: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     FairSplitCard(
-        modifier = Modifier.padding(16.dp),
-        backgroundColor = MaterialTheme.colorScheme.primaryContainer
+        modifier = modifier,
+        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+        onClick = if (inviteCode == null && !isGenerating) onGenerateCode else null
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.PersonAdd,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Пригласить друзей",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Используйте код, чтобы друзья могли присоединиться сами.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Share,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(32.dp).padding(bottom = 12.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            if (inviteCode == null) {
-                if (isGenerating) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+
+            Text(
+                text = "Пригласить друзей",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = if (inviteCode == null) "Создайте код, чтобы друзья могли присоединиться к группе"
+                else "Отправьте этот код друзьям",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            if (inviteCode != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        text = inviteCode,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 2.sp,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                } else {
-                    Button(
-                        onClick = onGenerateCode,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            contentColor = MaterialTheme.colorScheme.primaryContainer
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Создать код")
-                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    FairSplitIconButton(
+                        onClick = { onCopyCode(inviteCode) },
+                        icon = Icons.Default.ContentCopy,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             } else {
-                Surface(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                    shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = inviteCode,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 4.sp,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        IconButton(onClick = { onCopyCode(inviteCode) }) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCopy,
-                                contentDescription = "Копировать",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
+                FairSplitButton(
+                    text = "Сгенерировать код",
+                    onClick = onGenerateCode,
+                    isLoading = isGenerating,
+                    style = FairSplitButtonStyle.Primary,
+                    modifier = Modifier.fillMaxWidth(),
+                    enableMorphingAnimation = true
+                )
             }
         }
     }
 }
 
 @Composable
-fun SectionHeader(title: String, count: Int) {
-    Row(
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Surface(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-            shape = MaterialTheme.shapes.extraSmall
-        ) {
-            Text(
-                text = count.toString(),
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
-}
-
-@Composable
-fun MemberItem(
+private fun MemberItem(
     member: Member,
     currentUserId: String?,
     isLinked: Boolean,
     mergedGhosts: List<String>,
     canClaim: Boolean,
     onClaimClick: () -> Unit,
-    onClaimInfoClick: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val isCurrentUser = member.id == currentUserId
-    
-    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-        FairSplitCard {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                FairSplitUserAvatar(
-                    photoUrl = member.photoUrl,
-                    name = member.name,
-                    size = 48.dp
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
+
+    FairSplitCard(
+        modifier = modifier,
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Box(
+            modifier = Modifier.defaultMinSize(minHeight = 72.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            FairSplitListItem(
+                modifier = Modifier.fillMaxWidth(),
+                headlineContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = member.name,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = if (isCurrentUser) FontWeight.Bold else FontWeight.Medium
                         )
                         if (isCurrentUser) {
                             Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                shape = MaterialTheme.shapes.extraSmall
-                            ) {
-                                Text(
-                                    text = "ВЫ",
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                            FairSplitBadge(
+                                text = "ВЫ",
+                                type = BadgeType.Secondary
+                            )
+                        }
+                    }
+                },
+                leadingContent = {
+                    FairSplitUserAvatar(
+                        photoUrl = member.photoUrl,
+                        name = member.name,
+                        size = 44.dp
+                    )
+                },
+                supportingContent = if (mergedGhosts.isNotEmpty()) {
+                    {
+                        Row(
+                            modifier = Modifier.padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            mergedGhosts.forEach { ghostName ->
+                                FairSplitBadge(
+                                    text = ghostName,
+                                    type = BadgeType.Neutral
                                 )
                             }
                         }
                     }
-                    
-                    if (mergedGhosts.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            mergedGhosts.forEach { ghostName ->
-                                Surface(
-                                    color = MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = MaterialTheme.shapes.extraSmall
-                                ) {
-                                    Text(
-                                        text = ghostName,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if (member.isGhost && member.mergedWithUid == null) {
+                } else null,
+                trailingContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (canClaim && !isLinked) {
-                            IconButton(onClick = onClaimInfoClick) {
-                                Icon(
-                                    imageVector = Icons.Default.HelpOutline,
-                                    contentDescription = "Инфо",
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
                             TextButton(
                                 onClick = onClaimClick,
-                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                                modifier = Modifier.height(32.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp)
                             ) {
-                                Text("Это я", fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "Это я",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
-                        
-                        IconButton(onClick = onEditClick) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Редактировать",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp)
+                        if (member.isGhost && member.mergedWithUid == null) {
+                            FairSplitIconButton(
+                                onClick = onEditClick,
+                                icon = Icons.Default.Edit,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
-            }
+            )
         }
     }
 }
 
-private fun membersContainsUid(member: Member, uid: String?): Boolean {
-    return uid != null && member.mergedWithUid == uid
+@Composable
+private fun SectionHeader(
+    title: String,
+    count: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.padding(start = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        FairSplitBadge(
+            text = count.toString(),
+            type = BadgeType.Primary
+        )
+    }
 }
 
 @Composable
-fun EditMemberNameDialog(
+private fun EditMemberNameDialog(
     member: Member,
     onDismiss: () -> Unit,
     onConfirm: (String, String) -> Unit
 ) {
     var name by remember { mutableStateOf(member.name) }
 
-    AlertDialog(
+    FairSplitDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Изменить имя") },
-        text = {
+        title = "Изменить имя",
+        content = {
             FairSplitTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -530,82 +514,44 @@ fun EditMemberNameDialog(
                     capitalization = KeyboardCapitalization.Words,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(onDone = { if (name.isNotBlank()) onConfirm(member.id, name) })
+                singleLine = true
             )
         },
-        confirmButton = {
-            Button(
-                onClick = { if (name.isNotBlank()) onConfirm(member.id, name) },
-                enabled = name.isNotBlank() && name != member.name
-            ) {
-                Text("Сохранить")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { onDismiss() }) {
-                Text("Отмена")
-            }
-        }
+        confirmLabel = "Сохранить",
+        onConfirmAction = { if (name.isNotBlank()) onConfirm(member.id, name) },
+        dismissLabel = "Отмена",
+        onDismissAction = onDismiss
     )
 }
 
 @Composable
-fun AddMemberDialog(
+private fun AddMemberDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
 
-    AlertDialog(
+    FairSplitDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Новый участник") },
-        text = {
-            Column {
-                Text(
-                    text = "Добавьте друга вручную. Вы сможете делить с ним траты, а позже он сможет присоединиться к группе.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                FairSplitTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = "Имя участника",
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Words,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
-                            if (name.isNotBlank()) {
-                                onConfirm(name)
-                            }
-                        }
-                    )
-                )
-            }
+        title = "Новый участник",
+        text = "Добавьте друга вручную. Вы сможете делить с ним траты, а позже он сможет присоединиться к группе.",
+        content = {
+            FairSplitTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = "Имя",
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words,
+                    imeAction = ImeAction.Done
+                ),
+                singleLine = true
+            )
         },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (name.isNotBlank()) {
-                        onConfirm(name)
-                    }
-                },
-                enabled = name.isNotBlank(),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Добавить")
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Отмена")
-            }
-        }
+        confirmLabel = "Добавить",
+        onConfirmAction = { if (name.isNotBlank()) onConfirm(name) },
+        dismissLabel = "Отмена",
+        onDismissAction = onDismiss,
+        icon = Icons.Default.PersonAdd
     )
 }

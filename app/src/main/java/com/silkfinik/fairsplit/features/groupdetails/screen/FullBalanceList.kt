@@ -1,25 +1,33 @@
 package com.silkfinik.fairsplit.features.groupdetails.screen
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.silkfinik.fairsplit.core.common.util.CurrencyFormatter
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.model.Member
+import com.silkfinik.fairsplit.core.ui.component.BadgeType
+import com.silkfinik.fairsplit.core.ui.component.FairSplitBadge
+import com.silkfinik.fairsplit.core.ui.component.FairSplitDivider
+import com.silkfinik.fairsplit.core.ui.component.FairSplitListItem
+import com.silkfinik.fairsplit.core.ui.component.FairSplitMoneyText
 import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import kotlin.math.abs
 
@@ -32,69 +40,101 @@ fun FullBalanceList(
     onSettleUp: (String?, String?) -> Unit
 ) {
     val activeBalances = balances.filter { abs(it.value) > 0.01 }
-    val suggestedReceiverId = activeBalances.entries.filter { it.value > 0 }.maxByOrNull { it.value }?.key
+        .toList()
+        .sortedByDescending { it.second }
 
-    Column(modifier = Modifier.padding(16.dp).padding(bottom = 32.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+    ) {
         Text(
             text = "Детали баланса",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+
+        FairSplitDivider(
+            modifier = Modifier.padding(vertical = 8.dp),
+            startIndent = 24.dp,
+            endIndent = 24.dp
         )
 
         if (activeBalances.isEmpty()) {
-             Text("Все долги погашены.", style = MaterialTheme.typography.bodyLarge)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = Color(0xFF1B5E20),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Все долги погашены",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "В этой группе никто никому не должен.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         } else {
-            activeBalances.forEach { (memberId, balance) ->
-                val member = members.find { it.id == memberId }
-                val memberName = member?.name ?: "Неизвестный"
-                val isCreditor = balance > 0
-                val amountText = CurrencyFormatter.format(abs(balance), group.currency)
-                val isMe = memberId == currentUserId
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
+                activeBalances.forEach { (memberId, balance) ->
+                    val member = members.find { it.id == memberId }
+                    val memberName = member?.name ?: "Неизвестный"
+                    val isMe = memberId == currentUserId
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        FairSplitUserAvatar(
-                            photoUrl = member?.photoUrl,
-                            name = memberName,
-                            size = 40.dp
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        
-                        Column {
-                            Text(
-                                text = if (isMe) "$memberName (Вы)" else memberName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = if (isMe) FontWeight.Bold else FontWeight.Normal
+                    FairSplitListItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingContent = {
+                            FairSplitUserAvatar(
+                                photoUrl = member?.photoUrl,
+                                name = memberName,
+                                size = 48.dp
                             )
-                            Text(
-                                text = if (isCreditor) "+$amountText" else "-$amountText",
-                                style = MaterialTheme.typography.bodyMedium,
+                        },
+                        headlineContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = memberName,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                if (isMe) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    FairSplitBadge(text = "Вы", type = BadgeType.Secondary)
+                                }
+                            }
+                        },
+                        // supportingContent убран полностью
+                        trailingContent = {
+                            // Всегда показываем только сумму, без кнопок
+                            FairSplitMoneyText(
+                                amount = balance,
+                                currency = group.currency,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isCreditor) Color(0xFF006400) else Color(0xFFB00020)
+                                showSign = true,
+                                useColor = true
                             )
                         }
-                    }
-
-                    if (isMe && !isCreditor) {
-                        TextButton(
-                            onClick = { onSettleUp(suggestedReceiverId, abs(balance).toString()) },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
-                        ) {
-                            Text("Вернуть")
-                        }
-                    }
+                    )
                 }
             }
         }

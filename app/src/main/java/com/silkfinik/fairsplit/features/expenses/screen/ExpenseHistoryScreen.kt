@@ -21,12 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,7 +50,10 @@ import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.HistoryItem
 import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
+import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
+import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
+import com.silkfinik.fairsplit.core.ui.component.FairSplitScaffold
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.features.expenses.ui.ExpenseHistoryUiState
 import com.silkfinik.fairsplit.features.expenses.viewmodel.ExpenseHistoryViewModel
@@ -66,26 +68,34 @@ fun ExpenseHistoryScreen(
     viewModel: ExpenseHistoryViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
-
     val context = LocalContext.current
-
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Scaffold(
+    ObserveAsEvents(
+        flow = viewModel.uiEvent,
+        snackbarHostState = snackbarHostState,
+        onNavigateBack = onBack
+    )
+
+    FairSplitScaffold(
+        snackbarHostState = snackbarHostState,
         topBar = {
             FairSplitTopAppBar(title = "История изменений", onBackClick = onBack)
-        }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        },
+        isLoading = uiState is ExpenseHistoryUiState.Loading
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             when (val state = uiState) {
-                ExpenseHistoryUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
+                ExpenseHistoryUiState.Loading -> { }
                 is ExpenseHistoryUiState.Error -> {
-                    Text(
-                        text = state.message.asString(context),
+                    FairSplitEmptyState(
                         modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
+                        icon = Icons.Default.Warning,
+                        title = "Ошибка загрузки",
+                        description = state.message.asString(context),
+                        actionLabel = "Назад",
+                        onActionClick = onBack
                     )
                 }
                 is ExpenseHistoryUiState.Success -> {
@@ -108,9 +118,11 @@ fun HistoryList(
     currency: Currency
 ) {
     if (history.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("История пуста", style = MaterialTheme.typography.bodyLarge)
-        }
+        FairSplitEmptyState(
+            icon = Icons.Default.History,
+            title = "История пуста",
+            description = "Здесь будут отображаться все изменения этой траты."
+        )
     } else {
         val groupedHistory = remember(history) {
             history.groupBy { formatDateHeader(it.timestamp) }
@@ -118,14 +130,14 @@ fun HistoryList(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+            contentPadding = PaddingValues(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             groupedHistory.forEach { (dateHeader, items) ->
                 stickyHeader {
                     DateHeader(dateHeader)
                 }
-                
+
                 items(
                     items = items,
                     key = { it.id }
@@ -144,17 +156,18 @@ fun HistoryList(
 
 @Composable
 fun DateHeader(text: String) {
+    // Используем полупрозрачный фон для эффекта "стекла" при скролле
     Surface(
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 24.dp, vertical = 12.dp)
                 .fillMaxWidth()
         )
     }
@@ -167,17 +180,17 @@ fun HistoryItemCard(
     currency: Currency
 ) {
     val isCreate = item.action == "CREATE" || item.changes.containsKey("_event")
-    
+
     FairSplitCard {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 HistoryIcon(isCreate = isCreate)
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = if (isCreate) "Расход создан" else "Расход изменен",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         text = formatTime(item.timestamp),
@@ -186,8 +199,8 @@ fun HistoryItemCard(
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (isCreate) {
                 CreateContent(item.changes, members, currency)
@@ -196,25 +209,26 @@ fun HistoryItemCard(
             }
 
             if (!item.isMathValid) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.small)
-                        .padding(8.dp)
+                        .background(MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.medium)
+                        .padding(12.dp)
                         .fillMaxWidth()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = "Ошибка",
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "Обнаружена ошибка в расчетах",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -224,21 +238,21 @@ fun HistoryItemCard(
 
 @Composable
 private fun HistoryIcon(isCreate: Boolean) {
-    val backgroundColor = if (isCreate) 
-        MaterialTheme.colorScheme.primaryContainer 
-    else 
-        MaterialTheme.colorScheme.secondaryContainer
-        
+    val backgroundColor = if (isCreate)
+        MaterialTheme.colorScheme.primaryContainer
+    else
+        MaterialTheme.colorScheme.tertiaryContainer
+
     val iconColor = if (isCreate)
         MaterialTheme.colorScheme.onPrimaryContainer
     else
-        MaterialTheme.colorScheme.onSecondaryContainer
-        
+        MaterialTheme.colorScheme.onTertiaryContainer
+
     val icon = if (isCreate) Icons.Default.AddCircle else Icons.Default.Edit
 
     Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(48.dp)
             .clip(CircleShape)
             .background(backgroundColor),
         contentAlignment = Alignment.Center
@@ -254,11 +268,11 @@ private fun HistoryIcon(isCreate: Boolean) {
 
 @Composable
 private fun CreateContent(
-    changes: Map<String, Any>, 
+    changes: Map<String, Any>,
     members: Map<String, Member>,
     currency: Currency
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         changes["description"]?.let {
             Text(text = "Описание: $it", style = MaterialTheme.typography.bodyMedium)
         }
@@ -266,35 +280,34 @@ private fun CreateContent(
             val amount = (it as? Number)?.toDouble() ?: 0.0
             Text(
                 text = "Сумма: ${CurrencyFormatter.format(amount, currency)}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
         val payers = changes["payers"].asSafeMap()
         if (payers.isNotEmpty()) {
-             Spacer(modifier = Modifier.height(4.dp))
-             Text("Плательщики:", style = MaterialTheme.typography.labelMedium)
-             payers.forEach { (id, amount) ->
-                 val memberName = members[id]?.name ?: "Unknown"
-                 val amountVal = (amount as? Number)?.toDouble() ?: 0.0
-                 Text(
-                     text = "• $memberName: ${CurrencyFormatter.format(amountVal, currency)}",
-                     style = MaterialTheme.typography.bodySmall
-                 )
-             }
+            Text("Плательщики:", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            payers.forEach { (id, amount) ->
+                val memberName = members[id]?.name ?: "Unknown"
+                val amountVal = (amount as? Number)?.toDouble() ?: 0.0
+                Text(
+                    text = "• $memberName: ${CurrencyFormatter.format(amountVal, currency)}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         }
 
         val splits = changes["splits"].asSafeMap()
         if (splits.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Разделение:", style = MaterialTheme.typography.labelMedium)
+            Text("Разделение:", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             splits.forEach { (id, amount) ->
                 val memberName = members[id]?.name ?: "Unknown"
                 val amountVal = (amount as? Number)?.toDouble() ?: 0.0
                 Text(
                     text = "• $memberName: ${CurrencyFormatter.format(amountVal, currency)}",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
@@ -303,23 +316,23 @@ private fun CreateContent(
 
 @Composable
 private fun UpdateContent(
-    changes: Map<String, Any>, 
+    changes: Map<String, Any>,
     members: Map<String, Member>,
     currency: Currency
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         changes.forEach { (field, changeValue) ->
             if (field == "_event" || field == "is_math_valid" || field == "server_validated_at") return@forEach
-            
+
             val changeMap = changeValue.asSafeMap()
             val from = changeMap["from"]
             val to = changeMap["to"]
-            
+
             when (field) {
                 "amount" -> {
                     val fromVal = (from as? Number)?.toDouble()
                     val toVal = (to as? Number)?.toDouble()
-                    
+
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = "Сумма: ",
@@ -339,21 +352,20 @@ private fun UpdateContent(
                             if (toVal != null) {
                                 Text(
                                     text = CurrencyFormatter.format(toVal, currency),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
                     }
                 }
-                "description" -> {
-                    ChangeRow("Описание", from.toString(), to.toString())
-                }
+                "description" -> ChangeRow("Описание", from.toString(), to.toString())
                 "category" -> {
-                     val fromCategory = ExpenseCategory.fromId(from as? String)
-                     val toCategory = ExpenseCategory.fromId(to as? String)
-                     
-                     Row(modifier = Modifier.fillMaxWidth()) {
+                    val fromCategory = ExpenseCategory.fromId(from as? String)
+                    val toCategory = ExpenseCategory.fromId(to as? String)
+
+                    Row(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = "Категория: ",
                             style = MaterialTheme.typography.bodyMedium,
@@ -363,7 +375,7 @@ private fun UpdateContent(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    imageVector = fromCategory.icon, 
+                                    imageVector = fromCategory.icon,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -376,10 +388,10 @@ private fun UpdateContent(
                                     textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough
                                 )
                             }
-                            
+
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    imageVector = toCategory.icon, 
+                                    imageVector = toCategory.icon,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.primary
@@ -403,9 +415,6 @@ private fun UpdateContent(
                     val fromMap = from.asSafeMap()
                     val toMap = to.asSafeMap()
                     MapChangeSection("Разделение", fromMap, toMap, members, currency)
-                }
-                else -> {
-
                 }
             }
         }
@@ -450,7 +459,7 @@ private fun MapChangeSection(
     currency: Currency
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    
+
     Column {
         Text(
             text = "$title:",
@@ -464,7 +473,7 @@ private fun MapChangeSection(
             val toVal = (to[key] as? Number)?.toDouble()
             fromVal != toVal
         }
-        
+
         val itemsToShow = if (isExpanded) significantChanges else significantChanges.take(3)
 
         itemsToShow.forEach { key ->
@@ -491,7 +500,7 @@ private fun MapChangeSection(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null,
                         modifier = Modifier
-                            .size(20.dp)
+                            .size(16.dp)
                             .padding(horizontal = 4.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -531,7 +540,7 @@ private fun formatDateHeader(timestamp: Long): String {
     val date = Date(timestamp)
     val now = Calendar.getInstance()
     val itemDate = Calendar.getInstance().apply { time = date }
-    
+
     return when {
         isSameDay(now, itemDate) -> "Сегодня"
         isYesterday(now, itemDate) -> "Вчера"
@@ -541,7 +550,7 @@ private fun formatDateHeader(timestamp: Long): String {
 
 private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
     return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-           cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+            cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
 }
 
 private fun isYesterday(now: Calendar, itemDate: Calendar): Boolean {
@@ -553,5 +562,3 @@ private fun isYesterday(now: Calendar, itemDate: Calendar): Boolean {
 private fun formatTime(timestamp: Long): String {
     return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
 }
-
-

@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.silkfinik.fairsplit.core.ui.model.FairSplitSnackbarVisuals
 
 @Composable
 fun FairSplitScaffold(
@@ -48,7 +49,24 @@ fun FairSplitScaffold(
         bottomBar = bottomBar,
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                FairSplitSnackbar(snackbarData = data)
+                val customVisuals = data.visuals as? FairSplitSnackbarVisuals
+                val isError = customVisuals?.isError ?: false
+
+                val containerColor = if (isError)
+                    MaterialTheme.colorScheme.errorContainer
+                else
+                    MaterialTheme.colorScheme.inverseSurface
+
+                val contentColor = if (isError)
+                    MaterialTheme.colorScheme.onErrorContainer
+                else
+                    MaterialTheme.colorScheme.inverseOnSurface
+
+                FairSplitSnackbar(
+                    snackbarData = data,
+                    containerColor = containerColor,
+                    contentColor = contentColor
+                )
             }
         },
         floatingActionButton = floatingActionButton,

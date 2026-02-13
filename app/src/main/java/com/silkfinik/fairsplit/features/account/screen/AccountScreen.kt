@@ -6,35 +6,71 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.core.model.User
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
+import com.silkfinik.fairsplit.core.ui.component.BadgeType
+import com.silkfinik.fairsplit.core.ui.component.FairSplitBadge
+import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
+import com.silkfinik.fairsplit.core.ui.component.FairSplitButtonStyle
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
+import com.silkfinik.fairsplit.core.ui.component.FairSplitDialog
+import com.silkfinik.fairsplit.core.ui.component.FairSplitDivider
+import com.silkfinik.fairsplit.core.ui.component.FairSplitListItem
+import com.silkfinik.fairsplit.core.ui.component.FairSplitPasswordField
+import com.silkfinik.fairsplit.core.ui.component.FairSplitScaffold
+import com.silkfinik.fairsplit.core.ui.component.FairSplitSwitch
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTextField
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import com.silkfinik.fairsplit.features.account.viewmodel.AccountViewModel
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 
 @Composable
 fun AccountScreen(
@@ -52,46 +88,45 @@ fun AccountScreen(
 
     var nameState by remember(uiState.user) { mutableStateOf(uiState.user?.displayName ?: "") }
 
+    LaunchedEffect(uiState.user?.displayName) {
+        if (uiState.user?.displayName != null && nameState.isBlank()) {
+            nameState = uiState.user?.displayName ?: ""
+        }
+    }
+
     ObserveAsEvents(
         flow = viewModel.uiEvent,
         snackbarHostState = snackbarHostState
     )
 
-
     if (showSignOutDialog) {
-        AlertDialog(
+        FairSplitDialog(
             onDismissRequest = { showSignOutDialog = false },
-            title = { Text("Выход") },
-            text = { Text("Вы уверены, что хотите выйти из аккаунта?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showSignOutDialog = false
-                    viewModel.onSignOut()
-                }) { Text("Выйти") }
+            title = "Выход",
+            text = "Вы уверены, что хотите выйти из аккаунта?",
+            confirmLabel = "Выйти",
+            onConfirmAction = {
+                showSignOutDialog = false
+                viewModel.onSignOut()
             },
-            dismissButton = {
-                TextButton(onClick = { showSignOutDialog = false }) { Text("Отмена") }
-            }
+            dismissLabel = "Отмена",
+            icon = Icons.AutoMirrored.Filled.ExitToApp
         )
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
+        FairSplitDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Удаление аккаунта") },
-            text = { Text("Это действие необратимо. Все ваши данные будут удалены. Продолжить?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        viewModel.onDeleteAccount()
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("Удалить") }
+            title = "Удаление аккаунта",
+            text = "Это действие необратимо. Все ваши данные будут удалены безвозвратно.",
+            confirmLabel = "Удалить навсегда",
+            onConfirmAction = {
+                showDeleteDialog = false
+                viewModel.onDeleteAccount()
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
-            }
+            isDestructive = true,
+            dismissLabel = "Отмена",
+            icon = Icons.Default.Delete
         )
     }
 
@@ -116,31 +151,25 @@ fun AccountScreen(
         )
     }
 
-    Scaffold(
+    FairSplitScaffold(
         topBar = {
             FairSplitTopAppBar(
-                title = if (uiState.isAnonymous) "Гостевой профиль" else "Профиль",
+                title = if (uiState.isAnonymous) "Гость" else "Профиль",
                 onBackClick = onBack
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        if (uiState.isLoading && uiState.user == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+        snackbarHostState = snackbarHostState,
+        isLoading = uiState.isLoading
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
                 ProfileHeader(
                     user = uiState.user,
                     name = nameState,
@@ -149,22 +178,28 @@ fun AccountScreen(
                     onNameSubmit = { viewModel.onNameChange(nameState) },
                     onAvatarSelected = viewModel::onAvatarSelected
                 )
+            }
 
-                if (!uiState.isAnonymous && !uiState.isEmailVerified) {
+            if (!uiState.isAnonymous && !uiState.isEmailVerified) {
+                item {
                     VerificationWarningCard(
                         onResendClick = viewModel::resendVerificationEmail,
                         onCheckStatusClick = viewModel::checkVerificationStatus,
                         onChangeEmailClick = { showChangeEmailDialog = true }
                     )
                 }
+            }
 
-                if (uiState.isAnonymous) {
+            if (uiState.isAnonymous) {
+                item {
                     LinkAccountSection(
                         onLinkGoogle = { viewModel.startGoogleAccountLink(context) },
                         onLinkEmail = { showLinkEmailDialog = true }
                     )
                 }
+            }
 
+            item {
                 SettingsSection(
                     isNotificationsEnabled = uiState.isNotificationsEnabled,
                     onToggleNotifications = viewModel::onToggleNotifications,
@@ -236,18 +271,15 @@ fun ProfileHeader(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (user?.email != null) {
-                Text(
+                FairSplitBadge(
                     text = user.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    type = BadgeType.Neutral
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             } else if (isAnonymous) {
-                Text(
+                FairSplitBadge(
                     text = "Гостевой режим",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    fontWeight = FontWeight.SemiBold
+                    type = BadgeType.Info
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -255,20 +287,27 @@ fun ProfileHeader(
             FairSplitTextField(
                 value = name,
                 onValueChange = onNameChange,
-                label = "Имя",
+                label = "Ваше имя",
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("Введите ваше имя") }
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                    onDone = { onNameSubmit() }
+                )
             )
 
-            if (name != user?.displayName && name.isNotBlank()) {
+            val hasChanges = name != (user?.displayName ?: "") && name.isNotBlank()
+
+            if (hasChanges) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
+                FairSplitButton(
+                    text = "Сохранить",
                     onClick = onNameSubmit,
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Сохранить")
-                }
+                )
             }
         }
     }
@@ -281,57 +320,38 @@ fun LinkAccountSection(
 ) {
     FairSplitCard {
         Column(
-            modifier = Modifier
-                .padding(vertical = 8.dp)
-                .fillMaxWidth()
+            modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = "Сохранить прогресс",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                fontWeight = FontWeight.Bold
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Привяжите аккаунт, чтобы не потерять данные при выходе или смене устройства.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FairSplitButton(
+                text = "Google аккаунт",
+                onClick = onLinkGoogle,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Button(
-                onClick = onLinkGoogle,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Text("Привязать Google")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
+            FairSplitButton(
+                text = "Email и пароль",
                 onClick = onLinkEmail,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Icon(
-                    Icons.Default.Email,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Привязать Email")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
+                style = FairSplitButtonStyle.Secondary,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -344,59 +364,51 @@ fun SettingsSection(
     onDeleteAccount: () -> Unit
 ) {
     FairSplitCard {
-        Column(
-            modifier = Modifier
-                .padding(vertical = 8.dp)
-                .fillMaxWidth()
-        ) {
+        Column {
             Text(
                 text = "Настройки",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            FairSplitListItem(
+                headlineContent = { Text("Уведомления") },
+                leadingContent = {
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.size(16.dp))
-                    Text(text = "Уведомления")
-                }
-                Switch(
-                    checked = isNotificationsEnabled,
-                    onCheckedChange = onToggleNotifications
-                )
-            }
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                },
+                trailingContent = {
+                    FairSplitSwitch(
+                        checked = isNotificationsEnabled,
+                        onCheckedChange = onToggleNotifications
+                    )
+                },
+                modifier = Modifier.clickable { onToggleNotifications(!isNotificationsEnabled) }
             )
 
-            ListItem(
+            FairSplitDivider(
+                startIndent = 56.dp,
+                endIndent = 16.dp,
+                verticalSpacing = 8.dp
+            )
+
+            FairSplitListItem(
                 headlineContent = { Text("Выйти") },
                 leadingContent = {
                     Icon(
-                        Icons.Default.ExitToApp,
+                        Icons.AutoMirrored.Filled.ExitToApp,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
-                modifier = Modifier.clickable(onClick = onSignOut),
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                onClick = onSignOut
             )
 
-            ListItem(
+            FairSplitListItem(
                 headlineContent = {
                     Text("Удалить аккаунт", color = MaterialTheme.colorScheme.error)
                 },
@@ -407,55 +419,12 @@ fun SettingsSection(
                         tint = MaterialTheme.colorScheme.error
                     )
                 },
-                modifier = Modifier.clickable(onClick = onDeleteAccount),
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                onClick = onDeleteAccount
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
-}
-
-@Composable
-fun LinkEmailDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit
-) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Привязка Email") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FairSplitTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = "Email",
-                    modifier = Modifier.fillMaxWidth()
-                )
-                FairSplitTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = "Пароль",
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (email.isNotBlank() && password.length >= 6) {
-                        onConfirm(email, password)
-                    }
-                },
-                enabled = email.isNotBlank() && password.length >= 6
-            ) { Text("Привязать") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Отмена") }
-        }
-    )
 }
 
 @Composable
@@ -465,18 +434,16 @@ fun VerificationWarningCard(
     onChangeEmailClick: () -> Unit
 ) {
     FairSplitCard(
-        backgroundColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+        backgroundColor = MaterialTheme.colorScheme.errorContainer
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.MarkEmailUnread,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
@@ -490,34 +457,79 @@ fun VerificationWarningCard(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Вы не сможете войти в аккаунт повторно, пока не подтвердите почту по ссылке в письме.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
             ) {
-                TextButton(onClick = onChangeEmailClick) {
-                    Text("Исправить почту")
-                }
-                TextButton(onClick = onResendClick) {
-                    Text("Выслать письмо")
-                }
-            }
-            Button(
-                onClick = onCheckStatusClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
+                FairSplitButton(
+                    text = "Исправить",
+                    onClick = onChangeEmailClick,
+                    style = FairSplitButtonStyle.Text,
+                    modifier = Modifier.height(36.dp)
                 )
-            ) {
-                Text("Я подтвердил")
+                FairSplitButton(
+                    text = "Выслать письмо",
+                    onClick = onResendClick,
+                    style = FairSplitButtonStyle.Text,
+                    modifier = Modifier.height(36.dp)
+                )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            FairSplitButton(
+                text = "Я подтвердил",
+                onClick = onCheckStatusClick,
+                style = FairSplitButtonStyle.Primary,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
+}
+
+@Composable
+fun LinkEmailDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    // Для пароля используем rememberTextFieldState для нового BasicSecureTextField (если используем новый PasswordField)
+    // Но так как у вас FairSplitPasswordField принимает TextFieldState, нужно инициализировать его.
+    val passwordState = rememberTextFieldState()
+
+    FairSplitDialog(
+        onDismissRequest = onDismiss,
+        title = "Привязка Email",
+        content = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                FairSplitTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = "Email",
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                )
+                FairSplitPasswordField(
+                    state = passwordState,
+                    label = "Пароль",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmLabel = "Привязать",
+        onConfirmAction = {
+            if (email.isNotBlank() && passwordState.text.length >= 6) {
+                onConfirm(email, passwordState.text.toString())
+            }
+        },
+        dismissLabel = "Отмена"
+    )
 }
 
 @Composable
@@ -528,37 +540,26 @@ fun ChangeEmailDialog(
 ) {
     var newEmail by remember { mutableStateOf(currentEmail) }
 
-    AlertDialog(
+    FairSplitDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Исправить Email") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Введите корректный адрес. Мы отправим на него новое письмо с подтверждением.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                FairSplitTextField(
-                    value = newEmail,
-                    onValueChange = { newEmail = it },
-                    label = "Новый Email",
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+        title = "Исправить Email",
+        text = "Введите корректный адрес. Мы отправим на него новое письмо с подтверждением.",
+        content = {
+            FairSplitTextField(
+                value = newEmail,
+                onValueChange = { newEmail = it },
+                label = "Новый Email",
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            )
+        },
+        confirmLabel = "Сохранить",
+        onConfirmAction = {
+            if (newEmail.isNotBlank() && newEmail != currentEmail) {
+                onConfirm(newEmail)
             }
         },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (newEmail.isNotBlank() && newEmail != currentEmail) {
-                        onConfirm(newEmail)
-                    }
-                },
-                enabled = newEmail.isNotBlank() && newEmail != currentEmail
-            ) { Text("Сохранить") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Отмена") }
-        }
+        dismissLabel = "Отмена"
     )
 }

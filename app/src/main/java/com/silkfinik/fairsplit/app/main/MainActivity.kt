@@ -5,26 +5,29 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import com.silkfinik.fairsplit.app.navigation.AppNavHost
+import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
+import com.silkfinik.fairsplit.core.ui.component.FairSplitLoader
+import com.silkfinik.fairsplit.core.ui.component.FairSplitScaffold
 import com.silkfinik.fairsplit.core.ui.theme.FairSplitTheme
 import com.silkfinik.fairsplit.features.auth.screen.EmailVerificationScreen
-import com.silkfinik.fairsplit.features.auth.screen.WelcomeScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -43,7 +46,9 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     when (val state = uiState) {
-                        MainUiState.Loading -> LoadingScreen()
+                        MainUiState.Loading -> {
+                            LoadingScreen()
+                        }
                         MainUiState.Success -> {
                             val navController = rememberNavController()
                             AppNavHost(navController = navController)
@@ -63,13 +68,17 @@ class MainActivity : ComponentActivity() {
                         }
                         MainUiState.ErrorNoInternet -> {
                             BlockingErrorScreen(
-                                message = "Для первого запуска требуется интернет",
+                                title = "Нет интернета",
+                                message = "Для первого запуска приложения требуется подключение к сети.",
+                                icon = Icons.Default.CloudOff,
                                 onRetry = { viewModel.retry() }
                             )
                         }
                         is MainUiState.ErrorAuthFailed -> {
                             BlockingErrorScreen(
+                                title = "Ошибка входа",
                                 message = state.message,
+                                icon = Icons.Default.ErrorOutline,
                                 onRetry = { viewModel.retry() }
                             )
                         }
@@ -82,20 +91,31 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun LoadingScreen() {
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-        CircularProgressIndicator()
+    FairSplitScaffold {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            FairSplitLoader(modifier = Modifier.size(64.dp))
+        }
     }
 }
 
 @Composable
-fun BlockingErrorScreen(message: String, onRetry: () -> Unit) {
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = message, style = MaterialTheme.typography.bodyLarge)
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onRetry) {
-                Text("Повторить")
-            }
-        }
+fun BlockingErrorScreen(
+    title: String,
+    message: String,
+    icon: ImageVector,
+    onRetry: () -> Unit
+) {
+    FairSplitScaffold { padding ->
+        FairSplitEmptyState(
+            modifier = Modifier.padding(padding),
+            icon = icon,
+            title = title,
+            description = message,
+            actionLabel = "Повторить попытку",
+            onActionClick = onRetry
+        )
     }
 }
