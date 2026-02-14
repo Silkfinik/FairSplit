@@ -39,11 +39,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.BadgeType
@@ -101,13 +103,13 @@ fun GroupsListScreen(
     if (showAddMenu) {
         FairSplitBottomSheet(
             onDismissRequest = { showAddMenu = false },
-            title = "Добавить группу"
+            title = stringResource(R.string.groups_sheet_add_title)
         ) {
             Column(
                 modifier = Modifier.padding(bottom = 24.dp)
             ) {
                 FairSplitListItem(
-                    headlineContent = { Text("Создать новую группу") },
+                    headlineContent = { Text(stringResource(R.string.groups_sheet_action_create)) },
                     leadingContent = {
                         Icon(
                             Icons.Default.AddCircleOutline,
@@ -122,7 +124,7 @@ fun GroupsListScreen(
                 )
 
                 FairSplitListItem(
-                    headlineContent = { Text("Вступить по коду") },
+                    headlineContent = { Text(stringResource(R.string.groups_sheet_action_join)) },
                     leadingContent = {
                         Icon(
                             Icons.Default.Keyboard,
@@ -143,12 +145,12 @@ fun GroupsListScreen(
         snackbarHostState = snackbarHostState,
         topBar = {
             FairSplitTopAppBar(
-                title = "Мои группы",
+                title = stringResource(R.string.groups_title),
                 actions = {
                     IconButton(onClick = onNavigateToAccount) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Профиль"
+                            contentDescription = stringResource(R.string.groups_cd_profile)
                         )
                     }
                 }
@@ -163,9 +165,9 @@ fun GroupsListScreen(
                 FairSplitEmptyState(
                     modifier = Modifier.align(Alignment.Center),
                     icon = Icons.Default.Groups,
-                    title = "Групп пока нет",
-                    description = "Создайте свою первую группу, чтобы начать вести совместный бюджет с друзьями!",
-                    actionLabel = "Создать группу",
+                    title = stringResource(R.string.groups_empty_title),
+                    description = stringResource(R.string.groups_empty_desc),
+                    actionLabel = stringResource(R.string.groups_empty_action),
                     onActionClick = onNavigateToCreateGroup
                 )
             } else {
@@ -203,7 +205,7 @@ fun GroupsListScreen(
                         .padding(16.dp)
                 ) {
                     FairSplitButton(
-                        text = "Добавить группу",
+                        text = stringResource(R.string.groups_btn_add),
                         onClick = { showAddMenu = true },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -238,7 +240,7 @@ fun GroupItem(group: Group, onClick: () -> Unit) {
                 if (group.inviteCode != null) {
                     Spacer(modifier = Modifier.padding(2.dp))
                     Text(
-                        text = "Код: ${group.inviteCode}",
+                        text = stringResource(R.string.groups_item_code_format, group.inviteCode),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -263,11 +265,11 @@ fun JoinGroupDialog(
 
     FairSplitDialog(
         onDismissRequest = onDismiss,
-        title = "Вступить в группу",
+        title = stringResource(R.string.groups_join_dialog_title),
         content = {
             Column {
                 Text(
-                    text = "Введите 6-значный код приглашения, который вам отправил администратор группы.",
+                    text = stringResource(R.string.groups_join_dialog_message),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -275,17 +277,17 @@ fun JoinGroupDialog(
                 FairSplitTextField(
                     value = code,
                     onValueChange = { if (it.length <= 6) code = it.uppercase() },
-                    label = "Код приглашения",
+                    label = stringResource(R.string.groups_join_input_label),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Например: X7Z29A") },
+                    placeholder = { Text(stringResource(R.string.groups_join_input_placeholder)) },
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters)
                 )
             }
         },
-        confirmLabel = "Вступить",
+        confirmLabel = stringResource(R.string.groups_join_btn_confirm),
         onConfirmAction = { if (code.length == 6) onJoin(code) },
-        dismissLabel = "Отмена",
+        dismissLabel = stringResource(R.string.action_cancel),
         onDismissAction = onDismiss
     )
 }

@@ -31,11 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
 import com.silkfinik.fairsplit.core.ui.component.FairSplitButtonStyle
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
@@ -88,7 +90,7 @@ fun EmailVerificationScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Проверьте почту",
+                        text = stringResource(R.string.verify_email_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
@@ -98,7 +100,7 @@ fun EmailVerificationScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Мы отправили письмо со ссылкой для подтверждения. Перейдите по ней, чтобы активировать аккаунт.",
+                        text = stringResource(R.string.verify_email_message),
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -141,7 +143,7 @@ fun EmailVerificationScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     FairSplitButton(
-                        text = "Я подтвердил почту",
+                        text = stringResource(R.string.verify_email_btn_check),
                         onClick = { viewModel.checkVerificationStatus(onVerificationConfirmed) },
                         isLoading = uiState.isLoading,
                         modifier = Modifier.fillMaxWidth()
@@ -150,7 +152,7 @@ fun EmailVerificationScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     FairSplitButton(
-                        text = "Отправить письмо повторно",
+                        text = stringResource(R.string.verify_email_btn_resend),
                         onClick = { viewModel.sendVerificationEmail() },
                         style = FairSplitButtonStyle.Secondary,
                         modifier = Modifier.fillMaxWidth(),
@@ -162,7 +164,7 @@ fun EmailVerificationScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             FairSplitButton(
-                text = "Выйти / Другой аккаунт",
+                text = stringResource(R.string.verify_email_btn_logout),
                 onClick = { viewModel.signOut() },
                 style = FairSplitButtonStyle.Text,
                 modifier = Modifier.fillMaxWidth(),

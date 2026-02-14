@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -88,14 +89,14 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.weight(0.5f))
 
             Text(
-                text = "FairSplit",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
 
             Text(
-                text = "Делите расходы легко",
+                text = stringResource(R.string.welcome_subtitle),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -108,7 +109,7 @@ fun WelcomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Давайте знакомиться",
+                        text = stringResource(R.string.welcome_card_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -118,8 +119,8 @@ fun WelcomeScreen(
                     FairSplitTextField(
                         value = uiState.name,
                         onValueChange = viewModel::onNameChange,
-                        label = "Ваше имя",
-                        placeholder = { Text("Например, Иван") },
+                        label = stringResource(R.string.welcome_label_name),
+                        placeholder = { Text(stringResource(R.string.welcome_placeholder_name)) },
                         isError = uiState.nameError != null,
                         supportingText = uiState.nameError?.asString(context),
                         singleLine = true,
@@ -136,7 +137,7 @@ fun WelcomeScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     FairSplitButton(
-                        text = "Продолжить",
+                        text = stringResource(R.string.welcome_btn_continue),
                         onClick = viewModel::onContinueClick,
                         modifier = Modifier.fillMaxWidth(),
                         enabled = uiState.name.isNotBlank()
@@ -152,7 +153,7 @@ fun WelcomeScreen(
             ) {
                 FairSplitDivider(modifier = Modifier.weight(1f))
                 Text(
-                    text = "ИЛИ",
+                    text = stringResource(R.string.welcome_divider_or),
                     modifier = Modifier.padding(horizontal = 16.dp),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -164,7 +165,7 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             FairSplitButton(
-                text = "Войти через Google",
+                text = stringResource(R.string.welcome_btn_google),
                 icon = ImageVector.vectorResource(id = R.drawable.ic_google_logo),
                 onClick = { viewModel.onGoogleSignInClick(context) },
                 isLoading = uiState.isLoading && uiState.name.isBlank(),
@@ -177,7 +178,7 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             FairSplitButton(
-                text = "Войти через почту",
+                text = stringResource(R.string.welcome_btn_email),
                 onClick = { onNavigateToLogin() },
                 style = FairSplitButtonStyle.Text,
                 modifier = Modifier.fillMaxWidth()

@@ -23,11 +23,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
@@ -58,7 +60,7 @@ fun CreateGroupScreen(
         snackbarHostState = snackbarHostState,
         topBar = {
             FairSplitTopAppBar(
-                title = "Новая группа",
+                title = stringResource(R.string.create_group_title),
                 onBackClick = onBack
             )
         },
@@ -80,7 +82,7 @@ fun CreateGroupScreen(
                 ) {
                     FairSplitUserAvatar(
                         photoUrl = null,
-                        name = uiState.name.ifBlank { "?" },
+                        name = uiState.name.ifBlank { stringResource(R.string.create_group_avatar_placeholder) },
                         size = 100.dp,
                         fontSize = 40.sp
                     )
@@ -90,11 +92,11 @@ fun CreateGroupScreen(
                     FairSplitTextField(
                         value = uiState.name,
                         onValueChange = viewModel::onNameChange,
-                        label = "Название группы",
+                        label = stringResource(R.string.create_group_label_name),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                        placeholder = { Text("Например: Отпуск 2024") }
+                        placeholder = { Text(stringResource(R.string.create_group_placeholder_name)) }
                     )
                 }
             }
@@ -104,7 +106,7 @@ fun CreateGroupScreen(
                     modifier = Modifier.padding(vertical = 24.dp)
                 ) {
                     Text(
-                        text = "Валюта расчетов",
+                        text = stringResource(R.string.create_group_currency_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 24.dp)
@@ -113,7 +115,7 @@ fun CreateGroupScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "В этой валюте будут отображаться все долги.",
+                        text = stringResource(R.string.create_group_currency_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 24.dp)
@@ -140,7 +142,7 @@ fun CreateGroupScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             FairSplitButton(
-                text = "Создать группу",
+                text = stringResource(R.string.create_group_btn_submit),
                 onClick = { viewModel.createGroup(onSuccess = onBack) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = uiState.name.isNotBlank() && !uiState.isLoading,

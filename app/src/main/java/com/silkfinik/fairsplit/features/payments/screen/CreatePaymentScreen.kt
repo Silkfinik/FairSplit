@@ -33,10 +33,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitAmountInput
 import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
@@ -66,7 +68,7 @@ fun CreatePaymentScreen(
         snackbarHostState = snackbarHostState,
         topBar = {
             FairSplitTopAppBar(
-                title = "Вернуть долг",
+                title = stringResource(R.string.payment_title_create),
                 onBackClick = onBack
             )
         },
@@ -86,7 +88,7 @@ fun CreatePaymentScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Сумма перевода",
+                        text = stringResource(R.string.payment_label_amount),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -128,7 +130,7 @@ fun CreatePaymentScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Детали платежа",
+                            text = stringResource(R.string.payment_section_details),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -149,12 +151,12 @@ fun CreatePaymentScreen(
                             val currentUser = uiState.members.find { it.id == uiState.payerId }
                             FairSplitUserAvatar(
                                 photoUrl = currentUser?.photoUrl,
-                                name = currentUser?.name ?: "Вы",
+                                name = currentUser?.name ?: stringResource(R.string.payment_label_payer_me),
                                 size = 56.dp
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Вы",
+                                text = stringResource(R.string.payment_label_payer_me),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold
                             )
@@ -175,7 +177,7 @@ fun CreatePaymentScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = "to",
+                                    contentDescription = stringResource(R.string.payment_cd_arrow_to),
                                     modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -203,7 +205,7 @@ fun CreatePaymentScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "?",
+                                        text = stringResource(R.string.payment_receiver_unknown),
                                         style = MaterialTheme.typography.headlineSmall,
                                         color = MaterialTheme.colorScheme.primary
                                     )
@@ -213,7 +215,7 @@ fun CreatePaymentScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = receiver?.name ?: "Получатель",
+                                text = receiver?.name ?: stringResource(R.string.payment_label_receiver_placeholder),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = if (receiver != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = if (receiver != null) FontWeight.Bold else FontWeight.Normal,
@@ -226,7 +228,7 @@ fun CreatePaymentScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Выберите получателя:",
+                        text = stringResource(R.string.payment_label_select_receiver),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 24.dp)
@@ -267,7 +269,7 @@ fun CreatePaymentScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             FairSplitButton(
-                text = "Записать перевод",
+                text = stringResource(R.string.payment_btn_save),
                 onClick = viewModel::onSaveClick,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = uiState.amount.isNotEmpty() && uiState.receiverId != null,

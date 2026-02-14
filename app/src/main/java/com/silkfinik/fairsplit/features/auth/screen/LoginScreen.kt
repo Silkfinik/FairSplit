@@ -25,11 +25,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
@@ -77,7 +79,7 @@ fun LoginScreen(
     FairSplitScaffold(
         topBar = {
             FairSplitTopAppBar(
-                title = "Вход",
+                title = stringResource(R.string.login_title),
                 onBackClick = onNavigateBack
             )
         },
@@ -96,7 +98,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.weight(0.2f))
 
             Text(
-                text = "Добро пожаловать",
+                text = stringResource(R.string.login_welcome),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -105,7 +107,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Введите данные для входа",
+                text = stringResource(R.string.login_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -120,7 +122,7 @@ fun LoginScreen(
                     FairSplitTextField(
                         value = state.email,
                         onValueChange = viewModel::onEmailChange,
-                        label = "Email",
+                        label = stringResource(R.string.label_email),
                         modifier = Modifier.fillMaxWidth(),
                         isError = state.error != null,
                         keyboardOptions = KeyboardOptions(
@@ -134,7 +136,7 @@ fun LoginScreen(
 
                     FairSplitPasswordField(
                         state = passwordState,
-                        label = "Пароль",
+                        label = stringResource(R.string.label_password),
                         modifier = Modifier.fillMaxWidth(),
                         isError = state.error != null,
                         enabled = !state.isLoading
@@ -152,7 +154,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     FairSplitButton(
-                        text = "Войти",
+                        text = stringResource(R.string.login_btn_sign_in),
                         onClick = {
                             focusManager.clearFocus()
                             viewModel.signIn()
@@ -167,7 +169,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             FairSplitButton(
-                text = "Нет аккаунта? Регистрация",
+                text = stringResource(R.string.login_btn_to_register),
                 onClick = onNavigateToRegister,
                 style = FairSplitButtonStyle.Text,
                 modifier = Modifier.fillMaxWidth()

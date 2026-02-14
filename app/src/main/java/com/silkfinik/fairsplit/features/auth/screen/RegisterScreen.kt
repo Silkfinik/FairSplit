@@ -24,12 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.UiEvent
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
@@ -85,7 +87,7 @@ fun RegisterScreen(
     FairSplitScaffold(
         topBar = {
             FairSplitTopAppBar(
-                title = "Регистрация",
+                title = stringResource(R.string.register_title),
                 onBackClick = onNavigateBack
             )
         },
@@ -104,7 +106,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.weight(0.1f))
 
             Text(
-                text = "Новый аккаунт",
+                text = stringResource(R.string.register_welcome),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -113,7 +115,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Заполните форму, чтобы начать",
+                text = stringResource(R.string.register_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -128,7 +130,7 @@ fun RegisterScreen(
                     FairSplitTextField(
                         value = state.name,
                         onValueChange = viewModel::onNameChange,
-                        label = "Имя",
+                        label = stringResource(R.string.label_name),
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Words,
@@ -142,7 +144,7 @@ fun RegisterScreen(
                     FairSplitTextField(
                         value = state.email,
                         onValueChange = viewModel::onEmailChange,
-                        label = "Email",
+                        label = stringResource(R.string.label_email),
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
@@ -155,7 +157,7 @@ fun RegisterScreen(
 
                     FairSplitPasswordField(
                         state = passwordState,
-                        label = "Пароль",
+                        label = stringResource(R.string.label_password),
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isLoading
                     )
@@ -164,7 +166,7 @@ fun RegisterScreen(
 
                     FairSplitPasswordField(
                         state = confirmPasswordState,
-                        label = "Повторите пароль",
+                        label = stringResource(R.string.register_label_confirm_password),
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isLoading
                     )
@@ -181,7 +183,7 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     FairSplitButton(
-                        text = "Создать аккаунт",
+                        text = stringResource(R.string.register_btn_sign_up),
                         onClick = {
                             focusManager.clearFocus()
                             viewModel.signUp()

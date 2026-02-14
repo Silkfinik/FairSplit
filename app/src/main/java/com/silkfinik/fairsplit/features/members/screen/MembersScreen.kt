@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -52,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.BadgeType
@@ -95,7 +97,7 @@ fun MembersScreen(
 
     FairSplitScaffold(
         topBar = {
-            FairSplitTopAppBar(title = "Участники", onBackClick = onBack)
+            FairSplitTopAppBar(title = stringResource(R.string.members_title), onBackClick = onBack)
         },
         snackbarHostState = snackbarHostState,
         isLoading = uiState is MembersUiState.Loading
@@ -109,9 +111,9 @@ fun MembersScreen(
                 is MembersUiState.Error -> {
                     FairSplitEmptyState(
                         icon = Icons.Default.PersonAdd,
-                        title = "Ошибка загрузки",
+                        title = stringResource(R.string.members_error_title),
                         description = state.message.asString(context),
-                        actionLabel = "Попробовать снова",
+                        actionLabel = stringResource(R.string.members_error_retry),
                         modifier = Modifier.padding(padding)
                     )
                 }
@@ -143,7 +145,7 @@ fun MembersScreen(
                             .padding(16.dp)
                     ) {
                         FairSplitButton(
-                            text = "Добавить участника",
+                            text = stringResource(R.string.members_btn_add_new),
                             onClick = { showAddMemberDialog = true },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -178,9 +180,9 @@ fun MembersScreen(
             if (showClaimInfo) {
                 FairSplitDialog(
                     onDismissRequest = { showClaimInfo = false },
-                    title = "Что такое \"Это я\"?",
-                    text = "Если ваш друг добавил вас в группу вручную до того, как вы зарегистрировались, вы можете объединить этот виртуальный профиль со своим аккаунтом. Вся история трат этого профиля перейдет к вам.",
-                    confirmLabel = "Понятно",
+                    title = stringResource(R.string.members_dialog_claim_info_title),
+                    text = stringResource(R.string.members_dialog_claim_info_message),
+                    confirmLabel = stringResource(R.string.members_btn_understood),
                     onConfirmAction = { showClaimInfo = false },
                     dismissLabel = null,
                     icon = Icons.Outlined.Info
@@ -190,14 +192,14 @@ fun MembersScreen(
             if (memberToClaim != null) {
                 FairSplitDialog(
                     onDismissRequest = { memberToClaim = null },
-                    title = "Объединение профиля",
-                    text = "Вы действительно хотите объединить свой аккаунт с участником \"${memberToClaim?.name}\"? История трат будет сохранена за вами.",
-                    confirmLabel = "Объединить",
+                    title = stringResource(R.string.members_dialog_claim_confirm_title),
+                    text = stringResource(R.string.members_dialog_claim_confirm_message, memberToClaim?.name ?: ""),
+                    confirmLabel = stringResource(R.string.members_btn_merge),
                     onConfirmAction = {
                         memberToClaim?.let { viewModel.claimGhost(it.id) }
                         memberToClaim = null
                     },
-                    dismissLabel = "Отмена",
+                    dismissLabel = stringResource(R.string.action_cancel),
                     onDismissAction = { memberToClaim = null },
                     icon = Icons.Default.Link
                 )
@@ -254,7 +256,7 @@ private fun MembersListContent(
         if (activeMembers.isNotEmpty()) {
             item(key = "header_active") {
                 SectionHeader(
-                    title = "В группе",
+                    title = stringResource(R.string.members_header_active),
                     count = activeMembers.size,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -276,7 +278,7 @@ private fun MembersListContent(
         if (ghostMembers.isNotEmpty()) {
             item(key = "header_ghosts") {
                 SectionHeader(
-                    title = "Виртуальные участники",
+                    title = stringResource(R.string.members_header_ghosts),
                     count = ghostMembers.size,
                     modifier = Modifier.padding(top = 16.dp)
                 )
@@ -321,7 +323,7 @@ private fun InviteSectionCard(
             )
 
             Text(
-                text = "Пригласить друзей",
+                text = stringResource(R.string.members_invite_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -331,8 +333,8 @@ private fun InviteSectionCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = if (inviteCode == null) "Создайте код, чтобы друзья могли присоединиться к группе"
-                else "Отправьте этот код друзьям",
+                text = if (inviteCode == null) stringResource(R.string.members_invite_desc_create)
+                else stringResource(R.string.members_invite_desc_share),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center
@@ -366,7 +368,7 @@ private fun InviteSectionCard(
                 }
             } else {
                 FairSplitButton(
-                    text = "Сгенерировать код",
+                    text = stringResource(R.string.members_invite_btn_generate),
                     onClick = onGenerateCode,
                     isLoading = isGenerating,
                     style = FairSplitButtonStyle.Primary,
@@ -412,7 +414,7 @@ private fun MemberItem(
                         if (isCurrentUser) {
                             Spacer(modifier = Modifier.width(8.dp))
                             FairSplitBadge(
-                                text = "ВЫ",
+                                text = stringResource(R.string.members_badge_you),
                                 type = BadgeType.Secondary
                             )
                         }
@@ -449,7 +451,7 @@ private fun MemberItem(
                                 contentPadding = PaddingValues(horizontal = 8.dp)
                             ) {
                                 Text(
-                                    text = "Это я",
+                                    text = stringResource(R.string.members_btn_claim_me),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -503,12 +505,12 @@ private fun EditMemberNameDialog(
 
     FairSplitDialog(
         onDismissRequest = onDismiss,
-        title = "Изменить имя",
+        title = stringResource(R.string.members_dialog_edit_title),
         content = {
             FairSplitTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = "Имя участника",
+                label = stringResource(R.string.members_label_member_name),
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Words,
@@ -517,9 +519,9 @@ private fun EditMemberNameDialog(
                 singleLine = true
             )
         },
-        confirmLabel = "Сохранить",
+        confirmLabel = stringResource(R.string.action_save),
         onConfirmAction = { if (name.isNotBlank()) onConfirm(member.id, name) },
-        dismissLabel = "Отмена",
+        dismissLabel = stringResource(R.string.action_cancel),
         onDismissAction = onDismiss
     )
 }
@@ -533,13 +535,13 @@ private fun AddMemberDialog(
 
     FairSplitDialog(
         onDismissRequest = onDismiss,
-        title = "Новый участник",
-        text = "Добавьте друга вручную. Вы сможете делить с ним траты, а позже он сможет присоединиться к группе.",
+        title = stringResource(R.string.members_dialog_add_title),
+        text = stringResource(R.string.members_dialog_add_message),
         content = {
             FairSplitTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = "Имя",
+                label = stringResource(R.string.label_name),
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Words,
@@ -548,9 +550,9 @@ private fun AddMemberDialog(
                 singleLine = true
             )
         },
-        confirmLabel = "Добавить",
+        confirmLabel = stringResource(R.string.members_btn_add),
         onConfirmAction = { if (name.isNotBlank()) onConfirm(name) },
-        dismissLabel = "Отмена",
+        dismissLabel = stringResource(R.string.action_cancel),
         onDismissAction = onDismiss,
         icon = Icons.Default.PersonAdd
     )

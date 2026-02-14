@@ -41,9 +41,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.CurrencyFormatter
 import com.silkfinik.fairsplit.core.common.util.asSafeMap
 import com.silkfinik.fairsplit.core.model.Currency
@@ -81,7 +83,7 @@ fun ExpenseHistoryScreen(
     FairSplitScaffold(
         snackbarHostState = snackbarHostState,
         topBar = {
-            FairSplitTopAppBar(title = "История изменений", onBackClick = onBack)
+            FairSplitTopAppBar(title = stringResource(R.string.history_title), onBackClick = onBack)
         },
         isLoading = uiState is ExpenseHistoryUiState.Loading
     ) {
@@ -92,9 +94,9 @@ fun ExpenseHistoryScreen(
                     FairSplitEmptyState(
                         modifier = Modifier.align(Alignment.Center),
                         icon = Icons.Default.Warning,
-                        title = "Ошибка загрузки",
+                        title = stringResource(R.string.group_details_error_title),
                         description = state.message.asString(context),
-                        actionLabel = "Назад",
+                        actionLabel = stringResource(R.string.action_back),
                         onActionClick = onBack
                     )
                 }
@@ -120,12 +122,15 @@ fun HistoryList(
     if (history.isEmpty()) {
         FairSplitEmptyState(
             icon = Icons.Default.History,
-            title = "История пуста",
-            description = "Здесь будут отображаться все изменения этой траты."
+            title = stringResource(R.string.history_empty_title),
+            description = stringResource(R.string.history_empty_desc)
         )
     } else {
-        val groupedHistory = remember(history) {
-            history.groupBy { formatDateHeader(it.timestamp) }
+        val todayStr = stringResource(R.string.history_date_today)
+        val yesterdayStr = stringResource(R.string.history_date_yesterday)
+
+        val groupedHistory = remember(history, todayStr, yesterdayStr) {
+            history.groupBy { formatDateHeader(it.timestamp, todayStr, yesterdayStr) }
         }
 
         LazyColumn(
@@ -156,7 +161,6 @@ fun HistoryList(
 
 @Composable
 fun DateHeader(text: String) {
-    // Используем полупрозрачный фон для эффекта "стекла" при скролле
     Surface(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
         modifier = Modifier.fillMaxWidth()
@@ -188,7 +192,7 @@ fun HistoryItemCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isCreate) "Расход создан" else "Расход изменен",
+                        text = if (isCreate) stringResource(R.string.history_action_created) else stringResource(R.string.history_action_updated),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -219,13 +223,13 @@ fun HistoryItemCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
-                        contentDescription = "Ошибка",
+                        contentDescription = stringResource(R.string.transaction_expense_error),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Обнаружена ошибка в расчетах",
+                        text = stringResource(R.string.history_error_math),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         fontWeight = FontWeight.Medium
@@ -274,12 +278,12 @@ private fun CreateContent(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         changes["description"]?.let {
-            Text(text = "Описание: $it", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "${stringResource(R.string.history_label_description)}: $it", style = MaterialTheme.typography.bodyMedium)
         }
         changes["amount"]?.let {
             val amount = (it as? Number)?.toDouble() ?: 0.0
             Text(
-                text = "Сумма: ${CurrencyFormatter.format(amount, currency)}",
+                text = "${stringResource(R.string.history_label_amount)}: ${CurrencyFormatter.format(amount, currency)}",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -288,7 +292,7 @@ private fun CreateContent(
 
         val payers = changes["payers"].asSafeMap()
         if (payers.isNotEmpty()) {
-            Text("Плательщики:", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Text("${stringResource(R.string.history_label_payers)}:", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             payers.forEach { (id, amount) ->
                 val memberName = members[id]?.name ?: "Unknown"
                 val amountVal = (amount as? Number)?.toDouble() ?: 0.0
@@ -301,7 +305,7 @@ private fun CreateContent(
 
         val splits = changes["splits"].asSafeMap()
         if (splits.isNotEmpty()) {
-            Text("Разделение:", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Text("${stringResource(R.string.history_label_splits)}:", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             splits.forEach { (id, amount) ->
                 val memberName = members[id]?.name ?: "Unknown"
                 val amountVal = (amount as? Number)?.toDouble() ?: 0.0
@@ -335,7 +339,7 @@ private fun UpdateContent(
 
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = "Сумма: ",
+                            text = "${stringResource(R.string.history_label_amount)}: ",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.width(100.dp)
@@ -360,14 +364,14 @@ private fun UpdateContent(
                         }
                     }
                 }
-                "description" -> ChangeRow("Описание", from.toString(), to.toString())
+                "description" -> ChangeRow(stringResource(R.string.history_label_description), from.toString(), to.toString())
                 "category" -> {
                     val fromCategory = ExpenseCategory.fromId(from as? String)
                     val toCategory = ExpenseCategory.fromId(to as? String)
 
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = "Категория: ",
+                            text = "${stringResource(R.string.history_label_category)}: ",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.width(100.dp)
@@ -409,12 +413,12 @@ private fun UpdateContent(
                 "payers" -> {
                     val fromMap = from.asSafeMap()
                     val toMap = to.asSafeMap()
-                    MapChangeSection("Плательщики", fromMap, toMap, members, currency)
+                    MapChangeSection(stringResource(R.string.history_label_payers), fromMap, toMap, members, currency)
                 }
                 "splits" -> {
                     val fromMap = from.asSafeMap()
                     val toMap = to.asSafeMap()
-                    MapChangeSection("Разделение", fromMap, toMap, members, currency)
+                    MapChangeSection(stringResource(R.string.history_label_splits), fromMap, toMap, members, currency)
                 }
             }
         }
@@ -513,7 +517,7 @@ private fun MapChangeSection(
                     )
                 } else {
                     Text(
-                        text = "(удален)",
+                        text = stringResource(R.string.history_val_deleted),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -528,7 +532,8 @@ private fun MapChangeSection(
                 modifier = Modifier.height(32.dp)
             ) {
                 Text(
-                    text = if (isExpanded) "Свернуть" else "Показать еще (${significantChanges.size - 3})",
+                    text = if (isExpanded) stringResource(R.string.history_btn_collapse)
+                    else stringResource(R.string.history_btn_show_more, significantChanges.size - 3),
                     style = MaterialTheme.typography.labelMedium
                 )
             }
@@ -536,14 +541,14 @@ private fun MapChangeSection(
     }
 }
 
-private fun formatDateHeader(timestamp: Long): String {
+private fun formatDateHeader(timestamp: Long, todayStr: String, yesterdayStr: String): String {
     val date = Date(timestamp)
     val now = Calendar.getInstance()
     val itemDate = Calendar.getInstance().apply { time = date }
 
     return when {
-        isSameDay(now, itemDate) -> "Сегодня"
-        isYesterday(now, itemDate) -> "Вчера"
+        isSameDay(now, itemDate) -> todayStr
+        isYesterday(now, itemDate) -> yesterdayStr
         else -> SimpleDateFormat("d MMMM yyyy", Locale.getDefault()).format(date)
     }
 }

@@ -18,9 +18,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.model.Member
 import com.silkfinik.fairsplit.core.ui.component.BadgeType
@@ -49,7 +51,7 @@ fun FullBalanceList(
             .padding(top = 16.dp)
     ) {
         Text(
-            text = "Детали баланса",
+            text = stringResource(R.string.balance_summary_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
@@ -77,12 +79,12 @@ fun FullBalanceList(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Все долги погашены",
+                        text = stringResource(R.string.balance_settled_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "В этой группе никто никому не должен.",
+                        text = stringResource(R.string.balance_settled_message),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -97,7 +99,7 @@ fun FullBalanceList(
             ) {
                 activeBalances.forEach { (memberId, balance) ->
                     val member = members.find { it.id == memberId }
-                    val memberName = member?.name ?: "Неизвестный"
+                    val memberName = member?.name ?: stringResource(R.string.balance_member_unknown)
                     val isMe = memberId == currentUserId
 
                     FairSplitListItem(
@@ -118,13 +120,14 @@ fun FullBalanceList(
                                 )
                                 if (isMe) {
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    FairSplitBadge(text = "Вы", type = BadgeType.Secondary)
+                                    FairSplitBadge(
+                                        text = stringResource(R.string.balance_badge_you),
+                                        type = BadgeType.Secondary
+                                    )
                                 }
                             }
                         },
-                        // supportingContent убран полностью
                         trailingContent = {
-                            // Всегда показываем только сумму, без кнопок
                             FairSplitMoneyText(
                                 amount = balance,
                                 currency = group.currency,

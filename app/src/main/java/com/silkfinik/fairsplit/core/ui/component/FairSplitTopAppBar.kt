@@ -43,7 +43,7 @@ fun FairSplitTopAppBar(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back_button_description)
+                        contentDescription = stringResource(R.string.action_back)
                     )
                 }
             }

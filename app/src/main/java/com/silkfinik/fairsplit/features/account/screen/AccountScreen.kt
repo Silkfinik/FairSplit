@@ -22,10 +22,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Icon
@@ -42,8 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.model.User
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.BadgeType
@@ -68,9 +70,6 @@ import com.silkfinik.fairsplit.core.ui.component.FairSplitTextField
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import com.silkfinik.fairsplit.features.account.viewmodel.AccountViewModel
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 
 @Composable
 fun AccountScreen(
@@ -102,14 +101,14 @@ fun AccountScreen(
     if (showSignOutDialog) {
         FairSplitDialog(
             onDismissRequest = { showSignOutDialog = false },
-            title = "Выход",
-            text = "Вы уверены, что хотите выйти из аккаунта?",
-            confirmLabel = "Выйти",
+            title = stringResource(R.string.account_sign_out_dialog_title),
+            text = stringResource(R.string.account_sign_out_dialog_message),
+            confirmLabel = stringResource(R.string.account_sign_out_dialog_confirm),
             onConfirmAction = {
                 showSignOutDialog = false
                 viewModel.onSignOut()
             },
-            dismissLabel = "Отмена",
+            dismissLabel = stringResource(R.string.action_cancel),
             icon = Icons.AutoMirrored.Filled.ExitToApp
         )
     }
@@ -117,15 +116,15 @@ fun AccountScreen(
     if (showDeleteDialog) {
         FairSplitDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = "Удаление аккаунта",
-            text = "Это действие необратимо. Все ваши данные будут удалены безвозвратно.",
-            confirmLabel = "Удалить навсегда",
+            title = stringResource(R.string.account_delete_dialog_title),
+            text = stringResource(R.string.account_delete_dialog_message),
+            confirmLabel = stringResource(R.string.account_delete_dialog_confirm),
             onConfirmAction = {
                 showDeleteDialog = false
                 viewModel.onDeleteAccount()
             },
             isDestructive = true,
-            dismissLabel = "Отмена",
+            dismissLabel = stringResource(R.string.action_cancel),
             icon = Icons.Default.Delete
         )
     }
@@ -154,7 +153,7 @@ fun AccountScreen(
     FairSplitScaffold(
         topBar = {
             FairSplitTopAppBar(
-                title = if (uiState.isAnonymous) "Гость" else "Профиль",
+                title = if (uiState.isAnonymous) stringResource(R.string.account_title_guest) else stringResource(R.string.account_title_profile),
                 onBackClick = onBack
             )
         },
@@ -261,7 +260,7 @@ fun ProfileHeader(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Изменить фото",
+                        contentDescription = stringResource(R.string.account_cd_edit_photo),
                         modifier = Modifier.padding(6.dp),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -278,7 +277,7 @@ fun ProfileHeader(
                 Spacer(modifier = Modifier.height(24.dp))
             } else if (isAnonymous) {
                 FairSplitBadge(
-                    text = "Гостевой режим",
+                    text = stringResource(R.string.account_badge_guest_mode),
                     type = BadgeType.Info
                 )
                 Spacer(modifier = Modifier.height(24.dp))
@@ -287,7 +286,7 @@ fun ProfileHeader(
             FairSplitTextField(
                 value = name,
                 onValueChange = onNameChange,
-                label = "Ваше имя",
+                label = stringResource(R.string.account_input_label_name),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
@@ -304,7 +303,7 @@ fun ProfileHeader(
             if (hasChanges) {
                 Spacer(modifier = Modifier.height(16.dp))
                 FairSplitButton(
-                    text = "Сохранить",
+                    text = stringResource(R.string.action_save),
                     onClick = onNameSubmit,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -323,7 +322,7 @@ fun LinkAccountSection(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Сохранить прогресс",
+                text = stringResource(R.string.account_link_section_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -331,7 +330,7 @@ fun LinkAccountSection(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Привяжите аккаунт, чтобы не потерять данные при выходе или смене устройства.",
+                text = stringResource(R.string.account_link_section_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -339,7 +338,7 @@ fun LinkAccountSection(
             Spacer(modifier = Modifier.height(16.dp))
 
             FairSplitButton(
-                text = "Google аккаунт",
+                text = stringResource(R.string.account_btn_link_google),
                 onClick = onLinkGoogle,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -347,7 +346,7 @@ fun LinkAccountSection(
             Spacer(modifier = Modifier.height(12.dp))
 
             FairSplitButton(
-                text = "Email и пароль",
+                text = stringResource(R.string.account_btn_link_email),
                 onClick = onLinkEmail,
                 style = FairSplitButtonStyle.Secondary,
                 modifier = Modifier.fillMaxWidth()
@@ -366,14 +365,14 @@ fun SettingsSection(
     FairSplitCard {
         Column {
             Text(
-                text = "Настройки",
+                text = stringResource(R.string.account_settings_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
             )
 
             FairSplitListItem(
-                headlineContent = { Text("Уведомления") },
+                headlineContent = { Text(stringResource(R.string.account_settings_notifications)) },
                 leadingContent = {
                     Icon(
                         imageVector = Icons.Default.Notifications,
@@ -397,7 +396,7 @@ fun SettingsSection(
             )
 
             FairSplitListItem(
-                headlineContent = { Text("Выйти") },
+                headlineContent = { Text(stringResource(R.string.account_settings_sign_out)) },
                 leadingContent = {
                     Icon(
                         Icons.AutoMirrored.Filled.ExitToApp,
@@ -410,7 +409,7 @@ fun SettingsSection(
 
             FairSplitListItem(
                 headlineContent = {
-                    Text("Удалить аккаунт", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.account_settings_delete_account), color = MaterialTheme.colorScheme.error)
                 },
                 leadingContent = {
                     Icon(
@@ -447,7 +446,7 @@ fun VerificationWarningCard(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Почта не подтверждена",
+                    text = stringResource(R.string.account_verification_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onErrorContainer
@@ -456,7 +455,7 @@ fun VerificationWarningCard(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Вы не сможете войти в аккаунт повторно, пока не подтвердите почту по ссылке в письме.",
+                text = stringResource(R.string.account_verification_message),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
             )
@@ -468,13 +467,13 @@ fun VerificationWarningCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
             ) {
                 FairSplitButton(
-                    text = "Исправить",
+                    text = stringResource(R.string.account_verification_btn_fix),
                     onClick = onChangeEmailClick,
                     style = FairSplitButtonStyle.Text,
                     modifier = Modifier.height(36.dp)
                 )
                 FairSplitButton(
-                    text = "Выслать письмо",
+                    text = stringResource(R.string.account_verification_btn_resend),
                     onClick = onResendClick,
                     style = FairSplitButtonStyle.Text,
                     modifier = Modifier.height(36.dp)
@@ -484,7 +483,7 @@ fun VerificationWarningCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             FairSplitButton(
-                text = "Я подтвердил",
+                text = stringResource(R.string.account_verification_btn_check),
                 onClick = onCheckStatusClick,
                 style = FairSplitButtonStyle.Primary,
                 modifier = Modifier.fillMaxWidth()
@@ -499,36 +498,34 @@ fun LinkEmailDialog(
     onConfirm: (String, String) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
-    // Для пароля используем rememberTextFieldState для нового BasicSecureTextField (если используем новый PasswordField)
-    // Но так как у вас FairSplitPasswordField принимает TextFieldState, нужно инициализировать его.
     val passwordState = rememberTextFieldState()
 
     FairSplitDialog(
         onDismissRequest = onDismiss,
-        title = "Привязка Email",
+        title = stringResource(R.string.account_link_email_dialog_title),
         content = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 FairSplitTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = "Email",
+                    label = stringResource(R.string.label_email),
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                 )
                 FairSplitPasswordField(
                     state = passwordState,
-                    label = "Пароль",
+                    label = stringResource(R.string.label_password),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         },
-        confirmLabel = "Привязать",
+        confirmLabel = stringResource(R.string.account_link_email_dialog_confirm),
         onConfirmAction = {
             if (email.isNotBlank() && passwordState.text.length >= 6) {
                 onConfirm(email, passwordState.text.toString())
             }
         },
-        dismissLabel = "Отмена"
+        dismissLabel = stringResource(R.string.action_cancel)
     )
 }
 
@@ -542,24 +539,24 @@ fun ChangeEmailDialog(
 
     FairSplitDialog(
         onDismissRequest = onDismiss,
-        title = "Исправить Email",
-        text = "Введите корректный адрес. Мы отправим на него новое письмо с подтверждением.",
+        title = stringResource(R.string.account_change_email_dialog_title),
+        text = stringResource(R.string.account_change_email_dialog_message),
         content = {
             FairSplitTextField(
                 value = newEmail,
                 onValueChange = { newEmail = it },
-                label = "Новый Email",
+                label = stringResource(R.string.account_input_label_new_email),
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
         },
-        confirmLabel = "Сохранить",
+        confirmLabel = stringResource(R.string.action_save),
         onConfirmAction = {
             if (newEmail.isNotBlank() && newEmail != currentEmail) {
                 onConfirm(newEmail)
             }
         },
-        dismissLabel = "Отмена"
+        dismissLabel = stringResource(R.string.action_cancel)
     )
 }

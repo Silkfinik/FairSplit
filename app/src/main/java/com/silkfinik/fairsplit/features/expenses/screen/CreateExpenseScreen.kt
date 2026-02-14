@@ -33,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.model.enums.SplitType
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.FairSplitAmountInput
@@ -72,15 +74,15 @@ fun CreateExpenseScreen(
         topBar = {
             FairSplitTopAppBar(
                 title = when {
-                    uiState.isReadOnly -> "Детали траты"
-                    uiState.isEditing -> "Редактирование"
-                    else -> "Новая трата"
+                    uiState.isReadOnly -> stringResource(R.string.expense_title_details)
+                    uiState.isEditing -> stringResource(R.string.expense_title_edit)
+                    else -> stringResource(R.string.expense_title_new)
                 },
                 onBackClick = onBack,
                 actions = {
                     if (uiState.isEditing) {
                         IconButton(onClick = onHistoryClick) {
-                            Icon(Icons.Default.History, contentDescription = "История")
+                            Icon(Icons.Default.History, contentDescription = stringResource(R.string.expense_cd_history))
                         }
                     }
                 }
@@ -106,7 +108,7 @@ fun CreateExpenseScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Кто платил",
+                            text = stringResource(R.string.expense_label_payer),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = if (uiState.payerError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
@@ -119,7 +121,9 @@ fun CreateExpenseScreen(
                         ) {
                             items(uiState.members) { member ->
                                 val isSelected = member.id == uiState.payerId
-                                val displayName = if (member.id == uiState.currentUserId) "${member.name} (Вы)" else member.name
+                                val displayName = if (member.id == uiState.currentUserId)
+                                    stringResource(R.string.expense_payer_you_format, member.name)
+                                else member.name
                                 val displayMember = member.copy(name = displayName)
 
                                 FairSplitUserPill(
@@ -135,7 +139,7 @@ fun CreateExpenseScreen(
                         FairSplitTextField(
                             value = uiState.description,
                             onValueChange = viewModel::onDescriptionChange,
-                            label = "На что потрачено?",
+                            label = stringResource(R.string.expense_label_description),
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                             readOnly = uiState.isReadOnly,
@@ -146,7 +150,7 @@ fun CreateExpenseScreen(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
-                            text = "Категория",
+                            text = stringResource(R.string.expense_label_category),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -167,7 +171,7 @@ fun CreateExpenseScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Как делить",
+                                text = stringResource(R.string.expense_label_split),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = if (uiState.splitError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
@@ -176,7 +180,7 @@ fun CreateExpenseScreen(
                             if (!uiState.isReadOnly && uiState.splitType == SplitType.EQUAL) {
                                 val allSelected = uiState.splits.size == uiState.members.size
                                 TextButton(onClick = { viewModel.toggleAllMembers(!allSelected) }) {
-                                    Text(if (allSelected) "Снять все" else "Выбрать все")
+                                    Text(if (allSelected) stringResource(R.string.expense_btn_deselect_all) else stringResource(R.string.expense_btn_select_all))
                                 }
                             }
                         }
@@ -191,10 +195,10 @@ fun CreateExpenseScreen(
                         } else {
                             Text(
                                 text = when (uiState.splitType) {
-                                    SplitType.EQUAL -> "Поровну"
-                                    SplitType.EXACT -> "Точные суммы"
-                                    SplitType.PERCENT -> "Проценты"
-                                    SplitType.SHARES -> "Доли"
+                                    SplitType.EQUAL -> stringResource(R.string.split_type_equal)
+                                    SplitType.EXACT -> stringResource(R.string.split_type_exact)
+                                    SplitType.PERCENT -> stringResource(R.string.split_type_percent)
+                                    SplitType.SHARES -> stringResource(R.string.split_type_shares)
                                 },
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.primary,
@@ -251,7 +255,7 @@ fun CreateExpenseScreen(
                         .padding(16.dp)
                 ) {
                     FairSplitButton(
-                        text = "Сохранить",
+                        text = stringResource(R.string.action_save),
                         onClick = viewModel::onSaveClick,
                         modifier = Modifier.fillMaxWidth(),
                         isLoading = uiState.isLoading
@@ -268,10 +272,10 @@ fun SplitTypeSelector(
     onTypeSelected: (SplitType) -> Unit
 ) {
     val types = listOf(
-        SplitType.EQUAL to "Поровну",
-        SplitType.EXACT to "Сумма",
-        SplitType.PERCENT to "%",
-        SplitType.SHARES to "Доли"
+        SplitType.EQUAL to stringResource(R.string.split_type_equal),
+        SplitType.EXACT to stringResource(R.string.split_type_exact_short),
+        SplitType.PERCENT to stringResource(R.string.split_type_percent_symbol),
+        SplitType.SHARES to stringResource(R.string.split_type_shares)
     )
 
     FairSplitTabs(

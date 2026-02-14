@@ -9,11 +9,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -30,6 +32,16 @@ fun FairSplitUserAvatar(
     fontSize: TextUnit = TextUnit.Unspecified
 ) {
     val avatarShape = FairSplitShapes.avatarContainer
+
+    val density = LocalDensity.current
+
+    val effectiveFontSize = remember(size, fontSize, density) {
+        if (fontSize != TextUnit.Unspecified) {
+            fontSize
+        } else {
+            with(density) { (size * 0.6f).toSp() }
+        }
+    }
 
     if (photoUrl != null) {
         AsyncImage(
@@ -57,13 +69,15 @@ fun FairSplitUserAvatar(
                     text = initials,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontSize = fontSize
+                    fontSize = effectiveFontSize,
+                    lineHeight = effectiveFontSize
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(size * 0.6f)
                 )
             }
         }

@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Group
@@ -49,12 +49,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.model.Expense
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.model.Member
@@ -80,7 +82,6 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
-// ... (TransactionItem sealed interface остается без изменений) ...
 sealed interface TransactionItem {
     val id: String
     val date: Long
@@ -123,13 +124,11 @@ fun GroupDetailsScreen(
         onNavigateBack = onBackClick
     )
 
-    // ... (Dialogs and Scaffold structure remain similar, updating imports if needed) ...
-
     if (expenseToDelete != null) {
         AlertDialog(
             onDismissRequest = { expenseToDelete = null },
-            title = { Text("Удалить трату?") },
-            text = { Text("Это действие нельзя отменить, балансы будут пересчитаны.") },
+            title = { Text(stringResource(R.string.group_dialog_delete_expense_title)) },
+            text = { Text(stringResource(R.string.group_dialog_delete_expense_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -138,12 +137,12 @@ fun GroupDetailsScreen(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Удалить")
+                    Text(stringResource(R.string.group_dialog_delete_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { expenseToDelete = null }) {
-                    Text("Отмена")
+                    Text(stringResource(R.string.action_cancel))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -172,7 +171,7 @@ fun GroupDetailsScreen(
             val title = if (uiState is GroupDetailsUiState.Success) {
                 (uiState as GroupDetailsUiState.Success).group.name
             } else {
-                "Группа"
+                stringResource(R.string.group_details_default_title)
             }
             FairSplitTopAppBar(
                 title = title,
@@ -180,7 +179,7 @@ fun GroupDetailsScreen(
                 actions = {
                     if (uiState is GroupDetailsUiState.Success) {
                         IconButton(onClick = { onMembersClick((uiState as GroupDetailsUiState.Success).group.id) }) {
-                            Icon(Icons.Default.Group, "Участники")
+                            Icon(Icons.Default.Group, stringResource(R.string.group_details_cd_members))
                         }
                     }
                 }
@@ -195,9 +194,9 @@ fun GroupDetailsScreen(
                     FairSplitEmptyState(
                         modifier = Modifier.align(Alignment.Center),
                         icon = Icons.Default.Warning,
-                        title = "Ошибка загрузки",
+                        title = stringResource(R.string.group_details_error_title),
                         description = state.message.asString(context),
-                        actionLabel = "Назад",
+                        actionLabel = stringResource(R.string.action_back),
                         onActionClick = onBackClick
                     )
                 }
@@ -238,7 +237,10 @@ fun GroupDetailsScreen(
                                     .padding(bottom = 8.dp)
                             ) {
                                 FairSplitTabs(
-                                    titles = listOf("Траты", "Платежи"),
+                                    titles = listOf(
+                                        stringResource(R.string.group_tab_expenses),
+                                        stringResource(R.string.group_tab_payments)
+                                    ),
                                     selectedIndex = selectedTabIndex,
                                     onTabSelected = { selectedTabIndex = it }
                                 )
@@ -255,8 +257,8 @@ fun GroupDetailsScreen(
                                 ) {
                                     FairSplitEmptyState(
                                         icon = if (selectedTabIndex == 0) Icons.Default.Receipt else Icons.Default.AttachMoney,
-                                        title = if (selectedTabIndex == 0) "Трат пока нет" else "Платежей пока нет",
-                                        description = if (selectedTabIndex == 0) "Добавьте первую покупку, чтобы начать учет" else "Здесь появится история расчетов"
+                                        title = if (selectedTabIndex == 0) stringResource(R.string.group_empty_expenses_title) else stringResource(R.string.group_empty_payments_title),
+                                        description = if (selectedTabIndex == 0) stringResource(R.string.group_empty_expenses_desc) else stringResource(R.string.group_empty_payments_desc)
                                     )
                                 }
                             }
@@ -307,9 +309,8 @@ fun GroupDetailsScreen(
                             .padding(16.dp)
                     ) {
                         FairSplitButton(
-                            text = "Добавить трату",
+                            text = stringResource(R.string.group_btn_add_expense),
                             onClick = { onAddExpenseClick(state.group.id) },
-//                            icon = Icons.Default.Add, // Assuming FairSplitButton has icon support now or use just text
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -367,7 +368,7 @@ fun BalanceSummary(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Мой баланс",
+                        text = stringResource(R.string.balance_summary_my_balance),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
@@ -384,7 +385,9 @@ fun BalanceSummary(
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = if (abs(myBalance) < 0.01) "Всё ровно" else if (myBalance > 0) "Вам должны" else "Вы должны",
+                        text = if (abs(myBalance) < 0.01) stringResource(R.string.balance_summary_status_settled)
+                        else if (myBalance > 0) stringResource(R.string.balance_summary_status_owed)
+                        else stringResource(R.string.balance_summary_status_debt),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
@@ -400,7 +403,7 @@ fun BalanceSummary(
             if (myBalance < -0.01) {
                 Spacer(modifier = Modifier.height(20.dp))
                 FairSplitButton(
-                    text = "Вернуть долг",
+                    text = stringResource(R.string.balance_summary_btn_settle),
                     onClick = { onSettleUp(suggestedReceiverId, abs(myBalance).toString()) },
                     style = FairSplitButtonStyle.Primary,
                     modifier = Modifier.fillMaxWidth()
@@ -433,7 +436,7 @@ fun ExpenseItem(
                 if (!expense.isMathValid) {
                     Icon(
                         imageVector = Icons.Default.Warning,
-                        contentDescription = "Ошибка",
+                        contentDescription = stringResource(R.string.transaction_expense_error),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier
                             .size(16.dp)
@@ -471,7 +474,6 @@ fun ExpenseItem(
             }
 
             Column(horizontalAlignment = Alignment.End) {
-                // Для трат используем основной цвет (например, Primary)
                 FairSplitMoneyText(
                     amount = expense.amount,
                     currency = expense.currency,
@@ -514,7 +516,7 @@ fun PaymentItem(
                 }
 
                 Icon(
-                    imageVector = Icons.Default.ArrowForward,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier
@@ -531,7 +533,6 @@ fun PaymentItem(
                 Spacer(modifier = Modifier.weight(1f))
 
                 Column(horizontalAlignment = Alignment.End) {
-                    // Для платежей всегда зеленый (успех)
                     FairSplitMoneyText(
                         amount = payment.amount,
                         currency = group.currency,
@@ -556,9 +557,9 @@ fun PaymentItem(
                 }
 
                 val statusText = when (payment.status) {
-                    PaymentStatus.PENDING -> "Ожидает подтверждения"
-                    PaymentStatus.CONFIRMED -> "Выполнен"
-                    PaymentStatus.REJECTED -> "Отклонен"
+                    PaymentStatus.PENDING -> stringResource(R.string.payment_status_pending)
+                    PaymentStatus.CONFIRMED -> stringResource(R.string.payment_status_confirmed)
+                    PaymentStatus.REJECTED -> stringResource(R.string.payment_status_rejected)
                 }
 
                 Text(
@@ -574,13 +575,13 @@ fun PaymentItem(
                             onClick = { onAction(PaymentStatus.REJECTED) },
                             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                         ) {
-                            Text("Отклонить")
+                            Text(stringResource(R.string.payment_action_reject))
                         }
                         TextButton(
                             onClick = { onAction(PaymentStatus.CONFIRMED) },
                             colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF1B5E20))
                         ) {
-                            Text("Принять")
+                            Text(stringResource(R.string.payment_action_accept))
                         }
                     }
                 }
@@ -589,7 +590,6 @@ fun PaymentItem(
     }
 }
 
-// InviteDialog остается без изменений...
 @Composable
 fun InviteDialog(
     inviteCode: String?,
@@ -598,7 +598,6 @@ fun InviteDialog(
     onCopyCode: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    // ... тот же код
     FairSplitCard(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = MaterialTheme.shapes.extraLarge
@@ -607,7 +606,7 @@ fun InviteDialog(
             onDismissRequest = onDismiss,
             title = {
                 Text(
-                    "Пригласить друзей",
+                    stringResource(R.string.group_invite_title),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                     fontWeight = FontWeight.Bold
@@ -620,13 +619,13 @@ fun InviteDialog(
                 ) {
                     if (inviteCode == null) {
                         Text(
-                            "Сгенерируйте код, чтобы другие могли присоединиться к этой группе.",
+                            stringResource(R.string.group_invite_desc_generate),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         FairSplitButton(
-                            text = "Сгенерировать код",
+                            text = stringResource(R.string.group_invite_btn_generate),
                             onClick = onGenerateCode,
                             isLoading = isGenerating,
                             modifier = Modifier.fillMaxWidth()
@@ -648,13 +647,13 @@ fun InviteDialog(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "Нажмите, чтобы скопировать",
+                            stringResource(R.string.group_invite_hint_copy),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         FairSplitButton(
-                            text = "Копировать код",
+                            text = stringResource(R.string.group_invite_btn_copy),
                             onClick = { onCopyCode(inviteCode) },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -667,7 +666,7 @@ fun InviteDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Закрыть")
+                    Text(stringResource(R.string.action_close))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
