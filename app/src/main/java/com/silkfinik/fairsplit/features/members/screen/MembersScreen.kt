@@ -1,5 +1,6 @@
 package com.silkfinik.fairsplit.features.members.screen
 
+import android.content.ClipData
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
@@ -36,16 +36,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -71,6 +72,7 @@ import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import com.silkfinik.fairsplit.features.members.ui.MembersUiState
 import com.silkfinik.fairsplit.features.members.viewmodel.MembersViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun MembersScreen(
@@ -87,7 +89,8 @@ fun MembersScreen(
     var showClaimInfo by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
 
     ObserveAsEvents(
         flow = viewModel.uiEvent,
@@ -123,7 +126,10 @@ fun MembersScreen(
                         isGeneratingCode = isGeneratingCode,
                         onGenerateCode = viewModel::generateInviteCode,
                         onCopyCode = { code ->
-                            clipboardManager.setText(AnnotatedString(code))
+                            scope.launch {
+                                val clipData = ClipData.newPlainText("Invite Code", code)
+                                clipboard.setClipEntry(clipData.toClipEntry())
+                            }
                         },
                         onClaimClick = { memberToClaim = it },
                         onEditClick = { memberToEdit = it }

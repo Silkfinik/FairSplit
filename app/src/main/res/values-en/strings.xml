@@ -1,0 +1,300 @@
+<resources>
+    <string name="app_name">FairSplit</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_back">Back</string>
+    <string name="action_close">Close</string>
+
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="label_name">Name</string>
+
+    <string name="error_no_internet">No internet connection</string>
+    <string name="error_server_unavailable">Server unavailable. Try again later</string>
+    <string name="error_timeout">Request timed out. Check your connection</string>
+    <string name="error_unknown">Unknown error occurred</string>
+    <string name="error_generic_operation_failed">Operation failed</string>
+
+    <string name="error_invalid_credentials">Invalid email or password</string>
+    <string name="error_user_collision">This email is already registered</string>
+    <string name="error_user_not_found">User not found</string>
+    <string name="error_not_authorized">Not authorized. Please sign in again</string>
+    <string name="error_requires_relogin">Please sign in again for security reasons</string>
+    <string name="error_account_disabled">Your account has been disabled</string>
+
+    <string name="error_payment_amount_low">Amount must be greater than zero</string>
+    <string name="error_payment_self_transfer">Cannot transfer money to yourself</string>
+    <string name="error_payment_status_changed">Payment status already changed</string>
+    <string name="error_payment_not_found">Payment not found</string>
+    <string name="error_invalid_amount">Invalid amount</string>
+
+    <string name="error_group_not_found">Group not found or deleted</string>
+    <string name="error_expense_not_found">Expense not found</string>
+
+    <string name="error_item_already_exists">Item already exists</string>
+    <string name="enter_amount">Enter amount</string>
+    <string name="select_receiver">Select receiver</string>
+
+    <string name="success_email_verified">Email verified!</string>
+    <string name="success_email_not_verified">Email is not verified yet</string>
+    <string name="success_verification_email_sent">Verification email sent</string>
+    <string name="success_avatar_updated">Avatar updated successfully</string>
+    <string name="success_google_linked">Google account linked successfully</string>
+    <string name="success_email_linked">Account linked. Check email for verification</string>
+    <string name="success_email_change_sent">Email sent to %s. Please follow the link</string>
+
+    <string name="error_fcm_token_get">Error getting notification token</string>
+    <string name="error_fcm_token_save">Failed to save notification token</string>
+    <string name="error_update_name">Failed to update name</string>
+    <string name="action_cancelled">Cancelled</string>
+
+    <string name="error_members_not_found">Members not found</string>
+    <string name="success_ghost_claimed">Profile merged successfully</string>
+    <string name="success_invite_code_generated">Invite code generated</string>
+
+    <string name="success_status_updated">Status updated</string>
+
+    <string name="error_invalid_group_id">Invalid group ID</string>
+    <string name="error_enter_description">Enter description</string>
+    <string name="error_enter_amount">Enter amount</string>
+    <string name="error_select_payer">Select payer</string>
+    <string name="error_split_mismatch">Split amount does not match total amount</string>
+
+    <string name="error_select_at_least_one">Select at least one member</string>
+    <string name="error_split_remaining">Remaining: %s</string>
+    <string name="error_split_overflow">Overflow: %s</string>
+    <string name="error_split_remaining_percent">Remaining: %s%%</string>
+    <string name="error_split_overflow_percent">Overflow: %s%%</string>
+    <string name="error_enter_shares">Enter shares</string>
+
+    <string name="history_empty">History is empty</string>
+    <string name="history_created">Expense created</string>
+    <string name="history_updated">Expense updated</string>
+    <string name="history_calc_error">Calculation error detected</string>
+
+    <string name="error_enter_name">Please enter your name</string>
+    <string name="error_fill_all_fields">Fill all fields</string>
+    <string name="error_fill_required_fields">Fill all required fields</string>
+    <string name="error_passwords_mismatch">Passwords do not match</string>
+    <string name="error_password_too_short">Password must be at least 6 characters</string>
+
+    <string name="message_verification_sent">Email sent! Check your Spam folder.</string>
+    <string name="error_email_not_verified_yet">Email not verified yet. Try refreshing after clicking the link.</string>
+
+    <string name="account_title_profile">Profile</string>
+    <string name="account_title_guest">Guest</string>
+
+    <string name="account_cd_edit_photo">Edit photo</string>
+    <string name="account_badge_guest_mode">Guest mode</string>
+    <string name="account_input_label_name">Your Name</string>
+
+    <string name="account_verification_title">Email not verified</string>
+    <string name="account_verification_message">You won\'t be able to sign in again until you verify your email.</string>
+    <string name="account_verification_btn_fix">Fix</string>
+    <string name="account_verification_btn_resend">Resend email</string>
+    <string name="account_verification_btn_check">I verified</string>
+
+    <string name="account_link_section_title">Save Progress</string>
+    <string name="account_link_section_description">Link an account so you don\'t lose data when logging out or changing devices.</string>
+    <string name="account_btn_link_google">Google Account</string>
+    <string name="account_btn_link_email">Email &amp; Password</string>
+
+    <string name="account_settings_title">Settings</string>
+    <string name="account_settings_notifications">Notifications</string>
+    <string name="account_settings_sign_out">Sign Out</string>
+    <string name="account_settings_delete_account">Delete Account</string>
+
+    <string name="account_sign_out_dialog_title">Sign Out</string>
+    <string name="account_sign_out_dialog_message">Are you sure you want to sign out?</string>
+    <string name="account_sign_out_dialog_confirm">Sign Out</string>
+
+    <string name="account_delete_dialog_title">Delete Account</string>
+    <string name="account_delete_dialog_message">This action is irreversible. All your data will be permanently deleted.</string>
+    <string name="account_delete_dialog_confirm">Delete Forever</string>
+
+    <string name="account_link_email_dialog_title">Link Email</string>
+    <string name="account_link_email_dialog_confirm">Link</string>
+    <string name="account_change_email_dialog_title">Fix Email</string>
+    <string name="account_change_email_dialog_message">Enter a valid address. We will send a new confirmation email.</string>
+    <string name="account_input_label_new_email">New Email</string>
+
+    <string name="payment_title_create">Settle Up</string>
+    <string name="payment_label_amount">Transfer Amount</string>
+    <string name="payment_section_details">Payment Details</string>
+    <string name="payment_label_payer_me">You</string>
+    <string name="payment_label_receiver_placeholder">Receiver</string>
+    <string name="payment_label_select_receiver">Select Receiver:</string>
+    <string name="payment_cd_arrow_to">to</string>
+    <string name="payment_btn_save">Record Payment</string>
+
+    <string name="payment_receiver_unknown">\?</string>
+
+    <string name="members_title">Members</string>
+    <string name="members_error_title">Loading Error</string>
+    <string name="members_error_retry">Try Again</string>
+    <string name="members_btn_add_new">Add Member</string>
+
+    <string name="members_invite_title">Invite Friends</string>
+    <string name="members_invite_desc_create">Create a code so friends can join the group</string>
+    <string name="members_invite_desc_share">Share this code with friends</string>
+    <string name="members_invite_btn_generate">Generate Code</string>
+
+    <string name="members_header_active">In Group</string>
+    <string name="members_header_ghosts">Virtual Members</string>
+
+    <string name="members_badge_you">YOU</string>
+    <string name="members_btn_claim_me">This is me</string>
+
+    <string name="members_dialog_add_title">New Member</string>
+    <string name="members_dialog_add_message">Add a friend manually to split expenses, they can join later.</string>
+    <string name="members_btn_add">Add</string>
+
+    <string name="members_dialog_edit_title">Edit Name</string>
+    <string name="members_label_member_name">Member Name</string>
+
+    <string name="members_dialog_claim_info_title">What is \"This is me\"\?</string>
+    <string name="members_dialog_claim_info_message">If your friend added you manually before you registered, you can merge this virtual profile with your account to keep the history.</string>
+    <string name="members_btn_understood">Got it</string>
+
+    <string name="members_dialog_claim_confirm_title">Merge Profile</string>
+    <string name="members_dialog_claim_confirm_message">Do you want to merge your account with \"%1$s\"? History will be preserved.</string>
+    <string name="members_btn_merge">Merge</string>
+
+    <string name="create_group_title">New Group</string>
+    <string name="create_group_avatar_placeholder">\?</string>
+    <string name="create_group_label_name">Group Name</string>
+    <string name="create_group_placeholder_name">e.g. Vacation 2024</string>
+    <string name="create_group_currency_title">Currency</string>
+    <string name="create_group_currency_desc">All debts will be shown in this currency.</string>
+    <string name="create_group_btn_submit">Create Group</string>
+
+    <string name="groups_title">My Groups</string>
+    <string name="groups_cd_profile">Profile</string>
+    <string name="groups_btn_add">Add Group</string>
+
+    <string name="groups_sheet_add_title">Add Group</string>
+    <string name="groups_sheet_action_create">Create New Group</string>
+    <string name="groups_sheet_action_join">Join via Code</string>
+
+    <string name="groups_empty_title">No Groups Yet</string>
+    <string name="groups_empty_desc">Create your first group to start tracking shared expenses!</string>
+    <string name="groups_empty_action">Create Group</string>
+
+    <string name="groups_item_code_format">Code: %1$s</string>
+
+    <string name="groups_join_dialog_title">Join Group</string>
+    <string name="groups_join_dialog_message">Enter the 6-digit invite code from the group admin.</string>
+    <string name="groups_join_input_label">Invite Code</string>
+    <string name="groups_join_input_placeholder">e.g. X7Z29A</string>
+    <string name="groups_join_btn_confirm">Join</string>
+
+    <string name="group_details_default_title">Group</string>
+    <string name="group_details_cd_members">Members</string>
+    <string name="group_details_error_title">Loading Error</string>
+
+    <string name="balance_summary_title">Balance Details</string>
+    <string name="balance_summary_my_balance">My Balance</string>
+    <string name="balance_summary_status_settled">Settled Up</string>
+    <string name="balance_summary_status_owed">You are owed</string>
+    <string name="balance_summary_status_debt">You owe</string>
+    <string name="balance_summary_btn_settle">Settle Up</string>
+
+    <string name="balance_settled_title">All Debts Settled</string>
+    <string name="balance_settled_message">No one owes anything in this group.</string>
+    <string name="balance_member_unknown">Unknown</string>
+    <string name="balance_badge_you">You</string>
+
+    <string name="group_tab_expenses">Expenses</string>
+    <string name="group_tab_payments">Payments</string>
+    <string name="group_btn_add_expense">Add Expense</string>
+
+    <string name="group_empty_expenses_title">No Expenses Yet</string>
+    <string name="group_empty_expenses_desc">Add your first expense to start tracking</string>
+    <string name="group_empty_payments_title">No Payments Yet</string>
+    <string name="group_empty_payments_desc">Payment history will appear here</string>
+
+    <string name="group_dialog_delete_expense_title">Delete Expense\?</string>
+    <string name="group_dialog_delete_expense_message">This cannot be undone. Balances will be recalculated.</string>
+    <string name="group_dialog_delete_confirm">Delete</string>
+
+    <string name="transaction_expense_error">Error</string>
+    <string name="payment_status_pending">Pending</string>
+    <string name="payment_status_confirmed">Completed</string>
+    <string name="payment_status_rejected">Rejected</string>
+    <string name="payment_action_reject">Reject</string>
+    <string name="payment_action_accept">Accept</string>
+
+    <string name="group_invite_title">Invite Friends</string>
+    <string name="group_invite_desc_generate">Generate a code so others can join this group.</string>
+    <string name="group_invite_btn_generate">Generate Code</string>
+    <string name="group_invite_hint_copy">Tap to copy</string>
+    <string name="group_invite_btn_copy">Copy Code</string>
+
+    <string name="expense_title_new">New Expense</string>
+    <string name="expense_title_edit">Edit Expense</string>
+    <string name="expense_title_details">Expense Details</string>
+    <string name="expense_cd_history">History</string>
+
+    <string name="expense_label_payer">Paid By</string>
+    <string name="expense_payer_you_format">%1$s (You)</string>
+    <string name="expense_label_description">Description</string>
+    <string name="expense_label_category">Category</string>
+    <string name="expense_label_split">Split By</string>
+    <string name="expense_btn_select_all">Select All</string>
+    <string name="expense_btn_deselect_all">Deselect All</string>
+
+    <string name="split_type_equal">Equally</string>
+    <string name="split_type_exact">Exact Amount</string>
+    <string name="split_type_exact_short">Amount</string>
+    <string name="split_type_percent">Percent</string>
+    <string name="split_type_percent_symbol">%</string>
+    <string name="split_type_shares">Shares</string>
+
+    <string name="history_title">Edit History</string>
+    <string name="history_empty_title">History Empty</string>
+    <string name="history_empty_desc">Changes to this expense will appear here.</string>
+
+    <string name="history_date_today">Today</string>
+    <string name="history_date_yesterday">Yesterday</string>
+
+    <string name="history_action_created">Expense created</string>
+    <string name="history_action_updated">Expense updated</string>
+    <string name="history_error_math">Calculation error detected</string>
+
+    <string name="history_label_description">Description</string>
+    <string name="history_label_amount">Amount</string>
+    <string name="history_label_category">Category</string>
+    <string name="history_label_payers">Payers</string>
+    <string name="history_label_splits">Split</string>
+    <string name="history_val_deleted">(deleted)</string>
+
+    <string name="history_btn_collapse">Collapse</string>
+    <string name="history_btn_show_more">Show more (%1$d)</string>
+
+    <string name="welcome_subtitle">Split expenses easily</string>
+    <string name="welcome_card_title">Let\'s get started</string>
+    <string name="welcome_label_name">Your Name</string>
+    <string name="welcome_placeholder_name">e.g. John</string>
+    <string name="welcome_btn_continue">Continue</string>
+    <string name="welcome_divider_or">OR</string>
+    <string name="welcome_btn_google">Sign in with Google</string>
+    <string name="welcome_btn_email">Sign in with Email</string>
+
+    <string name="login_title">Sign In</string>
+    <string name="login_welcome">Welcome Back</string>
+    <string name="login_subtitle">Enter your details to sign in</string>
+    <string name="login_btn_sign_in">Sign In</string>
+    <string name="login_btn_to_register">No account\? Register</string>
+
+    <string name="register_title">Register</string>
+    <string name="register_welcome">New Account</string>
+    <string name="register_subtitle">Fill the form to get started</string>
+    <string name="register_label_confirm_password">Confirm Password</string>
+    <string name="register_btn_sign_up">Create Account</string>
+
+    <string name="verify_email_title">Check Email</string>
+    <string name="verify_email_message">We sent a confirmation link. Please click it to activate your account.</string>
+    <string name="verify_email_btn_check">I Verified</string>
+    <string name="verify_email_btn_resend">Resend Email</string>
+    <string name="verify_email_btn_logout">Log Out / Other Account</string>
+</resources>

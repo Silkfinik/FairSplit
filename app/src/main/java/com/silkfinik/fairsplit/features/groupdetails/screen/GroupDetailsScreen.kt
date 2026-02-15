@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
@@ -47,14 +46,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.model.Expense
@@ -108,11 +103,8 @@ fun GroupDetailsScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val isGeneratingCode by viewModel.isGeneratingCode.collectAsState()
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
-    var showInviteDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val clipboardManager = LocalClipboardManager.current
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -148,21 +140,6 @@ fun GroupDetailsScreen(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             shape = MaterialTheme.shapes.extraLarge
         )
-    }
-
-    if (showInviteDialog) {
-        val group = (uiState as? GroupDetailsUiState.Success)?.group
-        if (group != null) {
-            InviteDialog(
-                inviteCode = group.inviteCode,
-                isGenerating = isGeneratingCode,
-                onGenerateCode = { viewModel.generateInviteCode() },
-                onCopyCode = { code ->
-                    clipboardManager.setText(AnnotatedString(code))
-                },
-                onDismiss = { showInviteDialog = false }
-            )
-        }
     }
 
     FairSplitScaffold(
@@ -587,89 +564,5 @@ fun PaymentItem(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun InviteDialog(
-    inviteCode: String?,
-    isGenerating: Boolean,
-    onGenerateCode: () -> Unit,
-    onCopyCode: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    FairSplitCard(
-        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = MaterialTheme.shapes.extraLarge
-    ) {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = {
-                Text(
-                    stringResource(R.string.group_invite_title),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (inviteCode == null) {
-                        Text(
-                            stringResource(R.string.group_invite_desc_generate),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        FairSplitButton(
-                            text = stringResource(R.string.group_invite_btn_generate),
-                            onClick = onGenerateCode,
-                            isLoading = isGenerating,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        Text(
-                            text = inviteCode,
-                            style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.primary,
-                            letterSpacing = 4.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                                    MaterialTheme.shapes.medium
-                                )
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.group_invite_hint_copy),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        FairSplitButton(
-                            text = stringResource(R.string.group_invite_btn_copy),
-                            onClick = { onCopyCode(inviteCode) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.action_close))
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
     }
 }

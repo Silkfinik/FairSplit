@@ -1,0 +1,299 @@
+<resources>
+    <string name="app_name">FairSplit</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_back">Zurück</string>
+    <string name="action_close">Schließen</string>
+
+    <string name="label_email">E-Mail</string>
+    <string name="label_password">Passwort</string>
+    <string name="label_name">Name</string>
+
+    <string name="error_no_internet">Keine Internetverbindung</string>
+    <string name="error_server_unavailable">Der Server ist vorübergehend nicht erreichbar. Bitte versuchen Sie es später noch einmal</string>
+    <string name="error_timeout">Zeitüberschreitung der Anforderung. Überprüfen Sie Ihre Verbindung</string>
+    <string name="error_unknown">Ein unbekannter Fehler ist aufgetreten</string>
+    <string name="error_generic_operation_failed">Vorgang fehlgeschlagen</string>
+
+    <string name="error_invalid_credentials">Ungültige E-Mail oder Passwort</string>
+    <string name="error_user_collision">Diese E-Mail ist bereits registriert</string>
+    <string name="error_user_not_found">Benutzer nicht gefunden</string>
+    <string name="error_not_authorized">Nicht autorisiert. Bitte melden Sie sich erneut an</string>
+    <string name="error_requires_relogin">Aus Sicherheitsgründen melden Sie sich bitte erneut an</string>
+    <string name="error_account_disabled">Ihr Konto wurde deaktiviert</string>
+
+    <string name="error_payment_amount_low">Der Betrag muss größer als null sein</string>
+    <string name="error_payment_self_transfer">Sie können kein Geld an sich selbst überweisen</string>
+    <string name="error_payment_status_changed">Der Zahlungsstatus wurde bereits geändert</string>
+    <string name="error_payment_not_found">Zahlung nicht gefunden</string>
+    <string name="error_invalid_amount">Ungültiger Betrag</string>
+
+    <string name="error_group_not_found">Gruppe nicht gefunden oder gelöscht</string>
+    <string name="error_expense_not_found">Ausgabe nicht gefunden</string>
+
+    <string name="error_item_already_exists">Dieser Eintrag existiert bereits</string>
+    <string name="enter_amount">Betrag eingeben</string>
+    <string name="select_receiver">Empfänger auswählen</string>
+
+    <string name="success_email_verified">E-Mail verifiziert!</string>
+    <string name="success_email_not_verified">E-Mail ist noch nicht verifiziert</string>
+    <string name="success_verification_email_sent">Bestätigungs-E-Mail gesendet</string>
+    <string name="success_avatar_updated">Avatar erfolgreich aktualisiert</string>
+    <string name="success_google_linked">Google-Konto erfolgreich verknüpft</string>
+    <string name="success_email_linked">Konto verknüpft. Bitte überprüfen Sie Ihre E-Mail zur Verifizierung</string>
+    <string name="success_email_change_sent">E-Mail an %s gesendet. Bitte folgen Sie dem Link</string>
+
+    <string name="error_fcm_token_get">Fehler beim Abrufen des Benachrichtigungs-Tokens</string>
+    <string name="error_fcm_token_save">Benachrichtigungs-Token konnte nicht gespeichert werden</string>
+    <string name="error_update_name">Name konnte nicht aktualisiert werden</string>
+    <string name="action_cancelled">Abgebrochen</string>
+
+    <string name="error_members_not_found">Mitglieder nicht gefunden</string>
+    <string name="success_ghost_claimed">Profil erfolgreich zusammengeführt</string>
+    <string name="success_invite_code_generated">Einladungscode generiert</string>
+
+    <string name="success_status_updated">Status aktualisiert</string>
+
+    <string name="error_invalid_group_id">Ungültige Gruppen-ID</string>
+    <string name="error_enter_description">Bitte eine Beschreibung eingeben</string>
+    <string name="error_enter_amount">Bitte einen Betrag eingeben</string>
+    <string name="error_select_payer">Bitte den Zahler auswählen</string>
+    <string name="error_split_mismatch">Der geteilte Betrag stimmt nicht mit dem Gesamtbetrag überein</string>
+
+    <string name="error_select_at_least_one">Wählen Sie mindestens ein Mitglied aus</string>
+    <string name="error_split_remaining">Verbleibend: %s</string>
+    <string name="error_split_overflow">Überschuss: %s</string>
+    <string name="error_split_remaining_percent">Verbleibend: %s%%</string>
+    <string name="error_split_overflow_percent">Überschuss: %s%%</string>
+    <string name="error_enter_shares">Anteile eingeben</string>
+
+    <string name="history_empty">Der Verlauf ist leer</string>
+    <string name="history_created">Ausgabe erstellt</string>
+    <string name="history_updated">Ausgabe aktualisiert</string>
+    <string name="history_calc_error">Berechnungsfehler erkannt</string>
+
+    <string name="error_enter_name">Bitte geben Sie Ihren Namen ein</string>
+    <string name="error_fill_all_fields">Füllen Sie alle Felder aus</string>
+    <string name="error_fill_required_fields">Füllen Sie alle Pflichtfelder aus</string>
+    <string name="error_passwords_mismatch">Passwörter stimmen nicht überein</string>
+    <string name="error_password_too_short">Das Passwort muss mindestens 6 Zeichen lang sein</string>
+
+    <string name="message_verification_sent">E-Mail gesendet! Überprüfen Sie Ihren Spam-Ordner.</string>
+    <string name="error_email_not_verified_yet">E-Mail noch nicht verifiziert. Versuchen Sie nach dem Klicken auf den Link die Seite zu aktualisieren.</string>
+
+    <string name="account_title_profile">Profil</string>
+    <string name="account_title_guest">Gast</string>
+
+    <string name="account_cd_edit_photo">Foto ändern</string>
+    <string name="account_badge_guest_mode">Gastmodus</string>
+    <string name="account_input_label_name">Ihr Name</string>
+
+    <string name="account_verification_title">E-Mail nicht verifiziert</string>
+    <string name="account_verification_message">Sie können sich erst wieder anmelden, wenn Sie Ihre E-Mail über den Link verifiziert haben.</string>
+    <string name="account_verification_btn_fix">Korrigieren</string>
+    <string name="account_verification_btn_resend">Erneut senden</string>
+    <string name="account_verification_btn_check">Ich habe verifiziert</string>
+
+    <string name="account_link_section_title">Fortschritt speichern</string>
+    <string name="account_link_section_description">Verknüpfen Sie ein Konto, damit Ihre Daten beim Abmelden oder Gerätewechsel nicht verloren gehen.</string>
+    <string name="account_btn_link_google">Google-Konto</string>
+    <string name="account_btn_link_email">E-Mail und Passwort</string>
+
+    <string name="account_settings_title">Einstellungen</string>
+    <string name="account_settings_notifications">Benachrichtigungen</string>
+    <string name="account_settings_sign_out">Abmelden</string>
+    <string name="account_settings_delete_account">Konto löschen</string>
+
+    <string name="account_sign_out_dialog_title">Abmelden</string>
+    <string name="account_sign_out_dialog_message">Sind Sie sicher, dass Sie sich abmelden möchten\?</string>
+    <string name="account_sign_out_dialog_confirm">Abmelden</string>
+
+    <string name="account_delete_dialog_title">Konto löschen</string>
+    <string name="account_delete_dialog_message">Diese Aktion ist unwiderruflich. Alle Ihre Daten werden dauerhaft gelöscht.</string>
+    <string name="account_delete_dialog_confirm">Dauerhaft löschen</string>
+
+    <string name="account_link_email_dialog_title">E-Mail verknüpfen</string>
+    <string name="account_link_email_dialog_confirm">Verknüpfen</string>
+    <string name="account_change_email_dialog_title">E-Mail korrigieren</string>
+    <string name="account_change_email_dialog_message">Geben Sie eine gültige Adresse ein. Wir senden eine neue Bestätigungs-E-Mail.</string>
+    <string name="account_input_label_new_email">Neue E-Mail</string>
+
+    <string name="payment_title_create">Schulden begleichen</string>
+    <string name="payment_label_amount">Überweisungsbetrag</string>
+    <string name="payment_section_details">Zahlungsdetails</string>
+    <string name="payment_label_payer_me">Du</string>
+    <string name="payment_label_receiver_placeholder">Empfänger</string>
+    <string name="payment_label_select_receiver">Empfänger auswählen:</string>
+    <string name="payment_cd_arrow_to">an</string>
+    <string name="payment_btn_save">Zahlung speichern</string>
+    <string name="payment_receiver_unknown">\?</string>
+
+    <string name="members_title">Mitglieder</string>
+    <string name="members_error_title">Ladefehler</string>
+    <string name="members_error_retry">Erneut versuchen</string>
+    <string name="members_btn_add_new">Mitglied hinzufügen</string>
+
+    <string name="members_invite_title">Freunde einladen</string>
+    <string name="members_invite_desc_create">Erstellen Sie einen Code, damit Freunde der Gruppe beitreten können</string>
+    <string name="members_invite_desc_share">Teilen Sie diesen Code mit Freunden</string>
+    <string name="members_invite_btn_generate">Code generieren</string>
+
+    <string name="members_header_active">In der Gruppe</string>
+    <string name="members_header_ghosts">Virtuelle Mitglieder</string>
+
+    <string name="members_badge_you">DU</string>
+    <string name="members_btn_claim_me">Das bin ich</string>
+
+    <string name="members_dialog_add_title">Neues Mitglied</string>
+    <string name="members_dialog_add_message">Fügen Sie einen Freund manuell hinzu, um Ausgaben zu teilen. Er kann später beitreten.</string>
+    <string name="members_btn_add">Hinzufügen</string>
+
+    <string name="members_dialog_edit_title">Name ändern</string>
+    <string name="members_label_member_name">Mitgliedsname</string>
+
+    <string name="members_dialog_claim_info_title">Was bedeutet \"Das bin ich\"\?</string>
+    <string name="members_dialog_claim_info_message">Wenn ein Freund Sie vor Ihrer Registrierung manuell hinzugefügt hat, können Sie dieses virtuelle Profil mit Ihrem Konto zusammenführen.</string>
+    <string name="members_btn_understood">Verstanden</string>
+
+    <string name="members_dialog_claim_confirm_title">Profil zusammenführen</string>
+    <string name="members_dialog_claim_confirm_message">Möchten Sie Ihr Konto mit dem Mitglied \"%1$s\" zusammenführen\? Der Ausgabenverlauf bleibt erhalten.</string>
+    <string name="members_btn_merge">Zusammenführen</string>
+
+    <string name="create_group_title">Neue Gruppe</string>
+    <string name="create_group_avatar_placeholder">\?</string>
+    <string name="create_group_label_name">Gruppenname</string>
+    <string name="create_group_placeholder_name">Z.B. Urlaub 2024</string>
+    <string name="create_group_currency_title">Währung</string>
+    <string name="create_group_currency_desc">Alle Schulden werden in dieser Währung angezeigt.</string>
+    <string name="create_group_btn_submit">Gruppe erstellen</string>
+
+    <string name="groups_title">Meine Gruppen</string>
+    <string name="groups_cd_profile">Profil</string>
+    <string name="groups_btn_add">Gruppe hinzufügen</string>
+
+    <string name="groups_sheet_add_title">Gruppe hinzufügen</string>
+    <string name="groups_sheet_action_create">Neue Gruppe erstellen</string>
+    <string name="groups_sheet_action_join">Mit Code beitreten</string>
+
+    <string name="groups_empty_title">Noch keine Gruppen</string>
+    <string name="groups_empty_desc">Erstellen Sie Ihre erste Gruppe, um ein gemeinsames Budget mit Freunden zu führen!</string>
+    <string name="groups_empty_action">Gruppe erstellen</string>
+
+    <string name="groups_item_code_format">Code: %1$s</string>
+
+    <string name="groups_join_dialog_title">Gruppe beitreten</string>
+    <string name="groups_join_dialog_message">Geben Sie den 6-stelligen Einladungscode vom Gruppenadministrator ein.</string>
+    <string name="groups_join_input_label">Einladungscode</string>
+    <string name="groups_join_input_placeholder">Z.B. X7Z29A</string>
+    <string name="groups_join_btn_confirm">Beitreten</string>
+
+    <string name="group_details_default_title">Gruppe</string>
+    <string name="group_details_cd_members">Mitglieder</string>
+    <string name="group_details_error_title">Ladefehler</string>
+
+    <string name="balance_summary_title">Saldodetails</string>
+    <string name="balance_summary_my_balance">Mein Saldo</string>
+    <string name="balance_summary_status_settled">Alles ausgeglichen</string>
+    <string name="balance_summary_status_owed">Man schuldet dir</string>
+    <string name="balance_summary_status_debt">Du schuldest</string>
+    <string name="balance_summary_btn_settle">Schulden begleichen</string>
+
+    <string name="balance_settled_title">Alle Schulden sind beglichen</string>
+    <string name="balance_settled_message">Niemand schuldet irgendjemandem etwas in dieser Gruppe.</string>
+    <string name="balance_member_unknown">Unbekannt</string>
+    <string name="balance_badge_you">Du</string>
+
+    <string name="group_tab_expenses">Ausgaben</string>
+    <string name="group_tab_payments">Zahlungen</string>
+    <string name="group_btn_add_expense">Ausgabe hinzufügen</string>
+
+    <string name="group_empty_expenses_title">Noch keine Ausgaben</string>
+    <string name="group_empty_expenses_desc">Fügen Sie den ersten Kauf hinzu, um mit der Erfassung zu beginnen</string>
+    <string name="group_empty_payments_title">Noch keine Zahlungen</string>
+    <string name="group_empty_payments_desc">Der Zahlungsverlauf wird hier angezeigt</string>
+
+    <string name="group_dialog_delete_expense_title">Ausgabe löschen\?</string>
+    <string name="group_dialog_delete_expense_message">Diese Aktion kann nicht rückgängig gemacht werden, die Salden werden neu berechnet.</string>
+    <string name="group_dialog_delete_confirm">Löschen</string>
+
+    <string name="transaction_expense_error">Fehler</string>
+    <string name="payment_status_pending">Warten auf Bestätigung</string>
+    <string name="payment_status_confirmed">Abgeschlossen</string>
+    <string name="payment_status_rejected">Abgelehnt</string>
+    <string name="payment_action_reject">Ablehnen</string>
+    <string name="payment_action_accept">Akzeptieren</string>
+
+    <string name="group_invite_title">Freunde einladen</string>
+    <string name="group_invite_desc_generate">Generieren Sie einen Code, damit andere dieser Gruppe beitreten können.</string>
+    <string name="group_invite_btn_generate">Code generieren</string>
+    <string name="group_invite_hint_copy">Zum Kopieren tippen</string>
+    <string name="group_invite_btn_copy">Code kopieren</string>
+
+    <string name="expense_title_new">Neue Ausgabe</string>
+    <string name="expense_title_edit">Bearbeiten</string>
+    <string name="expense_title_details">Ausgabendetails</string>
+    <string name="expense_cd_history">Verlauf</string>
+
+    <string name="expense_label_payer">Wer hat bezahlt</string>
+    <string name="expense_payer_you_format">%1$s (Du)</string>
+    <string name="expense_label_description">Wofür wurde das Geld ausgegeben\?</string>
+    <string name="expense_label_category">Kategorie</string>
+    <string name="expense_label_split">Wie aufteilen</string>
+    <string name="expense_btn_select_all">Alle auswählen</string>
+    <string name="expense_btn_deselect_all">Auswahl aufheben</string>
+
+    <string name="split_type_equal">Gleichmäßig</string>
+    <string name="split_type_exact">Genaue Beträge</string>
+    <string name="split_type_exact_short">Betrag</string>
+    <string name="split_type_percent">Prozentsätze</string>
+    <string name="split_type_percent_symbol">%</string>
+    <string name="split_type_shares">Anteile</string>
+
+    <string name="history_title">Änderungsverlauf</string>
+    <string name="history_empty_title">Verlauf ist leer</string>
+    <string name="history_empty_desc">Änderungen an dieser Ausgabe werden hier angezeigt.</string>
+
+    <string name="history_date_today">Heute</string>
+    <string name="history_date_yesterday">Gestern</string>
+
+    <string name="history_action_created">Ausgabe erstellt</string>
+    <string name="history_action_updated">Ausgabe aktualisiert</string>
+    <string name="history_error_math">Berechnungsfehler erkannt</string>
+
+    <string name="history_label_description">Beschreibung</string>
+    <string name="history_label_amount">Betrag</string>
+    <string name="history_label_category">Kategorie</string>
+    <string name="history_label_payers">Zahler</string>
+    <string name="history_label_splits">Aufteilung</string>
+    <string name="history_val_deleted">(gelöscht)</string>
+
+    <string name="history_btn_collapse">Einklappen</string>
+    <string name="history_btn_show_more">Mehr anzeigen (%1$d)</string>
+
+    <string name="welcome_subtitle">Ausgaben einfach teilen</string>
+    <string name="welcome_card_title">Lass uns uns kennenlernen</string>
+    <string name="welcome_label_name">Dein Name</string>
+    <string name="welcome_placeholder_name">Z.B. Max</string>
+    <string name="welcome_btn_continue">Weiter</string>
+    <string name="welcome_divider_or">ODER</string>
+    <string name="welcome_btn_google">Mit Google anmelden</string>
+    <string name="welcome_btn_email">Mit E-Mail anmelden</string>
+
+    <string name="login_title">Anmelden</string>
+    <string name="login_welcome">Willkommen zurück</string>
+    <string name="login_subtitle">Geben Sie Ihre Daten zur Anmeldung ein</string>
+    <string name="login_btn_sign_in">Anmelden</string>
+    <string name="login_btn_to_register">Kein Konto\? Registrieren</string>
+
+    <string name="register_title">Registrierung</string>
+    <string name="register_welcome">Neues Konto</string>
+    <string name="register_subtitle">Füllen Sie das Formular aus, um zu beginnen</string>
+    <string name="register_label_confirm_password">Passwort wiederholen</string>
+    <string name="register_btn_sign_up">Konto erstellen</string>
+
+    <string name="verify_email_title">E-Mail überprüfen</string>
+    <string name="verify_email_message">Wir haben eine E-Mail mit einem Bestätigungslink gesendet. Klicken Sie darauf, um Ihr Konto zu aktivieren.</string>
+    <string name="verify_email_btn_check">Ich habe verifiziert</string>
+    <string name="verify_email_btn_resend">E-Mail erneut senden</string>
+    <string name="verify_email_btn_logout">Abmelden / Anderes Konto</string>
+</resources>
