@@ -130,7 +130,11 @@ fun HistoryList(
         val yesterdayStr = stringResource(R.string.history_date_yesterday)
 
         val groupedHistory = remember(history, todayStr, yesterdayStr) {
-            history.groupBy { formatDateHeader(it.timestamp, todayStr, yesterdayStr) }
+            val now = Calendar.getInstance()
+            val yesterday = Calendar.getInstance()
+            yesterday.add(Calendar.DAY_OF_YEAR, -1)
+            val itemCalendar = Calendar.getInstance()
+            history.groupBy { formatDateHeader(it.timestamp, todayStr, yesterdayStr, now, yesterday, itemCalendar) }
         }
 
         LazyColumn(
@@ -541,15 +545,29 @@ private fun MapChangeSection(
     }
 }
 
-private fun formatDateHeader(timestamp: Long, todayStr: String, yesterdayStr: String): String {
-    val date = Date(timestamp)
-    val now = Calendar.getInstance()
-    val itemDate = Calendar.getInstance().apply { time = date }
+
+private val dateFormatter = object : ThreadLocal<SimpleDateFormat>() {
+    override fun initialValue() = SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
+}
+
+private val timeFormatter = object : ThreadLocal<SimpleDateFormat>() {
+    override fun initialValue() = SimpleDateFormat("HH:mm", Locale.getDefault())
+}
+
+private fun formatDateHeader(
+    timestamp: Long,
+    todayStr: String,
+    yesterdayStr: String,
+    now: Calendar,
+    yesterday: Calendar,
+    itemCalendar: Calendar
+): String {
+    itemCalendar.timeInMillis = timestamp
 
     return when {
-        isSameDay(now, itemDate) -> todayStr
-        isYesterday(now, itemDate) -> yesterdayStr
-        else -> SimpleDateFormat("d MMMM yyyy", Locale.getDefault()).format(date)
+        isSameDay(now, itemCalendar) -> todayStr
+        isSameDay(yesterday, itemCalendar) -> yesterdayStr
+        else -> dateFormatter.get()?.format(Date(timestamp)) ?: ""
     }
 }
 
@@ -558,12 +576,8 @@ private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
             cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
 }
 
-private fun isYesterday(now: Calendar, itemDate: Calendar): Boolean {
-    val yesterday = now.clone() as Calendar
-    yesterday.add(Calendar.DAY_OF_YEAR, -1)
-    return isSameDay(yesterday, itemDate)
-}
+
 
 private fun formatTime(timestamp: Long): String {
-    return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
+    return timeFormatter.get()?.format(Date(timestamp)) ?: ""
 }
