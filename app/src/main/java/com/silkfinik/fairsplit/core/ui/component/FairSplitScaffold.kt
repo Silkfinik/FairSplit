@@ -41,6 +41,7 @@ fun FairSplitScaffold(
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     isLoading: Boolean = false,
     contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
+    applyPadding: Boolean = true,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
@@ -79,7 +80,9 @@ fun FairSplitScaffold(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .run {
+                    if (applyPadding) padding(paddingValues) else this
+                }
         ) {
             content(paddingValues)
 

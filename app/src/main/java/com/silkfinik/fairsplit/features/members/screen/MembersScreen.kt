@@ -32,7 +32,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,8 +80,8 @@ fun MembersScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
-    val isGeneratingCode by viewModel.isGeneratingCode.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isGeneratingCode by viewModel.isGeneratingCode.collectAsStateWithLifecycle()
 
     var showAddMemberDialog by remember { mutableStateOf(false) }
     var memberToEdit by remember { mutableStateOf<Member?>(null) }

@@ -27,7 +27,7 @@ class ExpenseHistoryViewModel @Inject constructor(
         .map { data ->
             if (data.currency != null) {
                 ExpenseHistoryUiState.Success(
-                    history = data.history,
+                    historyGroups = data.historyGroups,
                     members = data.members,
                     currency = data.currency
                 )

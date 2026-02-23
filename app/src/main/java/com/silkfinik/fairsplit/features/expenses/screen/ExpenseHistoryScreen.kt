@@ -31,7 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +48,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.CurrencyFormatter
 import com.silkfinik.fairsplit.core.common.util.asSafeMap
+import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpenseHistoryScreenDataUseCase
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.HistoryItem
 import com.silkfinik.fairsplit.core.model.Member
@@ -71,7 +72,7 @@ fun ExpenseHistoryScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     ObserveAsEvents(
@@ -85,14 +86,15 @@ fun ExpenseHistoryScreen(
         topBar = {
             FairSplitTopAppBar(title = stringResource(R.string.history_title), onBackClick = onBack)
         },
-        isLoading = uiState is ExpenseHistoryUiState.Loading
-    ) {
+        isLoading = uiState is ExpenseHistoryUiState.Loading,
+        applyPadding = false
+    ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
             when (val state = uiState) {
                 ExpenseHistoryUiState.Loading -> { }
                 is ExpenseHistoryUiState.Error -> {
                     FairSplitEmptyState(
-                        modifier = Modifier.align(Alignment.Center),
+                        modifier = Modifier.align(Alignment.Center).padding(paddingValues),
                         icon = Icons.Default.Warning,
                         title = stringResource(R.string.group_details_error_title),
                         description = state.message.asString(context),
@@ -102,9 +104,10 @@ fun ExpenseHistoryScreen(
                 }
                 is ExpenseHistoryUiState.Success -> {
                     HistoryList(
-                        history = state.history,
+                        historyGroups = state.historyGroups,
                         members = state.members,
-                        currency = state.currency
+                        currency = state.currency,
+                        paddingValues = paddingValues
                     )
                 }
             }
@@ -115,47 +118,47 @@ fun ExpenseHistoryScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryList(
-    history: List<HistoryItem>,
+    historyGroups: List<GetExpenseHistoryScreenDataUseCase.HistoryDateGroup>,
     members: Map<String, Member>,
-    currency: Currency
+    currency: Currency,
+    paddingValues: PaddingValues
 ) {
-    if (history.isEmpty()) {
+    if (historyGroups.isEmpty()) {
         FairSplitEmptyState(
             icon = Icons.Default.History,
             title = stringResource(R.string.history_empty_title),
-            description = stringResource(R.string.history_empty_desc)
+            description = stringResource(R.string.history_empty_desc),
+            modifier = Modifier.padding(paddingValues)
         )
     } else {
-        val todayStr = stringResource(R.string.history_date_today)
-        val yesterdayStr = stringResource(R.string.history_date_yesterday)
-
-        val groupedHistory = remember(history, todayStr, yesterdayStr) {
-            val now = Calendar.getInstance()
-            val yesterday = Calendar.getInstance()
-            yesterday.add(Calendar.DAY_OF_YEAR, -1)
-            val itemCalendar = Calendar.getInstance()
-            history.groupBy { formatDateHeader(it.timestamp, todayStr, yesterdayStr, now, yesterday, itemCalendar) }
-        }
-
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 32.dp),
+            contentPadding = PaddingValues(
+                 top = paddingValues.calculateTopPadding(),
+                 bottom = paddingValues.calculateBottomPadding() + 32.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            groupedHistory.forEach { (dateHeader, items) ->
+            historyGroups.forEach { group ->
                 stickyHeader {
-                    DateHeader(dateHeader)
+                    val dateStr = when (val header = group.dateHeader) {
+                        is GetExpenseHistoryScreenDataUseCase.HistoryDateHeader.Today -> stringResource(R.string.history_date_today)
+                        is GetExpenseHistoryScreenDataUseCase.HistoryDateHeader.Yesterday -> stringResource(R.string.history_date_yesterday)
+                        is GetExpenseHistoryScreenDataUseCase.HistoryDateHeader.SpecificDate -> header.formattedDate
+                    }
+                    DateHeader(dateStr)
                 }
 
                 items(
-                    items = items,
-                    key = { it.id }
-                ) { item ->
+                    items = group.items,
+                    key = { it.id },
+                    contentType = { "HistoryItem" }
+                ) { itemUI ->
                     Box(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
                     ) {
-                        HistoryItemCard(item = item, members = members, currency = currency)
+                        HistoryItemCard(item = itemUI, members = members, currency = currency)
                     }
                 }
             }
@@ -183,11 +186,11 @@ fun DateHeader(text: String) {
 
 @Composable
 fun HistoryItemCard(
-    item: HistoryItem,
+    item: GetExpenseHistoryScreenDataUseCase.HistoryItemUI,
     members: Map<String, Member>,
     currency: Currency
 ) {
-    val isCreate = item.action == "CREATE" || item.changes.containsKey("_event")
+    val isCreate = item.isCreate
 
     FairSplitCard {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -200,8 +203,11 @@ fun HistoryItemCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
+                    val timeStr = remember(item.timestamp) {
+                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(item.timestamp))
+                    }
                     Text(
-                        text = formatTime(item.timestamp),
+                        text = timeStr,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -210,10 +216,10 @@ fun HistoryItemCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (isCreate) {
-                CreateContent(item.changes, members, currency)
-            } else {
-                UpdateContent(item.changes, members, currency)
+            if (isCreate && item.createData != null) {
+                CreateContent(item.createData, members, currency)
+            } else if (!isCreate) {
+                UpdateContent(item.updateChanges, members, currency)
             }
 
             if (!item.isMathValid) {
@@ -276,16 +282,15 @@ private fun HistoryIcon(isCreate: Boolean) {
 
 @Composable
 private fun CreateContent(
-    changes: Map<String, Any>,
+    createData: GetExpenseHistoryScreenDataUseCase.HistoryCreateUI,
     members: Map<String, Member>,
     currency: Currency
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        changes["description"]?.let {
+        createData.description?.let {
             Text(text = "${stringResource(R.string.history_label_description)}: $it", style = MaterialTheme.typography.bodyMedium)
         }
-        changes["amount"]?.let {
-            val amount = (it as? Number)?.toDouble() ?: 0.0
+        createData.amount?.let { amount ->
             Text(
                 text = "${stringResource(R.string.history_label_amount)}: ${CurrencyFormatter.format(amount, currency)}",
                 style = MaterialTheme.typography.bodyLarge,
@@ -294,27 +299,25 @@ private fun CreateContent(
             )
         }
 
-        val payers = changes["payers"].asSafeMap()
+        val payers = createData.payers
         if (payers.isNotEmpty()) {
             Text("${stringResource(R.string.history_label_payers)}:", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             payers.forEach { (id, amount) ->
                 val memberName = members[id]?.name ?: "Unknown"
-                val amountVal = (amount as? Number)?.toDouble() ?: 0.0
                 Text(
-                    text = "• $memberName: ${CurrencyFormatter.format(amountVal, currency)}",
+                    text = "• $memberName: ${CurrencyFormatter.format(amount, currency)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
 
-        val splits = changes["splits"].asSafeMap()
+        val splits = createData.splits
         if (splits.isNotEmpty()) {
             Text("${stringResource(R.string.history_label_splits)}:", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             splits.forEach { (id, amount) ->
                 val memberName = members[id]?.name ?: "Unknown"
-                val amountVal = (amount as? Number)?.toDouble() ?: 0.0
                 Text(
-                    text = "• $memberName: ${CurrencyFormatter.format(amountVal, currency)}",
+                    text = "• $memberName: ${CurrencyFormatter.format(amount, currency)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -324,22 +327,16 @@ private fun CreateContent(
 
 @Composable
 private fun UpdateContent(
-    changes: Map<String, Any>,
+    changes: List<GetExpenseHistoryScreenDataUseCase.HistoryChangeUI>,
     members: Map<String, Member>,
     currency: Currency
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        changes.forEach { (field, changeValue) ->
-            if (field == "_event" || field == "is_math_valid" || field == "server_validated_at") return@forEach
-
-            val changeMap = changeValue.asSafeMap()
-            val from = changeMap["from"]
-            val to = changeMap["to"]
-
-            when (field) {
-                "amount" -> {
-                    val fromVal = (from as? Number)?.toDouble()
-                    val toVal = (to as? Number)?.toDouble()
+        changes.forEach { change ->
+            when (change) {
+                is GetExpenseHistoryScreenDataUseCase.HistoryChangeUI.Amount -> {
+                    val fromVal = change.from
+                    val toVal = change.to
 
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Text(
@@ -368,10 +365,12 @@ private fun UpdateContent(
                         }
                     }
                 }
-                "description" -> ChangeRow(stringResource(R.string.history_label_description), from.toString(), to.toString())
-                "category" -> {
-                    val fromCategory = ExpenseCategory.fromId(from as? String)
-                    val toCategory = ExpenseCategory.fromId(to as? String)
+                is GetExpenseHistoryScreenDataUseCase.HistoryChangeUI.Description -> {
+                    ChangeRow(stringResource(R.string.history_label_description), change.from, change.to)
+                }
+                is GetExpenseHistoryScreenDataUseCase.HistoryChangeUI.Category -> {
+                    val fromCategory = ExpenseCategory.fromId(change.fromId)
+                    val toCategory = ExpenseCategory.fromId(change.toId)
 
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Text(
@@ -414,15 +413,11 @@ private fun UpdateContent(
                         }
                     }
                 }
-                "payers" -> {
-                    val fromMap = from.asSafeMap()
-                    val toMap = to.asSafeMap()
-                    MapChangeSection(stringResource(R.string.history_label_payers), fromMap, toMap, members, currency)
+                is GetExpenseHistoryScreenDataUseCase.HistoryChangeUI.Payers -> {
+                    MapChangeSection(stringResource(R.string.history_label_payers), change.from, change.to, members, currency)
                 }
-                "splits" -> {
-                    val fromMap = from.asSafeMap()
-                    val toMap = to.asSafeMap()
-                    MapChangeSection(stringResource(R.string.history_label_splits), fromMap, toMap, members, currency)
+                is GetExpenseHistoryScreenDataUseCase.HistoryChangeUI.Splits -> {
+                    MapChangeSection(stringResource(R.string.history_label_splits), change.from, change.to, members, currency)
                 }
             }
         }
@@ -461,8 +456,8 @@ private fun ChangeRow(label: String, from: String?, to: String?) {
 @Composable
 private fun MapChangeSection(
     title: String,
-    from: Map<String, Any>,
-    to: Map<String, Any>,
+    from: Map<String, Double>,
+    to: Map<String, Double>,
     members: Map<String, Member>,
     currency: Currency
 ) {
@@ -477,16 +472,16 @@ private fun MapChangeSection(
 
         val allKeys = from.keys + to.keys
         val significantChanges = allKeys.distinct().filter { key ->
-            val fromVal = (from[key] as? Number)?.toDouble()
-            val toVal = (to[key] as? Number)?.toDouble()
+            val fromVal = from[key]
+            val toVal = to[key]
             fromVal != toVal
         }
 
         val itemsToShow = if (isExpanded) significantChanges else significantChanges.take(3)
 
         itemsToShow.forEach { key ->
-            val fromVal = (from[key] as? Number)?.toDouble()
-            val toVal = (to[key] as? Number)?.toDouble()
+            val fromVal = from[key]
+            val toVal = to[key]
             val memberName = members[key]?.name ?: "Unknown"
 
             Row(
@@ -545,39 +540,3 @@ private fun MapChangeSection(
     }
 }
 
-
-private val dateFormatter = object : ThreadLocal<SimpleDateFormat>() {
-    override fun initialValue() = SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
-}
-
-private val timeFormatter = object : ThreadLocal<SimpleDateFormat>() {
-    override fun initialValue() = SimpleDateFormat("HH:mm", Locale.getDefault())
-}
-
-private fun formatDateHeader(
-    timestamp: Long,
-    todayStr: String,
-    yesterdayStr: String,
-    now: Calendar,
-    yesterday: Calendar,
-    itemCalendar: Calendar
-): String {
-    itemCalendar.timeInMillis = timestamp
-
-    return when {
-        isSameDay(now, itemCalendar) -> todayStr
-        isSameDay(yesterday, itemCalendar) -> yesterdayStr
-        else -> dateFormatter.get()?.format(Date(timestamp)) ?: ""
-    }
-}
-
-private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
-    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-            cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
-}
-
-
-
-private fun formatTime(timestamp: Long): String {
-    return timeFormatter.get()?.format(Date(timestamp)) ?: ""
-}

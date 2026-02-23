@@ -29,7 +29,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,7 +72,7 @@ fun GroupsListScreen(
 ) {
 
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showJoinDialog by remember { mutableStateOf(false) }
@@ -156,14 +156,15 @@ fun GroupsListScreen(
                 }
             )
         },
-        isLoading = uiState.isLoading
-    ) {
+        isLoading = uiState.isLoading,
+        applyPadding = false
+    ) { paddingValues ->
         Box(modifier = Modifier
             .fillMaxSize()) {
 
             if (uiState.groups.isEmpty() && !uiState.isLoading) {
                 FairSplitEmptyState(
-                    modifier = Modifier.align(Alignment.Center),
+                    modifier = Modifier.align(Alignment.Center).padding(paddingValues),
                     icon = Icons.Default.Groups,
                     title = stringResource(R.string.groups_empty_title),
                     description = stringResource(R.string.groups_empty_desc),
@@ -173,10 +174,10 @@ fun GroupsListScreen(
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(
-                        top = 16.dp,
+                        top = 16.dp + paddingValues.calculateTopPadding(),
                         start = 16.dp,
                         end = 16.dp,
-                        bottom = 100.dp
+                        bottom = 100.dp + paddingValues.calculateBottomPadding()
                     ),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxSize()
@@ -202,6 +203,7 @@ fun GroupsListScreen(
                                 )
                             )
                         )
+                        .padding(bottom = paddingValues.calculateBottomPadding())
                         .padding(16.dp)
                 ) {
                     FairSplitButton(

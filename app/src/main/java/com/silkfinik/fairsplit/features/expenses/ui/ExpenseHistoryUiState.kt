@@ -1,6 +1,7 @@
 package com.silkfinik.fairsplit.features.expenses.ui
 
 import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpenseHistoryScreenDataUseCase
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.HistoryItem
 import com.silkfinik.fairsplit.core.model.Member
@@ -8,7 +9,7 @@ import com.silkfinik.fairsplit.core.model.Member
 sealed interface ExpenseHistoryUiState {
     data object Loading : ExpenseHistoryUiState
     data class Success(
-        val history: List<HistoryItem>,
+        val historyGroups: List<GetExpenseHistoryScreenDataUseCase.HistoryDateGroup>,
         val members: Map<String, Member>,
         val currency: Currency
     ) : ExpenseHistoryUiState
