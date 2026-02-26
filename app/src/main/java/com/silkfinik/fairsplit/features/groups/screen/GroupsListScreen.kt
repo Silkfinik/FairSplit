@@ -156,7 +156,7 @@ fun GroupsListScreen(
                 }
             )
         },
-        isLoading = uiState.isLoading,
+        showProgress = uiState.isLoading,
         applyPadding = false
     ) { paddingValues ->
         Box(modifier = Modifier

@@ -103,7 +103,7 @@ fun MembersScreen(
             FairSplitTopAppBar(title = stringResource(R.string.members_title), onBackClick = onBack)
         },
         snackbarHostState = snackbarHostState,
-        isLoading = uiState is MembersUiState.Loading
+        showProgress = uiState is MembersUiState.Loading
     ) { padding ->
 
         Box(

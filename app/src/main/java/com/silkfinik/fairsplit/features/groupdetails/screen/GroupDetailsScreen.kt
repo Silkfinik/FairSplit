@@ -211,7 +211,7 @@ fun GroupDetailsScreen(
                 }
             )
         },
-        isLoading = uiState is GroupDetailsUiState.Loading
+        showProgress = uiState is GroupDetailsUiState.Loading
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (val state = uiState) {

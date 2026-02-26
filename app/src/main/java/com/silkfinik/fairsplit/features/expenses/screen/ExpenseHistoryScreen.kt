@@ -86,7 +86,7 @@ fun ExpenseHistoryScreen(
         topBar = {
             FairSplitTopAppBar(title = stringResource(R.string.history_title), onBackClick = onBack)
         },
-        isLoading = uiState is ExpenseHistoryUiState.Loading,
+        showProgress = uiState is ExpenseHistoryUiState.Loading,
         applyPadding = false
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
