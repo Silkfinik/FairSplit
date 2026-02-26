@@ -1,5 +1,8 @@
 package com.silkfinik.fairsplit.core.data.repository
 
+import androidx.core.net.toUri
+import com.google.firebase.storage.FirebaseStorage
+import com.silkfinik.fairsplit.core.common.util.ImageCompressor
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.TimeProvider
 import com.silkfinik.fairsplit.core.common.util.safeCall
@@ -13,6 +16,7 @@ import com.silkfinik.fairsplit.core.database.entity.GroupEntity
 import com.silkfinik.fairsplit.core.database.entity.MemberEntity
 import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
 import com.silkfinik.fairsplit.core.domain.repository.GroupRepository
+import kotlinx.coroutines.tasks.await
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Group
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +33,9 @@ class OfflineGroupRepository @Inject constructor(
     private val workManagerSyncManager: WorkManagerSyncManager,
     private val authRepository: AuthRepository,
     private val cloudFunctionsDataSource: CloudFunctionsDataSource,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val storage: FirebaseStorage,
+    private val imageCompressor: ImageCompressor
 ) : GroupRepository {
 
     override fun getGroups(): Flow<List<Group>> {
@@ -106,6 +112,31 @@ class OfflineGroupRepository @Inject constructor(
             }
         }
         return result
+    }
+
+    override suspend fun uploadGroupAvatar(groupId: String, imageUri: String): Result<String> = safeCall {
+        val uri = imageUri.toUri()
+        val compressedBytes = imageCompressor.compress(uri)
+            ?: throw Exception("Не удалось обрезать и сжать изображение")
+
+        val filename = "group_avatars/${groupId}_${timeProvider.now()}.webp"
+        val ref = storage.reference.child(filename)
+
+        ref.putBytes(compressedBytes).await()
+        val downloadUrl = ref.downloadUrl.await().toString()
+
+        val existingEntity = groupDao.getGroupById(groupId)
+        if (existingEntity != null) {
+            val updatedGroup = existingEntity.copy(
+                avatarUrl = downloadUrl,
+                updatedAt = timeProvider.now(),
+                isDirty = true
+            )
+            groupDao.updateGroup(updatedGroup)
+            workManagerSyncManager.scheduleSync()
+        }
+        
+        downloadUrl
     }
 
     override fun startSync() {

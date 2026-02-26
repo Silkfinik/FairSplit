@@ -95,7 +95,6 @@ fun FullBalanceList(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp)
             ) {
                 activeBalances.forEach { (memberId, balance) ->
                     val member = members.find { it.id == memberId }

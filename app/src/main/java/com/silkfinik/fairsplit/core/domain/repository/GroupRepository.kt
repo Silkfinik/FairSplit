@@ -11,6 +11,7 @@ interface GroupRepository {
 
     suspend fun createGroup(name: String, currency: Currency, ownerId: String): Result<String>
     suspend fun updateGroup(group: Group): Result<Unit>
+    suspend fun uploadGroupAvatar(groupId: String, imageUri: String): Result<String>
 
     suspend fun joinGroup(code: String): Result<String>
     suspend fun generateInviteCode(groupId: String): Result<String>

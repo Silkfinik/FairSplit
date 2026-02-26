@@ -6,5 +6,6 @@ data class Group(
     val id: String,
     val name: String,
     val currency: Currency,
-    val inviteCode: String? = null
+    val inviteCode: String? = null,
+    val avatarUrl: String? = null
 )

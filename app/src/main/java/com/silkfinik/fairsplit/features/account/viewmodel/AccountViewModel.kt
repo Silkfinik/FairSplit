@@ -61,21 +61,24 @@ class AccountViewModel @Inject constructor(
         userJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val userId = authRepository.getUserId()
-            val isAnon = authRepository.isAnonymous()
-
-            val isVerified = if (isAnon) true else authRepository.isEmailVerified()
 
             if (userId != null) {
                 userRepository.getUser(userId)
                     .catch { emit(null) }
                     .collectLatest { user ->
+                        val authEmail = authRepository.getUserEmail()
+                        val dbEmail = user?.email
+                        val isAnonNow = authRepository.isAnonymous()
+                        val isPendingEmailVerification = dbEmail != null && authEmail != null && !dbEmail.equals(authEmail, ignoreCase = true)
+                        val currentVerifiedStatus = if (isPendingEmailVerification) false else (if (isAnonNow) true else authRepository.isEmailVerified())
+
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
                                 user = user,
                                 isNotificationsEnabled = user?.fcmToken != null,
-                                isAnonymous = isAnon,
-                                isEmailVerified = isVerified
+                                isAnonymous = isAnonNow,
+                                isEmailVerified = currentVerifiedStatus
                             )
                         }
                     }
@@ -91,7 +94,12 @@ class AccountViewModel @Inject constructor(
 
             authRepository.reloadUser()
                 .onSuccess {
-                    val isVerified = authRepository.isEmailVerified()
+                    val authEmail = authRepository.getUserEmail()
+                    val dbEmail = _uiState.value.user?.email
+                    
+                    val isPendingEmailVerification = dbEmail != null && authEmail != null && !dbEmail.equals(authEmail, ignoreCase = true)
+                    val isVerified = if (isPendingEmailVerification) false else authRepository.isEmailVerified()
+                    
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -113,13 +121,26 @@ class AccountViewModel @Inject constructor(
 
     fun resendVerificationEmail() {
         viewModelScope.launch {
-            authRepository.sendEmailVerification()
-                .onSuccess {
-                    sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_verification_email_sent)))
-                }
-                .onError { error ->
-                    sendEvent(UiEvent.ShowError(error.asUiText()))
-                }
+            val dbEmail = _uiState.value.user?.email
+            val authEmail = authRepository.getUserEmail()
+
+            if (dbEmail != null && authEmail != null && !dbEmail.equals(authEmail, ignoreCase = true)) {
+                authRepository.updateEmail(dbEmail)
+                    .onSuccess {
+                        sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_verification_email_sent)))
+                    }
+                    .onError { error ->
+                        sendEvent(UiEvent.ShowError(error.asUiText()))
+                    }
+            } else {
+                authRepository.sendEmailVerification()
+                    .onSuccess {
+                        sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_verification_email_sent)))
+                    }
+                    .onError { error ->
+                        sendEvent(UiEvent.ShowError(error.asUiText()))
+                    }
+            }
         }
     }
 
@@ -129,6 +150,10 @@ class AccountViewModel @Inject constructor(
 
             authRepository.updateEmail(newEmail)
                 .onSuccess {
+                    val currentUser = _uiState.value.user
+                    if (currentUser != null) {
+                        userRepository.createOrUpdateUser(currentUser.copy(email = newEmail))
+                    }
                     authPreferences.saveEmailForNextLogin(newEmail)
                     _uiState.update { it.copy(isLoading = false) }
                     sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_email_change_sent, newEmail)))

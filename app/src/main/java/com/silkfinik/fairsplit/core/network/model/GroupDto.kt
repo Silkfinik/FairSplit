@@ -30,5 +30,9 @@ data class GroupDto(
 
     @get:PropertyName("invite_code")
     @set:PropertyName("invite_code")
-    var inviteCode: String? = null
+    var inviteCode: String? = null,
+    
+    @get:PropertyName("avatar_url")
+    @set:PropertyName("avatar_url")
+    var avatarUrl: String? = null
 )

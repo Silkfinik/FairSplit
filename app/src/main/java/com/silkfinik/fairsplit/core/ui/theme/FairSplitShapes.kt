@@ -22,6 +22,7 @@ object FairSplitShapes {
     val medium: Shape = RoundedCornerShape(12.dp)
     val large: Shape = RoundedCornerShape(24.dp)
     val extraLarge: Shape = RoundedCornerShape(32.dp)
+    val bottomSheet: Shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
 
     val fabShape: Shape = MaterialShapes.Cookie4Sided.customToComposeShape()
 

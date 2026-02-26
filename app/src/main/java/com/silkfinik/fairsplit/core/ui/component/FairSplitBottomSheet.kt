@@ -31,7 +31,7 @@ fun FairSplitBottomSheet(
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val sheetShape = FairSplitShapes.extraLarge
+    val sheetShape = FairSplitShapes.bottomSheet
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,

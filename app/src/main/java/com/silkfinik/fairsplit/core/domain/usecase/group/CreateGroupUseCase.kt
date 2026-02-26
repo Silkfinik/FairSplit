@@ -12,10 +12,15 @@ class CreateGroupUseCase @Inject constructor(
     private val groupRepository: GroupRepository,
     private val authRepository: AuthRepository
 ) {
-    suspend operator fun invoke(name: String, currency: Currency): Result<Unit> {
+    suspend operator fun invoke(name: String, currency: Currency, imageUri: String?): Result<Unit> {
         val userId = authRepository.getUserId()
             ?: return Result.Error(AppError.Auth.NotAuthorized)
 
-        return groupRepository.createGroup(name, currency, userId).map {  }
+        return groupRepository.createGroup(name, currency, userId).map { groupId ->
+            if (imageUri != null) {
+                groupRepository.uploadGroupAvatar(groupId, imageUri)
+            }
+            Unit
+        }
     }
 }

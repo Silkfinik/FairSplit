@@ -39,6 +39,8 @@
     <string name="success_email_not_verified">Почта всё еще не подтверждена</string>
     <string name="success_verification_email_sent">Письмо с подтверждением отправлено</string>
     <string name="success_avatar_updated">Аватар успешно обновлен</string>
+    <string name="success_group_updated">Данные группы обновлены</string>
+    <string name="error_empty_group_name">Название группы не может быть пустым</string>
     <string name="success_google_linked">Google аккаунт успешно привязан</string>
     <string name="success_email_linked">Аккаунт привязан. Проверьте почту для подтверждения</string>
     <string name="success_email_change_sent">Письмо отправлено на %s. Перейдите по ссылке</string>
@@ -200,6 +202,7 @@
 
     <string name="group_details_default_title">Группа</string>
     <string name="group_details_cd_members">Участники</string>
+    <string name="group_details_edit_title">Редактировать группу</string>
     <string name="group_details_error_title">Ошибка загрузки</string>
 
     <string name="balance_summary_title">Детали баланса</string>

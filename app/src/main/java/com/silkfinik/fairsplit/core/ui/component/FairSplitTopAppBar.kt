@@ -20,16 +20,21 @@ import com.silkfinik.fairsplit.core.ui.theme.FairSplitShapes
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FairSplitTopAppBar(
-    title: String,
+    title: String = "",
+    titleContent: (@Composable () -> Unit)? = null,
     onBackClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
         title = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge
-            )
+            if (titleContent != null) {
+                titleContent()
+            } else if (title.isNotEmpty()) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
         },
         navigationIcon = {
             if (onBackClick != null) {

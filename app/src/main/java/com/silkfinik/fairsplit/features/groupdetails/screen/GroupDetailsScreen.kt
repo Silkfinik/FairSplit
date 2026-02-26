@@ -1,7 +1,12 @@
 package com.silkfinik.fairsplit.features.groupdetails.screen
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,14 +16,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Receipt
@@ -31,10 +40,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,12 +58,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.model.Expense
@@ -60,6 +76,7 @@ import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
 import com.silkfinik.fairsplit.core.model.enums.PaymentStatus
 import com.silkfinik.fairsplit.core.ui.common.ObserveAsEvents
 import com.silkfinik.fairsplit.core.ui.component.CategoryIcon
+import com.silkfinik.fairsplit.core.ui.component.FairSplitBottomSheet
 import com.silkfinik.fairsplit.core.ui.component.FairSplitButton
 import com.silkfinik.fairsplit.core.ui.component.FairSplitButtonStyle
 import com.silkfinik.fairsplit.core.ui.component.FairSplitCard
@@ -67,6 +84,7 @@ import com.silkfinik.fairsplit.core.ui.component.FairSplitEmptyState
 import com.silkfinik.fairsplit.core.ui.component.FairSplitMoneyText
 import com.silkfinik.fairsplit.core.ui.component.FairSplitScaffold
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTabs
+import com.silkfinik.fairsplit.core.ui.component.FairSplitTextField
 import com.silkfinik.fairsplit.core.ui.component.FairSplitTopAppBar
 import com.silkfinik.fairsplit.core.ui.component.FairSplitUserAvatar
 import com.silkfinik.fairsplit.features.groupdetails.ui.GroupDetailsUiState
@@ -76,6 +94,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
+
+enum class BottomSheetType {
+    BALANCES, EDIT_GROUP
+}
 
 sealed interface TransactionItem {
     val id: String
@@ -106,7 +128,8 @@ fun GroupDetailsScreen(
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val sheetState = rememberModalBottomSheetState()
+    var bottomSheetType by remember { mutableStateOf(BottomSheetType.BALANCES) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showBottomSheet by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -145,13 +168,39 @@ fun GroupDetailsScreen(
     FairSplitScaffold(
         snackbarHostState = snackbarHostState,
         topBar = {
-            val title = if (uiState is GroupDetailsUiState.Success) {
-                (uiState as GroupDetailsUiState.Success).group.name
-            } else {
-                stringResource(R.string.group_details_default_title)
-            }
             FairSplitTopAppBar(
-                title = title,
+                titleContent = {
+                    if (uiState is GroupDetailsUiState.Success) {
+                        val group = (uiState as GroupDetailsUiState.Success).group
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(MaterialTheme.shapes.small)
+                                .clickable {
+                                    bottomSheetType = BottomSheetType.EDIT_GROUP
+                                    showBottomSheet = true
+                                }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            FairSplitUserAvatar(
+                                photoUrl = group.avatarUrl,
+                                name = group.name,
+                                size = 28.dp,
+                                fontSize = 12.sp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = group.name,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(R.string.group_details_default_title),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                },
                 onBackClick = onBackClick,
                 actions = {
                     if (uiState is GroupDetailsUiState.Success) {
@@ -201,7 +250,10 @@ fun GroupDetailsScreen(
                                     onSettleUp = { receiverId, amount ->
                                         onSettleUpClick(state.group.id, receiverId, amount)
                                     },
-                                    onShowDetails = { showBottomSheet = true }
+                                    onShowDetails = { 
+                                        bottomSheetType = BottomSheetType.BALANCES
+                                        showBottomSheet = true 
+                                    }
                                 )
                             }
                         }
@@ -293,26 +345,49 @@ fun GroupDetailsScreen(
                     }
 
                     if (showBottomSheet) {
-                        ModalBottomSheet(
+                        FairSplitBottomSheet(
                             onDismissRequest = { showBottomSheet = false },
-                            sheetState = sheetState,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            shape = MaterialTheme.shapes.extraLarge
+                            sheetState = sheetState
                         ) {
-                            FullBalanceList(
-                                balances = state.balances,
-                                members = state.members,
-                                group = state.group,
-                                currentUserId = state.currentUserId,
-                                onSettleUp = { receiverId, amount ->
-                                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                        if (!sheetState.isVisible) {
-                                            showBottomSheet = false
+                            when (bottomSheetType) {
+                                BottomSheetType.BALANCES -> {
+                                    FullBalanceList(
+                                        balances = state.balances,
+                                        members = state.members,
+                                        group = state.group,
+                                        currentUserId = state.currentUserId,
+                                        onSettleUp = { receiverId, amount ->
+                                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                                if (!sheetState.isVisible) {
+                                                    showBottomSheet = false
+                                                }
+                                                onSettleUpClick(state.group.id, receiverId, amount)
+                                            }
                                         }
-                                        onSettleUpClick(state.group.id, receiverId, amount)
-                                    }
+                                    )
                                 }
-                            )
+                                BottomSheetType.EDIT_GROUP -> {
+                                    EditGroupSheet(
+                                        group = state.group,
+                                        isUpdating = viewModel.isUpdatingGroup.collectAsStateWithLifecycle().value,
+                                        onSave = { newName, newAvatarUri ->
+                                            viewModel.updateGroupDetails(newName, newAvatarUri)
+                                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                                if (!sheetState.isVisible) {
+                                                    showBottomSheet = false
+                                                }
+                                            }
+                                        },
+                                        onCancel = {
+                                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                                if (!sheetState.isVisible) {
+                                                    showBottomSheet = false
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -403,67 +478,98 @@ fun ExpenseItem(
     val payerId = expense.payers.keys.firstOrNull() ?: expense.creatorId
     val payer = members.find { it.id == payerId }
 
-    FairSplitCard(onClick = onClick) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box {
-                CategoryIcon(category = category, size = 48.dp)
-                if (!expense.isMathValid) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = stringResource(R.string.transaction_expense_error),
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .align(Alignment.TopEnd)
-                            .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.small)
-                    )
-                }
-            }
+    val dismissState = rememberSwipeToDismissBoxState()
 
-            Spacer(modifier = Modifier.width(16.dp))
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            onDelete()
+            dismissState.reset()
+        }
+    }
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = expense.description,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val color = MaterialTheme.colorScheme.errorContainer
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color, MaterialTheme.shapes.extraLarge)
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.group_dialog_delete_confirm),
+                    tint = MaterialTheme.colorScheme.onErrorContainer
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (payer != null) {
-                        FairSplitUserAvatar(
-                            photoUrl = payer.photoUrl,
-                            name = payer.name,
-                            size = 16.dp
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = payer.name,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        },
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = isEditable
+    ) {
+        FairSplitCard(onClick = onClick) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box {
+                    CategoryIcon(category = category, size = 48.dp)
+                    if (!expense.isMathValid) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = stringResource(R.string.transaction_expense_error),
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .align(Alignment.TopEnd)
+                                .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.small)
                         )
                     }
                 }
-            }
 
-            Column(horizontalAlignment = Alignment.End) {
-                FairSplitMoneyText(
-                    amount = expense.amount,
-                    currency = expense.currency,
-                    style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary),
-                    useColor = false,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(expense.date)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = expense.description,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (payer != null) {
+                            FairSplitUserAvatar(
+                                photoUrl = payer.photoUrl,
+                                name = payer.name,
+                                size = 16.dp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = payer.name,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    FairSplitMoneyText(
+                        amount = expense.amount,
+                        currency = expense.currency,
+                        style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary),
+                        useColor = false,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(expense.date)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
     }
@@ -563,6 +669,95 @@ fun PaymentItem(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun EditGroupSheet(
+    group: Group,
+    isUpdating: Boolean,
+    onSave: (String, String?) -> Unit,
+    onCancel: () -> Unit
+) {
+    var editedName by remember { mutableStateOf(group.name) }
+    var selectedAvatarUri by remember { mutableStateOf<String?>(group.avatarUrl) }
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> uri?.let { selectedAvatarUri = it.toString() } }
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 24.dp, end = 24.dp, top = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.group_details_edit_title),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Box(
+            contentAlignment = Alignment.BottomEnd,
+            modifier = Modifier.clickable {
+                photoPickerLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
+            }
+        ) {
+            FairSplitUserAvatar(
+                photoUrl = selectedAvatarUri,
+                name = editedName.ifBlank { "?" },
+                size = 100.dp,
+                fontSize = 40.sp,
+                modifier = Modifier.clip(CircleShape)
+            )
+            
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier
+                    .size(32.dp)
+                    .offset(x = 4.dp, y = 4.dp),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.padding(6.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        FairSplitTextField(
+            value = editedName,
+            onValueChange = { editedName = it },
+            label = stringResource(R.string.create_group_label_name),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            FairSplitButton(
+                text = stringResource(R.string.action_cancel),
+                onClick = onCancel,
+                style = FairSplitButtonStyle.Secondary,
+                modifier = Modifier.weight(1f)
+            )
+            FairSplitButton(
+                text = stringResource(R.string.action_save),
+                onClick = { onSave(editedName, selectedAvatarUri) },
+                enabled = editedName.isNotBlank() && !isUpdating,
+                isLoading = isUpdating,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

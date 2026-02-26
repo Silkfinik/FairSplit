@@ -225,7 +225,7 @@ fun GroupItem(group: Group, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             FairSplitUserAvatar(
-                photoUrl = null,
+                photoUrl = group.avatarUrl,
                 name = group.name,
                 size = 56.dp,
                 fontSize = 24.sp

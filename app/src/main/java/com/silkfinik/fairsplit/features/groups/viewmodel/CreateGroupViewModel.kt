@@ -31,6 +31,10 @@ class CreateGroupViewModel @Inject constructor(
         _uiState.update { it.copy(selectedCurrency = currency) }
     }
 
+    fun onImageSelected(uri: String?) {
+        _uiState.update { it.copy(imageUri = uri) }
+    }
+
     fun createGroup(onSuccess: () -> Unit) {
         val currentState = _uiState.value
         if (currentState.name.isBlank()) return
@@ -38,7 +42,7 @@ class CreateGroupViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true) }
 
         viewModelScope.launch {
-            createGroupUseCase(currentState.name, currentState.selectedCurrency)
+            createGroupUseCase(currentState.name, currentState.selectedCurrency, currentState.imageUri)
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false) }
                     onSuccess()

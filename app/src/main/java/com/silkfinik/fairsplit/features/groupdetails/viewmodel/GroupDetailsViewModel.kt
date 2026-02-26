@@ -12,6 +12,8 @@ import com.silkfinik.fairsplit.core.domain.usecase.expense.DeleteExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SyncGroupExpensesUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GenerateInviteCodeUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupDetailsScreenDataUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.group.UpdateGroupAvatarUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.group.UpdateGroupNameUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.member.AddGhostMemberUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.payment.SyncGroupPaymentsUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.payment.UpdatePaymentStatusUseCase
@@ -37,13 +39,18 @@ class GroupDetailsViewModel @Inject constructor(
     private val syncGroupExpensesUseCase: SyncGroupExpensesUseCase,
     private val syncGroupPaymentsUseCase: SyncGroupPaymentsUseCase,
     private val generateInviteCodeUseCase: GenerateInviteCodeUseCase,
-    private val updatePaymentStatusUseCase: UpdatePaymentStatusUseCase
+    private val updatePaymentStatusUseCase: UpdatePaymentStatusUseCase,
+    private val updateGroupNameUseCase: UpdateGroupNameUseCase,
+    private val updateGroupAvatarUseCase: UpdateGroupAvatarUseCase
 ) : BaseViewModel() {
 
     private val groupId: String = checkNotNull(savedStateHandle["groupId"])
 
     private val _isGeneratingCode = MutableStateFlow(false)
     val isGeneratingCode = _isGeneratingCode.asStateFlow()
+
+    private val _isUpdatingGroup = MutableStateFlow(false)
+    val isUpdatingGroup = _isUpdatingGroup.asStateFlow()
 
     val uiState: StateFlow<GroupDetailsUiState> = getGroupDetailsScreenDataUseCase(groupId)
         .map { data ->
@@ -115,6 +122,44 @@ class GroupDetailsViewModel @Inject constructor(
                     sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
             _isGeneratingCode.value = false
+        }
+    }
+
+    fun updateGroupDetails(newName: String, newAvatarUri: String?) {
+        if (newName.isBlank()) {
+            sendEvent(UiEvent.ShowError(UiText.StringResource(R.string.error_empty_group_name)))
+            return
+        }
+        viewModelScope.launch {
+            _isUpdatingGroup.value = true
+
+            val currentGroup = (uiState.value as? GroupDetailsUiState.Success)?.group
+            var isChanged = false
+
+            if (currentGroup?.name != newName) {
+                updateGroupNameUseCase(groupId, newName)
+                    .onError { error ->
+                        sendEvent(UiEvent.ShowError(error.asUiText()))
+                        _isUpdatingGroup.value = false
+                        return@launch
+                    }
+                isChanged = true
+            }
+
+            if (newAvatarUri != null && newAvatarUri != currentGroup?.avatarUrl && !newAvatarUri.startsWith("http")) {
+                updateGroupAvatarUseCase(groupId, newAvatarUri)
+                    .onError { error ->
+                        sendEvent(UiEvent.ShowError(error.asUiText()))
+                        _isUpdatingGroup.value = false
+                        return@launch
+                    }
+                isChanged = true
+            }
+
+            if (isChanged) {
+                sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_group_updated)))
+            }
+            _isUpdatingGroup.value = false
         }
     }
 }

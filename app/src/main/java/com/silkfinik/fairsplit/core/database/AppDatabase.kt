@@ -15,7 +15,7 @@ import com.silkfinik.fairsplit.core.database.util.Converters
 
 @Database(
     entities = [GroupEntity::class, MemberEntity::class, ExpenseEntity::class, PaymentEntity::class],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

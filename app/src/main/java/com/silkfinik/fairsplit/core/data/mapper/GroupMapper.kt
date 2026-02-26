@@ -10,7 +10,8 @@ fun GroupEntity.asDomainModel(): Group {
         id = this.id,
         name = this.name,
         currency = this.currency,
-        inviteCode = this.inviteCode
+        inviteCode = this.inviteCode,
+        avatarUrl = this.avatarUrl
     )
 }
 
@@ -22,7 +23,8 @@ fun GroupEntity.asDto(): GroupDto {
         ownerId = this.ownerId,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
-        inviteCode = this.inviteCode
+        inviteCode = this.inviteCode,
+        avatarUrl = this.avatarUrl
     )
 }
 
@@ -41,6 +43,7 @@ fun GroupDto.asEntity(): GroupEntity {
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
         inviteCode = this.inviteCode,
+        avatarUrl = this.avatarUrl,
         isDirty = false
     )
 }
