@@ -1,16 +1,16 @@
 package com.silkfinik.fairsplit.features.expenses.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
+import com.silkfinik.fairsplit.R
 import com.silkfinik.fairsplit.core.common.util.Result
 import com.silkfinik.fairsplit.core.common.util.UiEvent
-import com.silkfinik.fairsplit.core.domain.repository.AuthRepository
-import com.silkfinik.fairsplit.core.domain.usecase.expense.GetExpenseUseCase
+import com.silkfinik.fairsplit.core.common.util.UiText
+import com.silkfinik.fairsplit.core.domain.usecase.expense.PrepareCreateExpenseUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.expense.SaveExpenseUseCase
-import com.silkfinik.fairsplit.core.domain.usecase.group.GetGroupUseCase
-import com.silkfinik.fairsplit.core.domain.usecase.member.GetMembersUseCase
 import com.silkfinik.fairsplit.core.model.Currency
 import com.silkfinik.fairsplit.core.model.Group
 import com.silkfinik.fairsplit.core.model.Member
+import com.silkfinik.fairsplit.core.model.enums.ExpenseCategory
 import com.silkfinik.fairsplit.core.testing.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -37,11 +37,8 @@ class CreateExpenseViewModelTest {
 
     private lateinit var viewModel: CreateExpenseViewModel
     private val savedStateHandle: SavedStateHandle = mockk(relaxed = true)
-    private val getGroupUseCase: GetGroupUseCase = mockk()
-    private val getMembersUseCase: GetMembersUseCase = mockk()
-    private val getExpenseUseCase: GetExpenseUseCase = mockk()
+    private val prepareCreateExpenseUseCase: PrepareCreateExpenseUseCase = mockk()
     private val saveExpenseUseCase: SaveExpenseUseCase = mockk()
-    private val authRepository: AuthRepository = mockk()
 
     private val testGroupId = "group1"
     private val testGroup = Group(id = testGroupId, name = "Test Group", currency = Currency.USD)
@@ -67,20 +64,30 @@ class CreateExpenseViewModelTest {
     fun setUp() {
         every { savedStateHandle.get<String>("groupId") } returns testGroupId
         every { savedStateHandle.get<String>("expenseId") } returns null
-        every { authRepository.getUserId() } returns "user1"
-
-        coEvery { getGroupUseCase(testGroupId) } returns flowOf(testGroup)
-        coEvery { getMembersUseCase(testGroupId) } returns flowOf(testMembers)
+        coEvery { prepareCreateExpenseUseCase(testGroupId, null) } returns Result.Success(
+            PrepareCreateExpenseUseCase.EditorData(
+                currency = testGroup.currency,
+                members = testMembers,
+                currentUserId = "user1",
+                isEditing = false,
+                isReadOnly = false,
+                description = "",
+                amount = "",
+                category = ExpenseCategory.OTHER,
+                payerId = testMember1.id,
+                splitType = SplitType.EQUAL,
+                splits = emptyMap(),
+                splitData = emptyMap(),
+                selectedMemberIds = setOf(testMember1.id, testMember2.id)
+            )
+        )
     }
 
     private fun createViewModel() {
         viewModel = CreateExpenseViewModel(
-            savedStateHandle,
-            getGroupUseCase,
-            getMembersUseCase,
-            getExpenseUseCase,
-            saveExpenseUseCase,
-            authRepository
+            savedStateHandle = savedStateHandle,
+            prepareCreateExpenseUseCase = prepareCreateExpenseUseCase,
+            saveExpenseUseCase = saveExpenseUseCase
         )
     }
 
@@ -93,7 +100,7 @@ class CreateExpenseViewModelTest {
         assertEquals(false, state.isLoading)
         assertEquals(testGroup.currency, state.currency)
         assertEquals(testMembers, state.members)
-        assertEquals(testMember1.id, state.payerId) // Default payer is first member
+        assertEquals(testMember1.id, state.payerId)
     }
 
     @Test
@@ -121,7 +128,8 @@ class CreateExpenseViewModelTest {
         
         val state = viewModel.uiState.value
         assertEquals("-10", state.amount)
-        assertEquals("Некорректная сумма", state.amountError)
+        assertTrue(state.amountError is UiText.StringResource)
+        assertEquals(com.silkfinik.fairsplit.R.string.error_invalid_amount, (state.amountError as UiText.StringResource).resId)
     }
 
     @Test
@@ -156,10 +164,10 @@ class CreateExpenseViewModelTest {
         advanceUntilIdle()
 
         coVerify { 
-            saveExpenseUseCase(match { 
-                it.amount == 100.0 && 
-                it.description == "Dinner" &&
-                it.splits.size == 2
+            saveExpenseUseCase(match { params: SaveExpenseUseCase.Params ->
+                params.amount == 100.0 && 
+                params.description == "Dinner" &&
+                params.splits.size == 2
             }) 
         }
         
@@ -175,7 +183,8 @@ class CreateExpenseViewModelTest {
 
         viewModel.onSaveClick()
         
-        assertEquals("Введите описание", viewModel.uiState.value.descriptionError)
+        assertTrue(viewModel.uiState.value.descriptionError is UiText.StringResource)
+        assertEquals(R.string.error_enter_description, (viewModel.uiState.value.descriptionError as UiText.StringResource).resId)
         coVerify(exactly = 0) { saveExpenseUseCase(any()) }
     }
 

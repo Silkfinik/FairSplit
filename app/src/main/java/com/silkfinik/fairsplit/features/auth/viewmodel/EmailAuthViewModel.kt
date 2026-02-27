@@ -8,8 +8,11 @@ import com.silkfinik.fairsplit.core.common.util.asUiText
 import com.silkfinik.fairsplit.core.common.util.onError
 import com.silkfinik.fairsplit.core.common.util.onSuccess
 import com.silkfinik.fairsplit.core.domain.usecase.auth.GetSavedEmailUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.PasswordValidationResult
 import com.silkfinik.fairsplit.core.domain.usecase.auth.SignInWithEmailUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.SignUpWithEmailUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.ValidateEmailUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.ValidatePasswordUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.auth.ui.EmailAuthUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,7 +27,9 @@ import javax.inject.Inject
 class EmailAuthViewModel @Inject constructor(
     private val signInWithEmailUseCase: SignInWithEmailUseCase,
     private val signUpWithEmailUseCase: SignUpWithEmailUseCase,
-    private val getSavedEmailUseCase: GetSavedEmailUseCase
+    private val getSavedEmailUseCase: GetSavedEmailUseCase,
+    private val validatePasswordUseCase: ValidatePasswordUseCase,
+    private val validateEmailUseCase: ValidateEmailUseCase
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(EmailAuthUiState())
@@ -68,6 +73,11 @@ class EmailAuthViewModel @Inject constructor(
             return
         }
 
+        if (!validateEmailUseCase(email)) {
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.error_invalid_email)) }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
@@ -93,13 +103,26 @@ class EmailAuthViewModel @Inject constructor(
             return
         }
 
+        if (!validateEmailUseCase(email)) {
+            _uiState.update { it.copy(error = UiText.StringResource(R.string.error_invalid_email)) }
+            return
+        }
+
         if (password != confirmPassword) {
             _uiState.update { it.copy(error = UiText.StringResource(R.string.error_passwords_mismatch)) }
             return
         }
 
-        if (password.length < 6) {
-            _uiState.update { it.copy(error = UiText.StringResource(R.string.error_password_too_short)) }
+        val validationResult = validatePasswordUseCase(password)
+        if (validationResult != PasswordValidationResult.SUCCESS) {
+            val errorStringRes = when (validationResult) {
+                PasswordValidationResult.TOO_SHORT -> R.string.error_password_too_short
+                PasswordValidationResult.NO_UPPERCASE -> R.string.error_password_no_uppercase
+                PasswordValidationResult.NO_LOWERCASE -> R.string.error_password_no_lowercase
+                PasswordValidationResult.NO_DIGIT -> R.string.error_password_no_digit
+                PasswordValidationResult.SUCCESS -> return
+            }
+            _uiState.update { it.copy(error = UiText.StringResource(errorStringRes)) }
             return
         }
 

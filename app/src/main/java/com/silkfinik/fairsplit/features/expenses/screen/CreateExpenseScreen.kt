@@ -88,7 +88,7 @@ fun CreateExpenseScreen(
                 }
             )
         },
-        isLoading = uiState.isLoading
+        showProgress = uiState.isLoading
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(

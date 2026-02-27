@@ -29,11 +29,14 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -82,7 +85,6 @@ fun AccountScreen(
 
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var showLinkEmailDialog by remember { mutableStateOf(false) }
     var showChangeEmailDialog by remember { mutableStateOf(false) }
 
     var nameState by remember(uiState.user) { mutableStateOf(uiState.user?.displayName ?: "") }
@@ -129,13 +131,14 @@ fun AccountScreen(
         )
     }
 
-    if (showLinkEmailDialog) {
-        LinkEmailDialog(
-            onDismiss = { showLinkEmailDialog = false },
-            onConfirm = { email, password ->
-                showLinkEmailDialog = false
-                viewModel.onLinkEmailAccount(email, password)
-            }
+    if (uiState.isLinkSheetVisible) {
+        LinkEmailBottomSheet(
+            uiState = uiState,
+            onDismiss = { viewModel.showLinkEmailSheet(false) },
+            onEmailChange = viewModel::onLinkEmailChange,
+            onPasswordChange = viewModel::onLinkPasswordChange,
+            onConfirmPasswordChange = viewModel::onLinkConfirmPasswordChange,
+            onConfirm = viewModel::onLinkEmailAccount
         )
     }
 
@@ -158,7 +161,7 @@ fun AccountScreen(
             )
         },
         snackbarHostState = snackbarHostState,
-        isLoading = uiState.isLoading
+        showProgress = uiState.isLoading
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -193,7 +196,7 @@ fun AccountScreen(
                 item {
                     LinkAccountSection(
                         onLinkGoogle = { viewModel.startGoogleAccountLink(context) },
-                        onLinkEmail = { showLinkEmailDialog = true }
+                        onLinkEmail = { viewModel.showLinkEmailSheet(true) }
                     )
                 }
             }
@@ -492,41 +495,76 @@ fun VerificationWarningCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LinkEmailDialog(
+fun LinkEmailBottomSheet(
+    uiState: com.silkfinik.fairsplit.features.account.ui.AccountUiState,
     onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onConfirm: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    val passwordState = rememberTextFieldState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = androidx.compose.ui.platform.LocalContext.current
 
-    FairSplitDialog(
+    com.silkfinik.fairsplit.core.ui.component.FairSplitBottomSheet(
         onDismissRequest = onDismiss,
-        title = stringResource(R.string.account_link_email_dialog_title),
-        content = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                FairSplitTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = stringResource(R.string.label_email),
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-                )
-                FairSplitPasswordField(
-                    state = passwordState,
-                    label = stringResource(R.string.label_password),
-                    modifier = Modifier.fillMaxWidth()
-                )
+        sheetState = sheetState,
+        title = stringResource(R.string.account_link_email_dialog_title)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+
+            FairSplitTextField(
+                value = uiState.linkEmail,
+                onValueChange = onEmailChange,
+                label = stringResource(R.string.label_email),
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                isError = uiState.linkEmailError != null,
+                supportingText = uiState.linkEmailError?.asString(context)
+            )
+
+            val passwordState = rememberTextFieldState()
+            val confirmPasswordState = rememberTextFieldState()
+
+            LaunchedEffect(passwordState.text) {
+                onPasswordChange(passwordState.text.toString())
             }
-        },
-        confirmLabel = stringResource(R.string.account_link_email_dialog_confirm),
-        onConfirmAction = {
-            if (email.isNotBlank() && passwordState.text.length >= 6) {
-                onConfirm(email, passwordState.text.toString())
+
+            LaunchedEffect(confirmPasswordState.text) {
+                onConfirmPasswordChange(confirmPasswordState.text.toString())
             }
-        },
-        dismissLabel = stringResource(R.string.action_cancel)
-    )
+
+            FairSplitPasswordField(
+                state = passwordState,
+                label = stringResource(R.string.label_password),
+                modifier = Modifier.fillMaxWidth(),
+                isError = uiState.linkPasswordError != null,
+                supportingText = uiState.linkPasswordError?.asString(context)
+            )
+
+            FairSplitPasswordField(
+                state = confirmPasswordState,
+                label = stringResource(R.string.account_input_label_confirm_password),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            FairSplitButton(
+                text = stringResource(R.string.account_btn_link_email_confirm),
+                onClick = onConfirm,
+                style = FairSplitButtonStyle.Primary,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 }
 
 @Composable

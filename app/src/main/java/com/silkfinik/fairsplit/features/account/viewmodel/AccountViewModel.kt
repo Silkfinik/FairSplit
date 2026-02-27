@@ -18,8 +18,11 @@ import com.silkfinik.fairsplit.core.domain.repository.UserRepository
 import com.silkfinik.fairsplit.core.domain.usecase.auth.DeleteAccountUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkEmailAccountUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.LinkGoogleAccountUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.PasswordValidationResult
 import com.silkfinik.fairsplit.core.domain.usecase.auth.SignOutUseCase
 import com.silkfinik.fairsplit.core.domain.usecase.auth.UpdateUserAvatarUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.ValidateEmailUseCase
+import com.silkfinik.fairsplit.core.domain.usecase.auth.ValidatePasswordUseCase
 import com.silkfinik.fairsplit.core.ui.base.BaseViewModel
 import com.silkfinik.fairsplit.features.account.ui.AccountUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,7 +47,9 @@ class AccountViewModel @Inject constructor(
     private val signOutUseCase: SignOutUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val googleSignInHelper: GoogleSignInHelper,
-    private val authPreferences: AuthPreferences
+    private val authPreferences: AuthPreferences,
+    private val validateEmailUseCase: ValidateEmailUseCase,
+    private val validatePasswordUseCase: ValidatePasswordUseCase
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(AccountUiState())
@@ -289,7 +294,65 @@ class AccountViewModel @Inject constructor(
         }
     }
 
-    fun onLinkEmailAccount(email: String, password: String) {
+    fun showLinkEmailSheet(show: Boolean) {
+        _uiState.update { 
+            it.copy(
+                isLinkSheetVisible = show,
+                linkEmailError = null,
+                linkPasswordError = null,
+                linkEmail = if (show) "" else it.linkEmail,
+                linkPassword = if (show) "" else it.linkPassword,
+                linkConfirmPassword = if (show) "" else it.linkConfirmPassword
+            ) 
+        }
+    }
+
+    fun onLinkEmailChange(email: String) {
+        _uiState.update { it.copy(linkEmail = email, linkEmailError = null) }
+    }
+
+    fun onLinkPasswordChange(password: String) {
+        _uiState.update { it.copy(linkPassword = password, linkPasswordError = null) }
+    }
+
+    fun onLinkConfirmPasswordChange(password: String) {
+        _uiState.update { it.copy(linkConfirmPassword = password, linkPasswordError = null) }
+    }
+
+    fun onLinkEmailAccount() {
+        val state = _uiState.value
+        val email = state.linkEmail.trim()
+        val password = state.linkPassword
+        val confirmPassword = state.linkConfirmPassword
+
+        if (email.isBlank() || password.isBlank()) {
+            _uiState.update { it.copy(linkEmailError = UiText.StringResource(R.string.error_fill_all_fields)) }
+            return
+        }
+
+        if (!validateEmailUseCase(email)) {
+            _uiState.update { it.copy(linkEmailError = UiText.StringResource(R.string.error_invalid_email)) }
+            return
+        }
+
+        if (password != confirmPassword) {
+            _uiState.update { it.copy(linkPasswordError = UiText.StringResource(R.string.error_passwords_mismatch)) }
+            return
+        }
+
+        val validationResult = validatePasswordUseCase(password)
+        if (validationResult != PasswordValidationResult.SUCCESS) {
+            val errorStringRes = when (validationResult) {
+                PasswordValidationResult.TOO_SHORT -> R.string.error_password_too_short
+                PasswordValidationResult.NO_UPPERCASE -> R.string.error_password_no_uppercase
+                PasswordValidationResult.NO_LOWERCASE -> R.string.error_password_no_lowercase
+                PasswordValidationResult.NO_DIGIT -> R.string.error_password_no_digit
+                PasswordValidationResult.SUCCESS -> return
+            }
+            _uiState.update { it.copy(linkPasswordError = UiText.StringResource(errorStringRes)) }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
@@ -301,13 +364,17 @@ class AccountViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             isAnonymous = false,
-                            isEmailVerified = false
+                            isEmailVerified = false,
+                            isLinkSheetVisible = false,
+                            linkEmail = "",
+                            linkPassword = "",
+                            linkConfirmPassword = ""
                         )
                     }
                     sendEvent(UiEvent.ShowSnackbar(UiText.StringResource(R.string.success_email_linked)))
                 }
                 .onError { error ->
-                    _uiState.update { it.copy(isLoading = false) }
+                    _uiState.update { it.copy(isLoading = false, isLinkSheetVisible = false) }
                     sendEvent(UiEvent.ShowError(error.asUiText()))
                 }
         }
