@@ -127,36 +127,87 @@ The backend logic runs on **Firebase Cloud Functions** (TypeScript, `europe-west
 
 ## Testing
 
-FairSplit has a comprehensive unit test suite covering **all architectural layers**:
+FairSplit follows the **Testing Pyramid** methodology, providing comprehensive test coverage across all architectural layers with **77 automated tests** in total:
+
+```
+        / \
+       /   \        System / E2E Tests (4)
+      / UI  \       Compose UI flows, user navigation, device verification
+     /-------\
+    /         \     Integration Tests (15)
+   / Workflows \    Multi-component workflows, offline caching, balance settlement
+  /-------------\
+ /               \  Unit Tests (58)
+/  Domain & Data  \ Domain use cases, ViewModels, business logic, mappers
+-------------------
+```
 
 ### Test Stack
 - **JUnit 4** — test runner and assertions
 - **MockK** — Kotlin-first mocking framework
 - **Kotlinx Coroutines Test** — `runTest`, `advanceUntilIdle`, `UnconfinedTestDispatcher`
+- **Turbine** — testing Kotlin Coroutine `Flow` and `StateFlow`
+- **AndroidX Test & Jetpack Compose UI Testing** — `createAndroidComposeRule`, Compose semantics, end-to-end screen interactions
 - **MainDispatcherRule** — custom JUnit rule for replacing the main dispatcher in ViewModel tests
 
-### Test Coverage
+---
+
+### Test Pyramid Breakdown
+
+#### 1. Unit Tests (58 tests)
+Fast, isolated tests verifying core business logic, domain use cases, ViewModels, and data mappers on the JVM without requiring an Android runtime:
 
 | Layer | Test Class | Tests | What's Covered |
 |---|---|---|---|
+| **Domain Use Cases** | `CalculateGroupBalanceUseCaseTest` | 7 | Comprehensive balance calculation, multi-currency splits, debt simplification algorithm |
+| **Domain Use Cases** | `ValidateEmailUseCaseTest` | 6 | Email format validation (valid, empty, no @, no domain, invalid domain, leading @) |
+| **Domain Use Cases** | `ValidatePasswordUseCaseTest` | 5 | Password strength rules (too short, no uppercase, no lowercase, no digit, valid) |
+| **Domain Service** | `MemberResolutionServiceTest` | 5 | Ghost member resolution, account linking, display name fallback rules |
 | **ViewModel** | `CreateExpenseViewModelTest` | 10 | Expense creation, split recalculation (Equal/Exact/Percent/Shares), validation |
 | **ViewModel** | `GroupDetailsViewModelTest` | 4 | Sync initialization, screen data loading, ghost member creation, expense deletion |
-| **ViewModel** | `GroupsViewModelTest` | 1 | Group list loading and UI state emission |
 | **ViewModel** | `AccountViewModelTest` | 5 | Email account linking with full validation (blank fields, invalid email, password mismatch, short password, valid flow) |
-| **Use Case** | `ValidateEmailUseCaseTest` | 6 | Email format validation (valid, empty, no @, no domain, invalid domain, leading @) |
-| **Use Case** | `ValidatePasswordUseCaseTest` | 5 | Password strength rules (too short, no uppercase, no lowercase, no digit, valid) |
+| **ViewModel** | `GroupsViewModelTest` | 1 | Group list loading and UI state emission |
+| **Data Mappers** | `ExpenseMapperTest` | 4 | Domain `Expense` <-> Firestore / Room DTO transformations |
+| **Data Mappers** | `GroupMapperTest` | 3 | Domain `Group` <-> Firestore / Room DTO transformations |
+| **Models & Enums** | `ExpenseCategoryTest` | 3 | Category attributes, default icons, and localized labels |
+| **Common Utils** | `CollectionExtTest` | 4 | Safe collections and map extensions |
+| **Sanity** | `ExampleUnitTest` | 1 | Basic JVM execution sanity check |
+
+#### 2. Integration Tests (15 tests)
+Verify interactions between multiple architectural layers (UseCases, Repositories, Offline Storage, Caching, and Business Workflows) working together:
+
+| Integration Suite | Tests | What's Covered |
+|---|---|---|
+| `ExpenseWorkflowIntegrationTest` | 4 | Full expense addition workflow, balance recomputation across members, multi-payer transactions, rollback on failure |
+| `PaymentWorkflowIntegrationTest` | 4 | Debt settlement flow, multi-currency payment handling, debt reduction verification, overpayment edge cases |
+| `OfflineRepositoryIntegrationTest` | 4 | Offline-first sync behavior, Room local caching, dirty flag resolution, conflict management |
+| `GroupBalanceIntegrationTest` | 3 | End-to-end balance calculation with complex group expenses, ghost members, and debt simplification |
+
+#### 3. System / End-to-End Tests (4 tests)
+Run directly on physical Android devices or emulators using Jetpack Compose UI Testing to validate real user journeys, navigation graphs, and UI states:
+
+| Test Class | Tests | What's Covered |
+|---|---|---|
+| `AuthNavigationSystemTest` | 2 | Navigation from Login to Registration screen and back, UI element rendering, password visibility toggle |
+| `RegistrationSystemTest` | 1 | Complete registration user journey: inputting name, email, password, and triggering account creation |
+| `ExampleInstrumentedTest` | 1 | Application context, package name, and Android runtime initialization check |
+
+---
 
 ### Running Tests
 
 ```bash
-# Run all unit tests
+# Run all JVM tests (Unit + Integration tests)
 ./gradlew test
 
 # Run a specific test class
-./gradlew test --tests "com.silkfinik.fairsplit.features.expenses.viewmodel.CreateExpenseViewModelTest"
+./gradlew test --tests "com.silkfinik.fairsplit.integration.ExpenseWorkflowIntegrationTest"
 
-# Run all tests with detailed output
-./gradlew test --info
+# Run all connected System / UI tests (requires connected device or running emulator)
+./gradlew connectedAndroidTest
+
+# Run a specific connected system test class
+./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.silkfinik.fairsplit.system.AuthNavigationSystemTest
 ```
 
 ---
