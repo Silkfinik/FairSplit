@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/Backend-Firebase-orange?logo=firebase" alt="Backend"/>
   <img src="https://img.shields.io/badge/Min%20SDK-24-brightgreen" alt="Min SDK"/>
   <img src="https://img.shields.io/badge/Target%20SDK-36-brightgreen" alt="Target SDK"/>
+  <a href="https://github.com/Silkfinik/FairSplit/actions/workflows/android-ci.yml"><img src="https://github.com/Silkfinik/FairSplit/actions/workflows/android-ci.yml/badge.svg" alt="Android CI"/></a>
 </p>
 
 ---
@@ -209,6 +210,25 @@ Run directly on physical Android devices or emulators using Jetpack Compose UI T
 # Run a specific connected system test class
 ./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.silkfinik.fairsplit.system.AuthNavigationSystemTest
 ```
+
+---
+
+## Continuous Integration (CI/CD)
+
+The project includes an automated **GitHub Actions** pipeline ([`.github/workflows/android-ci.yml`](.github/workflows/android-ci.yml)) running on every push and pull request to `main`, `master`, and `develop`.
+
+### Pipeline Highlights
+- **Build Environment**: Ubuntu runner with **JDK 21** and built-in Gradle build cache.
+- **Secure Secret Handling**:
+  - `google-services.json` is kept strictly out of git version control.
+  - Decodes the real configuration from the repository secret during CI runs.
+  - Automatically falls back to generating a valid mock `google-services.json` (with OAuth client support) if the secret is absent, allowing external pull requests and forks to compile and pass all tests seamlessly.
+- **Automated Quality Gates**:
+  - Runs all **Unit and Integration tests** (`./gradlew test`).
+  - Assembles the debug APK (`./gradlew assembleDebug`).
+- **Artifacts**:
+  - Automatically publishes HTML test reports (`test-reports`).
+  - Generates downloadable `fairsplit-debug-apk` on successful builds.
 
 ---
 
